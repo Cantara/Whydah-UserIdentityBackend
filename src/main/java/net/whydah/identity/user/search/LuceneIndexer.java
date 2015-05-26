@@ -5,9 +5,14 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +32,10 @@ public class LuceneIndexer {
     public static final String FIELD_PERSONREF = "personref";
     public static final String FIELD_MOBILE = "mobile";
 
+    public static final Version LUCENE_VERSION = Version.LUCENE_4_10_3;
+    protected static final Analyzer ANALYZER = new StandardAnalyzer();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LuceneIndexer.class);
-    private static final Analyzer ANALYZER = new StandardAnalyzer(Version.LUCENE_31);
     private final Directory index;
 
     public LuceneIndexer(Directory index) {
@@ -43,6 +50,12 @@ public class LuceneIndexer {
             LOGGER.error("getWriter failed.", e);
         } finally {
             closeWriter(w);
+        }
+
+        if (index instanceof FSDirectory) {
+            LOGGER.info("Lucene is using a FSDirectory index with path {}", ((FSDirectory) index).getDirectory().getPath());
+        } else if (index instanceof RAMDirectory) {
+            LOGGER.info("Lucene is using RAMDirectory index");
         }
     }
 
@@ -113,36 +126,48 @@ public class LuceneIndexer {
      *  IO error
      */
     private IndexWriter getWriter() throws IOException {
-        return new IndexWriter(index, ANALYZER, IndexWriter.MaxFieldLength.UNLIMITED);
+        return new IndexWriter(index, new IndexWriterConfig(LUCENE_VERSION, ANALYZER));
     }
 
-
     private Document createLuceneDocument(UserIdentity user) {
+        FieldType ftNotTokenized = new FieldType(StringField.TYPE_STORED);
+        ftNotTokenized.setTokenized(false);
+
+        FieldType ftTokenized = new FieldType(StringField.TYPE_STORED);
+        ftTokenized.setTokenized(true);
+
+        FieldType ftNotIndexed = new FieldType(StringField.TYPE_STORED);
+        ftNotIndexed.setIndexed(false);
+
+
         Document doc = new Document();
-        doc.add(new Field(FIELD_UID, user.getUid(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-        doc.add(new Field(FIELD_USERNAME, user.getUsername(), Field.Store.YES, Field.Index.ANALYZED));
-        doc.add(new Field(FIELD_EMAIL, user.getEmail(), Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field(FIELD_UID, user.getUid(), ftNotTokenized)); //Field.Index.NOT_ANALYZED
+        doc.add(new Field(FIELD_USERNAME, user.getUsername(), ftTokenized));
+        doc.add(new Field(FIELD_EMAIL, user.getEmail(), ftTokenized));
 
         if (user.getFirstName() != null) {
-            doc.add(new Field(FIELD_FIRSTNAME, user.getFirstName(), Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(new Field(FIELD_FIRSTNAME, user.getFirstName(), ftTokenized));
         }
         if (user.getLastName() != null) {
-            doc.add(new Field(FIELD_LASTNAME, user.getLastName(), Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(new Field(FIELD_LASTNAME, user.getLastName(), ftTokenized));
         }
         if (user.getPersonRef() != null) {
-            doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), Field.Store.YES, Field.Index.NO));
+            doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftNotIndexed));  //Field.Index.NO
+            //For Lucene 5
+            //doc.add(new StoredField(FIELD_PERSONREF, user.getPersonRef()));
         }
 
         if (user.getCellPhone() != null) {
-            doc.add(new Field(FIELD_MOBILE, user.getCellPhone(), Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(new Field(FIELD_MOBILE, user.getCellPhone(), ftTokenized));
         }
         return doc;
     }
 
+
     private void closeWriter(IndexWriter w) {
         if (w != null) {
             try {
-                w.optimize();
+                //w.optimize();
                 w.close();
             } catch (IOException e) {
                 //intentionally ignore

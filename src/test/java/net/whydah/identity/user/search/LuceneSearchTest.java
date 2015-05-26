@@ -1,6 +1,5 @@
 package net.whydah.identity.user.search;
 
-import junit.framework.TestCase;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import org.apache.lucene.store.Directory;
@@ -11,45 +10,34 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LuceneSearchTest extends TestCase{
+import static org.junit.Assert.assertEquals;
 
-  @Test
-  public void testsearch() throws IOException {
-        Directory index = new RAMDirectory();
+public class LuceneSearchTest {
 
-        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
-        List<UserIdentity> users = new ArrayList<UserIdentity>(){{
-        	add(createUser("kari.norman@example.com", "Kari", "Norman", "kari.norman@example.com", "kari.norman@example.com"));
-        	add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
-        	add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
-            
-        }};
-        luceneIndexer.addToIndex(users);
+    @Test
+    public void testSearch() throws IOException {
+        RAMDirectory index = new RAMDirectory();
+        addUsers(index);
+
         LuceneSearch luceneSearch = new LuceneSearch(index);
         List<UserIdentityRepresentation> result = luceneSearch.search("Ola");
         assertEquals(1, result.size());
         result = luceneSearch.search("Norman");
         assertEquals(2, result.size());
         result = luceneSearch.search("ola@example.com");
-        assertEquals(1, result.size());
+        assertEquals(3, result.size());
         result = luceneSearch.search("Pølser");
         assertEquals(0, result.size());
-        
+
     }
-  
- 
+
+
     @Test
-    public void testremoveuser() throws IOException {
+    public void testRemoveuser() throws IOException {
         RAMDirectory index = new RAMDirectory();
 
-        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
-        List<UserIdentity> users = new ArrayList<UserIdentity>(){{
-        	add(createUser("kari.norman@example.com", "Kari", "norman", "kari.norman@example.com", "kari.norman@example.com"));
-        	add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
-        	add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
-            
-        }};
-        luceneIndexer.addToIndex(users);
+        LuceneIndexer luceneIndexer = addUsers(index);
+
         LuceneSearch luceneSearch = new LuceneSearch(index);
         List<UserIdentityRepresentation> result = luceneSearch.search("Ola");
         assertEquals(1, result.size());
@@ -57,18 +45,13 @@ public class LuceneSearchTest extends TestCase{
         result = luceneSearch.search("Ola");
         assertEquals(0, result.size());
     }
-    
+
 
     @Test
-    public void testmodifyuser() throws IOException {
+    public void testModifyUser() throws IOException {
         RAMDirectory index = new RAMDirectory();
-        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
-        List<UserIdentity> users = new ArrayList<UserIdentity>(){{
-        	add(createUser("kari.norman@example.com", "Kari", "norman", "kari.norman@example.com", "kari.norman@example.com"));
-        	add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
-        	add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
-        }};
-        luceneIndexer.addToIndex(users);
+        LuceneIndexer luceneIndexer = addUsers(index);
+
         LuceneSearch luceneSearch = new LuceneSearch(index);
         List<UserIdentityRepresentation> result = luceneSearch.search("Ola");
         assertEquals(1, result.size());
@@ -79,20 +62,14 @@ public class LuceneSearchTest extends TestCase{
         assertEquals(1, result.size());
         result = luceneSearch.search("Ola");
         assertEquals(1, result.size());
-       
+
     }
 
     @Test
-    public void testwildcardsearch() throws IOException {
+    public void testWildcardSearch() throws IOException {
         Directory index = new RAMDirectory();
-        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
-        List<UserIdentity> users = new ArrayList<UserIdentity>(){{
-          	add(createUser("kari.norman@example.com", "Kari", "norman", "kari.norman@example.com", "kari.norman@example.com"));
-        	add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
-        	add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
-        
-        }};
-        luceneIndexer.addToIndex(users);
+        addUsers(index);
+
         LuceneSearch luceneSearch = new LuceneSearch(index);
         List<UserIdentityRepresentation> result = luceneSearch.search("Ola");
         assertEquals(1, result.size());
@@ -103,23 +80,28 @@ public class LuceneSearchTest extends TestCase{
     }
 
     @Test
-    public void testweights() throws IOException {
+    public void testWeights() throws IOException {
         Directory index = new RAMDirectory();
+        addUsers(index);
 
-        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
-        List<UserIdentity> users = new ArrayList<UserIdentity>(){{
-        	add(createUser("kari.norman@example.com", "Kari", "Norman", "kari.norman@example.com", "kari.norman@example.com"));
-        	add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
-        	add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
-
-        }};
-        luceneIndexer.addToIndex(users);
         LuceneSearch luceneSearch = new LuceneSearch(index);
         List<UserIdentityRepresentation> result = luceneSearch.search("Norman");
         assertEquals(2, result.size());
         assertEquals("ola@example.com", result.get(1).getUsername());
     }
 
+
+    private LuceneIndexer addUsers(Directory index) throws IOException {
+        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
+        List<UserIdentity> users = new ArrayList<UserIdentity>(){{
+            add(createUser("kari.norman@example.com", "Kari", "norman", "kari.norman@example.com", "kari.norman@example.com"));
+            add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
+            add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
+
+        }};
+        luceneIndexer.addToIndex(users);
+        return luceneIndexer;
+    }
 
     private static UserIdentity createUser(String username, String fornavn, String etternavn, String email, String uid) {
         UserIdentity user1 = new UserIdentity();
@@ -128,7 +110,7 @@ public class LuceneSearchTest extends TestCase{
         user1.setLastName(etternavn);
         user1.setEmail(email);
         user1.setUid(uid);
-	    user1.setPersonRef("r"+uid);
+        user1.setPersonRef("r"+uid);
         return user1;
     }
 

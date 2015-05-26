@@ -5,14 +5,14 @@ import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.queryParser.MultiFieldQueryParser;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,7 @@ import java.util.List;
 
 public class LuceneSearch {
     private static final Logger logger = LoggerFactory.getLogger(LuceneSearch.class);
-    private static final Analyzer ANALYZER = new StandardAnalyzer(Version.LUCENE_31);
+    protected static final Analyzer ANALYZER = new StandardAnalyzer();  //use LuceneIndexer.ANALYZER?
     private static final int MAX_HITS = 200;
     private final Directory index;
 
@@ -45,7 +45,8 @@ public class LuceneSearch {
         boosts.put(LuceneIndexer.FIELD_FIRSTNAME, 2.5f);
         boosts.put(LuceneIndexer.FIELD_LASTNAME, 2f);
         boosts.put(LuceneIndexer.FIELD_USERNAME, 1.5f);
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(Version.LUCENE_30, fields, ANALYZER, boosts);
+
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(fields, ANALYZER, boosts);
         multiFieldQueryParser.setAllowLeadingWildcard(true);
         Query q;
         try {
@@ -56,9 +57,11 @@ public class LuceneSearch {
         }
 
         List<UserIdentityRepresentation> result = new ArrayList<>();
-        IndexSearcher searcher = null;
+        DirectoryReader directoryReader = null;
         try {
-            searcher = new IndexSearcher(index, true);
+            //searcher = new IndexSearcher(index, true);    //http://lucene.472066.n3.nabble.com/IndexSearcher-close-removed-in-4-0-td4041177.html
+            directoryReader = DirectoryReader.open(index);
+            IndexSearcher searcher = new IndexSearcher(directoryReader);
             TopDocs topDocs = searcher.search(q, MAX_HITS);
 
             for (ScoreDoc hit : topDocs.scoreDocs) {
@@ -78,9 +81,9 @@ public class LuceneSearch {
         } catch (IOException e) {
             logger.error("Error when searching.", e);
         } finally {
-            if (searcher != null) {
+            if (directoryReader != null) {
                 try {
-                    searcher.close();
+                    directoryReader.close();
                 } catch (IOException e) {
                     logger.info("searcher.close() failed. Ignore. {}", e.getMessage());
                 }

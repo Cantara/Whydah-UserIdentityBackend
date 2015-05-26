@@ -65,6 +65,7 @@
         <grizzy.version>2.1.11</grizzy.version>
         <apache.ds.version>2.0.0-M17</apache.ds.version>
         <slf4j.version>1.7.12</slf4j.version>
+        <lucene.version>4.10.4</lucene.version>
     </properties>
 
     <repositories>
@@ -167,10 +168,34 @@
         </dependency>
         -->
 
+        <!--
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
             <version>3.1.0</version>
+        </dependency>
+        -->
+
+        <!--
+        Upgrading to Lucene 5 requires existing indexes to be migrated or deleted
+         http://lucene.apache.org/core/5_1_0/MIGRATE.html
+         -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <!-- StandardAnalyzer -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <!-- LuceneSearch use MultiFieldQueryParser -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queryparser</artifactId>
+            <version>${lucene.version}</version>
         </dependency>
 
         <dependency>
