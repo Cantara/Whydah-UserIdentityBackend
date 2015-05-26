@@ -9,7 +9,6 @@ import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.role.UserPropertyAndRole;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
-import net.whydah.identity.user.search.LuceneIndexer;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
@@ -34,12 +33,9 @@ public class IamDataImporterTest {
     private static EmbeddedADS ads;
     private static LdapUserIdentityDao ldapUserIdentityDao;
     private static UserPropertyAndRoleRepository roleRepository;
+    private static BasicDataSource dataSource;
+    private static Directory index;
 
-	private static OrganizationImporter organizationImporter;
-	private static WhydahUserIdentityImporter userImporter;
-	private static RoleMappingImporter roleMappingImporter;
-	private static ApplicationImporter applicationImporter;
-	
     @BeforeClass
     public static void init() throws Exception {
         System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
@@ -57,8 +53,7 @@ public class IamDataImporterTest {
         ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
 
 
-
-        BasicDataSource dataSource = new BasicDataSource();
+        dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         dataSource.setUsername("sa");
         dataSource.setPassword("");
@@ -70,13 +65,7 @@ public class IamDataImporterTest {
         ApplicationDao configDataRepository = new ApplicationDao(dataSource);
         roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
 
-        Directory index = new NIOFSDirectory(new File(lucenePath));
-        LuceneIndexer luceneIndexer = new LuceneIndexer(index);
-
-        organizationImporter = new OrganizationImporter(queryRunner);
-        applicationImporter = new ApplicationImporter(queryRunner);
-        userImporter = new WhydahUserIdentityImporter(ldapUserIdentityDao, luceneIndexer);
-        roleMappingImporter = new RoleMappingImporter(roleRepository);
+        index = new NIOFSDirectory(new File(lucenePath));
     }
     
     @AfterClass
@@ -88,8 +77,8 @@ public class IamDataImporterTest {
     
     @Test
     public void testDataIsImported() throws Exception {
-		IamDataImporter iamDataImporter = new IamDataImporter(applicationImporter, organizationImporter, userImporter, roleMappingImporter);
-        iamDataImporter.importIamData();
+		//IamDataImporter iamDataImporter = new IamDataImporter(applicationImporter, organizationImporter, userImporter, roleMappingImporter);
+        new IamDataImporter(dataSource, ldapUserIdentityDao, index).importIamData();
         
         UserIdentity thomaspUserIdentity = ldapUserIdentityDao.getUserIndentity("thomasp");
         assertEquals("Name must be set", "Thomas", thomaspUserIdentity.getFirstName());

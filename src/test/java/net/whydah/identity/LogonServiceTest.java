@@ -9,6 +9,7 @@ import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
+import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.identity.EmbeddedADS;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
@@ -44,7 +45,7 @@ public class LogonServiceTest {
     //private static LdapAuthenticator ldapAuthenticator;
     private static UserPropertyAndRoleRepository roleRepository;
     //private static UserAdminHelper userAdminHelper;
-    private static Main uib=null;
+    private static Main main = null;
 
 
     @BeforeClass
@@ -85,15 +86,16 @@ public class LogonServiceTest {
         Directory index = new NIOFSDirectory(new File(basepath + "lucene"));
         //userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogRepository, roleRepository);
         try {
-            uib = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
-            uib.importUsersAndRoles();
+            main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
+            //main.importUsersAndRoles();
+            new IamDataImporter().importIamData();
         } catch (Exception e){
 
         }
 
         String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
-        uib.startHttpServer(sslVerification, requiredRoleName);
+        main.startHttpServer(sslVerification, requiredRoleName);
 
         baseUri = UriBuilder.fromUri("http://localhost/uib/").port(HTTP_PORT).build();
     }

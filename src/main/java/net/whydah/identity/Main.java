@@ -6,7 +6,6 @@ import com.google.inject.servlet.GuiceFilter;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import net.whydah.identity.application.authentication.ApplicationTokenService;
 import net.whydah.identity.config.AppConfig;
-import net.whydah.identity.config.ImportModule;
 import net.whydah.identity.config.SSLTool;
 import net.whydah.identity.config.UserIdentityBackendModule;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
@@ -45,6 +44,16 @@ public class Main {
     }
 
 
+
+    // 1a. Default:        External ldap and database
+    // or
+    // 1b. Test scenario:  start embedded Ldap and database
+
+    // 2. run db migrations (should not share any objects with the web application)
+
+    // 3. possibly import (should not share any objects with the web application)
+
+    // 4. start webserver
     public static void main(String[] args) {
         boolean importEnabled = Boolean.parseBoolean(AppConfig.appConfig.getProperty("import.enabled"));
         boolean embeddedDSEnabled = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.embedded"));
@@ -81,9 +90,9 @@ public class Main {
 
             main.upgradeDatabase();
 
-            // Populate ldap, database and lucene index
             if (importEnabled) {
-                main.importUsersAndRoles();
+                // Populate ldap, database and lucene index
+                new IamDataImporter().importIamData();
             }
 
             main.startHttpServer(sslVerification, requiredRoleName);
@@ -109,11 +118,13 @@ public class Main {
         injector.getInstance(DatabaseMigrationHelper.class).upgradeDatabase();
     }
 
+    /*
     public void importUsersAndRoles() {
         Injector injector = Guice.createInjector(new ImportModule());
         IamDataImporter iamDataImporter = injector.getInstance(IamDataImporter.class);
         iamDataImporter.importIamData();
     }
+    */
 
     public Injector getInjector() {
         return injector;

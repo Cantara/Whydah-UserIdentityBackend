@@ -7,6 +7,7 @@ import com.sun.jersey.api.client.WebResource;
 import net.whydah.identity.Main;
 import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
+import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.email.MockMail;
 import net.whydah.identity.util.FileUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -31,7 +32,7 @@ import static org.junit.Assert.*;
 public class UserAdminTest {
     private static WebResource baseResource;
     private static WebResource logonResource;
-    private static Main uib;
+    private static Main main;
 
     @Before
     public void init() throws Exception {
@@ -39,20 +40,22 @@ public class UserAdminTest {
         String ldapPath = AppConfig.appConfig.getProperty("ldap.embedded.directory");
         FileUtils.deleteDirectory(new File(ldapPath));
         FileUtils.deleteDirectory(new File("target/bootstrapdata/"));
-        uib = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
+        main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
 
-        DatabaseMigrationHelper dbHelper = uib.getInjector().getInstance(DatabaseMigrationHelper.class);
+        DatabaseMigrationHelper dbHelper = main.getInjector().getInstance(DatabaseMigrationHelper.class);
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
-        uib.startEmbeddedDS(AppConfig.appConfig.getProperty("ldap.embedded.directory"), Integer.valueOf(AppConfig.appConfig.getProperty("ldap.embedded.port")));
-        uib.importUsersAndRoles();
+        main.startEmbeddedDS(AppConfig.appConfig.getProperty("ldap.embedded.directory"), Integer.valueOf(AppConfig.appConfig.getProperty("ldap.embedded.port")));
+        //main.importUsersAndRoles();
+        new IamDataImporter().importIamData();
+
         String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
-        uib.startHttpServer(sslVerification, requiredRoleName);
+        main.startHttpServer(sslVerification, requiredRoleName);
 
-        URI baseUri = UriBuilder.fromUri("http://localhost/uib/uib/useradmin/").port(uib.getPort()).build();
-        URI logonUri = UriBuilder.fromUri("http://localhost/uib/").port(uib.getPort()).build();
+        URI baseUri = UriBuilder.fromUri("http://localhost/uib/uib/useradmin/").port(main.getPort()).build();
+        URI logonUri = UriBuilder.fromUri("http://localhost/uib/").port(main.getPort()).build();
         //String authentication = "usrtk1";
         baseResource = Client.create().resource(baseUri)/*.path(authentication + '/')*/;
         logonResource = Client.create().resource(logonUri);
@@ -60,7 +63,7 @@ public class UserAdminTest {
 
     @After
     public void teardown() throws InterruptedException {
-        uib.stop();
+        main.stop();
     }
 
     @Test
@@ -391,7 +394,7 @@ public class UserAdminTest {
 
         // TODO somehow replace PasswordSender with MockMail in guice context.
 
-        String token = uib.getInjector().getInstance(MockMail.class).getToken(uid);
+        String token = main.getInjector().getInstance(MockMail.class).getToken(uid);
         assertNotNull(token);
 
         ClientResponse response = baseResource.path("user/sneile/newpassword/" + token).type(MediaType.APPLICATION_JSON).post(ClientResponse.class, "{\"newpassword\":\"naLLert\"}");
