@@ -95,7 +95,7 @@ public class LogonServiceTest {
 
         String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
-        main.startHttpServer(sslVerification, requiredRoleName);
+        main.startHttpServer(requiredRoleName);
 
         baseUri = UriBuilder.fromUri("http://localhost/uib/").port(HTTP_PORT).build();
     }

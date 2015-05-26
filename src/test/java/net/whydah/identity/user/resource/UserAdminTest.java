@@ -53,9 +53,8 @@ public class UserAdminTest {
         //main.importUsersAndRoles();
         new IamDataImporter(dataSource).importIamData();
 
-        String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
-        main.startHttpServer(sslVerification, requiredRoleName);
+        main.startHttpServer(requiredRoleName);
 
         URI baseUri = UriBuilder.fromUri("http://localhost/uib/uib/useradmin/").port(main.getPort()).build();
         URI logonUri = UriBuilder.fromUri("http://localhost/uib/").port(main.getPort()).build();

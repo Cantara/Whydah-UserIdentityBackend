@@ -27,18 +27,15 @@ import java.io.IOException;
 import java.util.HashMap;
 
 public class Main {
+    public static final String contextpath = "/uib";
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-
-    public static String version;
 
     private EmbeddedADS ads;
     private HttpServer httpServer;
     private int webappPort;
-    public static final String contextpath = "/uib";
 
 
     public Main(Integer webappPort) {
-        version = this.getClass().getPackage().getImplementationVersion();
         this.webappPort = webappPort;
     }
 
@@ -65,7 +62,7 @@ public class Main {
         String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
         Integer webappPort = Integer.valueOf(AppConfig.appConfig.getProperty("service.port"));
-
+        String version = Main.class.getPackage().getImplementationVersion();
 
         log.info("Starting UserIdentityBackend version={}, import.enabled={}, embeddedDSEnabled={}", version, importEnabled, embeddedDSEnabled);
         try {
@@ -95,7 +92,14 @@ public class Main {
                 new IamDataImporter(dataSource).importIamData();
             }
 
-            main.startHttpServer(sslVerification, requiredRoleName);
+
+            // Property-overwrite of SSL verification to support weak ssl certificates
+            if ("disabled".equalsIgnoreCase(sslVerification)) {
+                SSLTool.disableCertificateValidation();
+            }
+
+            main.startHttpServer(requiredRoleName);
+            log.info("UserIdentityBackend version:{} started on port {}.", version, webappPort + " context-path:" + contextpath);
 
             if (!embeddedDSEnabled) {
                 try {
@@ -127,12 +131,7 @@ public class Main {
         return dataSource;
     }
 
-    public void startHttpServer(String sslVerification, String requiredRoleName) {
-        // Property-overwrite of SSL verification to support weak ssl certificates
-        if ("disabled".equalsIgnoreCase(sslVerification)) {
-            SSLTool.disableCertificateValidation();
-        }
-
+    public void startHttpServer(String requiredRoleName) {
         ServletHandler servletHandler = new ServletHandler();
         servletHandler.setContextPath(contextpath);
         servletHandler.addInitParameter("com.sun.jersey.config.property.packages",
@@ -168,7 +167,6 @@ public class Main {
         } catch (IOException e) {
             throw new RuntimeException("grizzly server start failed", e);
         }
-        log.info("UserIdentityBackend version:{} started on port {}.", version, webappPort + " context-path:" + contextpath);
     }
 
 
