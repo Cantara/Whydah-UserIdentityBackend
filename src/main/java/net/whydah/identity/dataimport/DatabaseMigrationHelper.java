@@ -1,6 +1,5 @@
 package net.whydah.identity.dataimport;
 
-import com.google.inject.Inject;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
@@ -18,7 +17,6 @@ public class DatabaseMigrationHelper {
     private Flyway flyway;
     private String dbUrl;
 
-    @Inject
     public DatabaseMigrationHelper(BasicDataSource dataSource) {
         this.dbUrl = dataSource.getUrl();
         flyway = new Flyway();
