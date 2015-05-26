@@ -1,10 +1,7 @@
-package net.whydah.identity.user.email;
-
-import com.google.inject.Singleton;
+package net.whydah.identity.user.resource;
 
 import java.util.HashMap;
 
-@Singleton
 public class MockMail {
     private final HashMap<String, String> passwords = new HashMap<String, String>();
 

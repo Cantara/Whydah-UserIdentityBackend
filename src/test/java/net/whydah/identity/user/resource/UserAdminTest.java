@@ -8,8 +8,8 @@ import net.whydah.identity.Main;
 import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
-import net.whydah.identity.user.email.MockMail;
 import net.whydah.identity.util.FileUtils;
+import org.apache.commons.dbcp.BasicDataSource;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.junit.After;
@@ -42,13 +42,16 @@ public class UserAdminTest {
         FileUtils.deleteDirectory(new File("target/bootstrapdata/"));
         main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
 
-        DatabaseMigrationHelper dbHelper = main.getInjector().getInstance(DatabaseMigrationHelper.class);
+
+        //DatabaseMigrationHelper dbHelper = main.getInjector().getInstance(DatabaseMigrationHelper.class);
+        BasicDataSource dataSource = initBasicDataSource();
+        DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
         main.startEmbeddedDS(AppConfig.appConfig.getProperty("ldap.embedded.directory"), Integer.valueOf(AppConfig.appConfig.getProperty("ldap.embedded.port")));
         //main.importUsersAndRoles();
-        new IamDataImporter().importIamData();
+        new IamDataImporter(dataSource).importIamData();
 
         String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
@@ -59,6 +62,20 @@ public class UserAdminTest {
         //String authentication = "usrtk1";
         baseResource = Client.create().resource(baseUri)/*.path(authentication + '/')*/;
         logonResource = Client.create().resource(logonUri);
+    }
+
+    private static BasicDataSource initBasicDataSource() {
+        String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
+        String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
+        String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
+        String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);//"jdbc:hsqldb:file:" + basepath + "hsqldb");
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
     }
 
     @After
@@ -394,7 +411,8 @@ public class UserAdminTest {
 
         // TODO somehow replace PasswordSender with MockMail in guice context.
 
-        String token = main.getInjector().getInstance(MockMail.class).getToken(uid);
+        //String token = main.getInjector().getInstance(MockMail.class).getToken(uid);
+        String token = new MockMail().getToken(uid);
         assertNotNull(token);
 
         ClientResponse response = baseResource.path("user/sneile/newpassword/" + token).type(MediaType.APPLICATION_JSON).post(ClientResponse.class, "{\"newpassword\":\"naLLert\"}");

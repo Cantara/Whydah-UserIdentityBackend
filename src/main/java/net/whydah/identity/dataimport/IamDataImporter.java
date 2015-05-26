@@ -27,8 +27,8 @@ public class IamDataImporter {
     private final LdapUserIdentityDao ldapUserIdentityDao;
     private final Directory index;
 
-	public IamDataImporter()  {
-        this.dataSource = initBasicDataSource();
+	public IamDataImporter(BasicDataSource dataSource)  {
+        this.dataSource = dataSource;
         this.queryRunner = new QueryRunner(dataSource);
         this.ldapUserIdentityDao = initLdapUserIdentityDao();
         this.index = initDirectory();
@@ -101,20 +101,6 @@ public class IamDataImporter {
         String primaryUsernameAttribute = AppConfig.appConfig.getProperty("ldap.primary.username.attribute");
         boolean readonly = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.primary.readonly"));
         return new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
-    }
-
-    private BasicDataSource initBasicDataSource() {
-        String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
-        String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
-        String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
-        String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
-
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName(jdbcdriver);
-        dataSource.setUrl(jdbcurl);//"jdbc:hsqldb:file:" + basepath + "hsqldb");
-        dataSource.setUsername(roledbuser);
-        dataSource.setPassword(roledbpasswd);
-        return dataSource;
     }
 
     private Directory initDirectory() {

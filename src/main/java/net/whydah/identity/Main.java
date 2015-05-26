@@ -14,6 +14,7 @@ import net.whydah.identity.security.SecurityFilter;
 import net.whydah.identity.user.authentication.SecurityTokenServiceHelper;
 import net.whydah.identity.user.identity.EmbeddedADS;
 import net.whydah.identity.util.FileUtils;
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.lang.StringUtils;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.http.server.NetworkListener;
@@ -29,7 +30,6 @@ public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static String version;
-    private final Injector injector;
 
     private EmbeddedADS ads;
     private HttpServer httpServer;
@@ -39,7 +39,6 @@ public class Main {
 
     public Main(Integer webappPort) {
         version = this.getClass().getPackage().getImplementationVersion();
-        injector = Guice.createInjector(new UserIdentityBackendModule());
         this.webappPort = webappPort;
     }
 
@@ -88,11 +87,12 @@ public class Main {
                 main.startEmbeddedDS(ldapEmbeddedpath, ldapPort);
             }
 
-            main.upgradeDatabase();
+            BasicDataSource dataSource = initBasicDataSource();
+            new DatabaseMigrationHelper(dataSource).upgradeDatabase();
 
             if (importEnabled) {
                 // Populate ldap, database and lucene index
-                new IamDataImporter().importIamData();
+                new IamDataImporter(dataSource).importIamData();
             }
 
             main.startHttpServer(sslVerification, requiredRoleName);
@@ -113,21 +113,18 @@ public class Main {
         }
     }
 
+    private static BasicDataSource initBasicDataSource() {
+        String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
+        String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
+        String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
+        String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
 
-    public void upgradeDatabase() {
-        injector.getInstance(DatabaseMigrationHelper.class).upgradeDatabase();
-    }
-
-    /*
-    public void importUsersAndRoles() {
-        Injector injector = Guice.createInjector(new ImportModule());
-        IamDataImporter iamDataImporter = injector.getInstance(IamDataImporter.class);
-        iamDataImporter.importIamData();
-    }
-    */
-
-    public Injector getInjector() {
-        return injector;
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);//"jdbc:hsqldb:file:" + basepath + "hsqldb");
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
     }
 
     public void startHttpServer(String sslVerification, String requiredRoleName) {
@@ -146,7 +143,17 @@ public class Main {
         GuiceFilter filter = new GuiceFilter();
         servletHandler.addFilter(filter, "guiceFilter", null);
 
-        addSecurityFilterForUserAdmin(servletHandler, requiredRoleName);
+        Injector injector = Guice.createInjector(new UserIdentityBackendModule());
+        SecurityTokenServiceHelper securityTokenHelper = injector.getInstance(SecurityTokenServiceHelper.class);
+        ApplicationTokenService applicationTokenService = injector.getInstance(ApplicationTokenService.class);
+        //addSecurityFilterForUserAdmin
+        if (StringUtils.isEmpty(requiredRoleName)) {
+            log.warn("Required Role Name is empty! Verify the useradmin.requiredrolename-attribute in the configuration.");
+        }
+        SecurityFilter securityFilter = new SecurityFilter(securityTokenHelper, applicationTokenService);
+        HashMap<String, String> initParams = new HashMap<>(1);
+        servletHandler.addFilter(securityFilter, "SecurityFilter", initParams);
+        log.info("SecurityFilter initialized with params:", initParams);
 
         GuiceContainer container = new GuiceContainer(injector);
         servletHandler.setServletInstance(container);
@@ -164,16 +171,6 @@ public class Main {
         log.info("UserIdentityBackend version:{} started on port {}.", version, webappPort + " context-path:" + contextpath);
     }
 
-
-    private void addSecurityFilterForUserAdmin(ServletHandler servletHandler, String requiredRoleName) {
-        if (StringUtils.isEmpty(requiredRoleName)) {
-            log.warn("Required Role Name is empty! Verify the useradmin.requiredrolename-attribute in the configuration.");
-        }
-        SecurityFilter securityFilter = new SecurityFilter(injector.getInstance(SecurityTokenServiceHelper.class), injector.getInstance(ApplicationTokenService.class));
-        HashMap<String, String> initParams = new HashMap<>(1);
-        servletHandler.addFilter(securityFilter, "SecurityFilter", initParams);
-        log.info("SecurityFilter initialized with params:", initParams);
-    }
 
     public void startEmbeddedDS(String ldapPath, int ldapPort) {
         ads = new EmbeddedADS(ldapPath);

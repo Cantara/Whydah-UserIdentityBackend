@@ -5,7 +5,9 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import net.whydah.identity.Main;
 import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;
+import org.apache.commons.dbcp.BasicDataSource;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,12 +31,28 @@ public class ApplicationEndpointTest {
         String roleDBDirectory = AppConfig.appConfig.getProperty("roledb.directory");
         FileUtils.deleteDirectory(roleDBDirectory);
         main = new Main(6644);
-        main.upgradeDatabase();
+        //main.upgradeDatabase();
+        BasicDataSource dataSource = initBasicDataSource();
+        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
         main.startHttpServer(null, null);
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.contextpath;
         mapper = new ObjectMapper();
         //mapper.findAndRegisterModules();
+    }
+
+    private static BasicDataSource initBasicDataSource() {
+        String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
+        String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
+        String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
+        String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);//"jdbc:hsqldb:file:" + basepath + "hsqldb");
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
     }
 
     @Test

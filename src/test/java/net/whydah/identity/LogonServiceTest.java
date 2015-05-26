@@ -88,7 +88,7 @@ public class LogonServiceTest {
         try {
             main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
             //main.importUsersAndRoles();
-            new IamDataImporter().importIamData();
+            new IamDataImporter(dataSource).importIamData();
         } catch (Exception e){
 
         }
