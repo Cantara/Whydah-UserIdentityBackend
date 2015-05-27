@@ -34,9 +34,10 @@ public class ApplicationEndpointTest {
         //main.upgradeDatabase();
         BasicDataSource dataSource = initBasicDataSource();
         new DatabaseMigrationHelper(dataSource).upgradeDatabase();
-        main.startHttpServer(null);
+        //main.startHttpServer(null);
+        main.start();
         RestAssured.port = main.getPort();
-        RestAssured.basePath = Main.contextpath;
+        RestAssured.basePath = Main.CONTEXT_PATH;
         mapper = new ObjectMapper();
         //mapper.findAndRegisterModules();
     }

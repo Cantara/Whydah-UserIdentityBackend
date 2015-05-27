@@ -1,16 +1,18 @@
 package net.whydah.identity.user.role;
 
-import com.google.inject.Inject;
 import net.whydah.identity.application.Application;
 import net.whydah.identity.application.ApplicationDao;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public class UserPropertyAndRoleRepository {
     private final UserPropertyAndRoleDao userPropertyAndRoleDao;
     private final ApplicationDao applicationDao;
 
-    @Inject
+    @Autowired
     public UserPropertyAndRoleRepository(UserPropertyAndRoleDao userPropertyAndRoleDao, ApplicationDao applicationDao) {
         this.userPropertyAndRoleDao = userPropertyAndRoleDao;
         this.applicationDao = applicationDao;

@@ -61,11 +61,15 @@
 
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
-        <jersey.version>1.6</jersey.version>
+        <!--<jersey.version>1.6</jersey.version>
         <grizzy.version>2.1.11</grizzy.version>
+        -->
         <apache.ds.version>2.0.0-M17</apache.ds.version>
         <slf4j.version>1.7.12</slf4j.version>
         <lucene.version>4.10.4</lucene.version>
+        <jersey.version>2.17</jersey.version>
+        <jetty.version>9.2.2.v20140723</jetty.version>
+        <spring.version>4.1.6.RELEASE</spring.version>
     </properties>
 
     <repositories>
@@ -80,6 +84,88 @@
 
     <!-- mvn org.codehaus.mojo:versions-maven-plugin:2.2:display-dependency-updates -->
     <dependencies>
+
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.servlet</artifactId>
+            <version>3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <!-- https://jersey.java.net/documentation/latest/spring.html, allows Spring to inject into Jersey managed components -->
+        <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-spring3</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <!-- used by UserAuthenticationEndpoint, UsersResource, FreemarkerViewProcessor-->
+        <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-mvc</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <!-- support for Freemarker templates -->
+        <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-mvc-freemarker</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+        <!-- SecurityTokenServiceHelper -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+
+
+        <!-- ONLY for DI, override spring versions from constretto-spring -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+            <exclusions>
+                <!-- use jcl over slf4j instead -->
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+
+        <!--
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
@@ -127,6 +213,7 @@
             <artifactId>jersey-guice</artifactId>
             <version>${jersey.version}</version>
         </dependency>
+        -->
 
         <dependency>
             <groupId>org.freemarker</groupId>

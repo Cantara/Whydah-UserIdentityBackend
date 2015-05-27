@@ -1,10 +1,10 @@
 package net.whydah.identity.user.resource;
 
-import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.spi.template.ViewProcessor;
+//import com.sun.jersey.spi.template.ViewProcessor;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +48,8 @@ import java.util.Map;
  * @author Chris Winters <chris@cwinters.com> // original code
  * @author Olivier Grisel <ogrisel@nuxeo.com> // ViewProcessor refactoring
  */
+
+//https://jersey.java.net/documentation/latest/mvc.html#d0e15092
 @Provider
 public class FreemarkerViewProcessor implements ViewProcessor<Template> {
     private final Logger log = LoggerFactory.getLogger(getClass());

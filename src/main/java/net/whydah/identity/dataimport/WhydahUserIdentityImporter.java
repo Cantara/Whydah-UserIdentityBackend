@@ -1,6 +1,5 @@
 package net.whydah.identity.dataimport;
 
-import com.google.inject.Inject;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.search.LuceneIndexer;
@@ -30,7 +29,6 @@ public class WhydahUserIdentityImporter {
     private LdapUserIdentityDao ldapUserIdentityDao;
     private LuceneIndexer luceneIndexer;
     
-    @Inject
 	public WhydahUserIdentityImporter(LdapUserIdentityDao ldapUserIdentityDao, LuceneIndexer luceneIndexer) {
 		this.ldapUserIdentityDao = ldapUserIdentityDao;
 		this.luceneIndexer = luceneIndexer;

@@ -1,42 +1,41 @@
 package net.whydah.identity;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.servlet.GuiceFilter;
-import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import net.whydah.identity.application.authentication.ApplicationTokenService;
 import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.config.SSLTool;
-import net.whydah.identity.config.UserIdentityBackendModule;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
-import net.whydah.identity.security.SecurityFilter;
-import net.whydah.identity.user.authentication.SecurityTokenServiceHelper;
 import net.whydah.identity.user.identity.EmbeddedADS;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.commons.lang.StringUtils;
-import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.grizzly.http.server.NetworkListener;
-import org.glassfish.grizzly.http.server.ServerConfiguration;
-import org.glassfish.grizzly.servlet.ServletHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.HashMap;
+import java.net.URL;
 
 public class Main {
-    public static final String contextpath = "/uib";
+    public static final String CONTEXT_PATH = "/uib";
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     private EmbeddedADS ads;
-    private HttpServer httpServer;
+    //private HttpServer httpServer;
     private int webappPort;
+    private Server server;
+    private String resourceBase;
+
 
 
     public Main(Integer webappPort) {
         this.webappPort = webappPort;
+        //log.info("Starting Jetty on port {}", webappPort);
+        this.server = new Server(webappPort);
+
+        URL url = ClassLoader.getSystemResource("WEB-INF/web.xml");
+        this.resourceBase = url.toExternalForm().replace("WEB-INF/web.xml", "");
     }
 
 
@@ -98,8 +97,10 @@ public class Main {
                 SSLTool.disableCertificateValidation();
             }
 
-            main.startHttpServer(requiredRoleName);
-            log.info("UserIdentityBackend version:{} started on port {}.", version, webappPort + " context-path:" + contextpath);
+            //main.startHttpServer(requiredRoleName);
+            main.start();
+            main.join();
+            log.info("UserIdentityBackend version:{} started on port {}.", version, webappPort + " context-path:" + CONTEXT_PATH);
 
             if (!embeddedDSEnabled) {
                 try {
@@ -131,9 +132,70 @@ public class Main {
         return dataSource;
     }
 
+    public void start()  {
+        WebAppContext webAppContext = new WebAppContext();
+        log.debug("Start Jetty using resourcebase={}", resourceBase);
+        webAppContext.setDescriptor(resourceBase + "/WEB-INF/web.xml");
+        webAppContext.setResourceBase(resourceBase);
+        webAppContext.setContextPath(CONTEXT_PATH);
+        webAppContext.setParentLoaderPriority(true);
+
+        HandlerList handlers = new HandlerList();
+        Handler[] handlerList = {webAppContext, new DefaultHandler()};
+        handlers.setHandlers(handlerList);
+        server.setHandler(handlers);
+
+        //TODO addSecurityFilterForUserAdmin
+        /*
+        SecurityTokenServiceHelper securityTokenHelper = injector.getInstance(SecurityTokenServiceHelper.class);
+        ApplicationTokenService applicationTokenService = injector.getInstance(ApplicationTokenService.class);
+        //addSecurityFilterForUserAdmin
+        if (StringUtils.isEmpty(requiredRoleName)) {
+            log.warn("Required Role Name is empty! Verify the useradmin.requiredrolename-attribute in the configuration.");
+        }
+        SecurityFilter securityFilter = new SecurityFilter(securityTokenHelper, applicationTokenService);
+        HashMap<String, String> initParams = new HashMap<>(1);
+        servletHandler.addFilter(securityFilter, "SecurityFilter", initParams);
+        log.info("SecurityFilter initialized with params:", initParams);
+         */
+
+
+        try {
+            server.start();
+        } catch (Exception e) {
+            log.error("Error during Jetty startup. Exiting", e);
+            System.exit(2);
+        }
+        int localPort = getPort();
+        log.info("Jetty server started on http://localhost:{}{}", localPort, CONTEXT_PATH);
+    }
+
+
+    public void stop() {
+        try {
+            server.stop();
+        } catch (Exception e) {
+            log.warn("Error when stopping Jetty server", e);
+        }
+
+        if (ads != null) {
+            log.info("Stopping embedded Apache DS.");
+            ads.stopServer();
+        }
+    }
+
+    public void join() {
+        try {
+            server.join();
+        } catch (InterruptedException e) {
+            log.error("Jetty server thread when join. Pretend everything is OK.", e);
+        }
+    }
+
+    /*
     public void startHttpServer(String requiredRoleName) {
         ServletHandler servletHandler = new ServletHandler();
-        servletHandler.setContextPath(contextpath);
+        servletHandler.setContextPath(CONTEXT_PATH);
         servletHandler.addInitParameter("com.sun.jersey.config.property.packages",
                 "net.whydah.identity.user.resource, net.whydah.identity.user.authentication, net.whydah.identity.application, net.whydah.identity.application.authentication, net.whydah.identity.health");
         servletHandler.addInitParameter("com.sun.jersey.api.json.POJOMappingFeature", "true");
@@ -143,6 +205,7 @@ public class Main {
         servletHandler.addFilter(filter, "guiceFilter", null);
 
         Injector injector = Guice.createInjector(new UserIdentityBackendModule());
+
         SecurityTokenServiceHelper securityTokenHelper = injector.getInstance(SecurityTokenServiceHelper.class);
         ApplicationTokenService applicationTokenService = injector.getInstance(ApplicationTokenService.class);
         //addSecurityFilterForUserAdmin
@@ -168,6 +231,7 @@ public class Main {
             throw new RuntimeException("grizzly server start failed", e);
         }
     }
+    */
 
 
     public void startEmbeddedDS(String ldapPath, int ldapPort) {
@@ -175,6 +239,7 @@ public class Main {
         ads.startServer(ldapPort);
     }
 
+    /*
     public void stop() {
         log.info("Stopping http server");    //TODO ED: What about hsqldb?  It dies with the process..
         if (httpServer != null) {
@@ -185,8 +250,10 @@ public class Main {
             ads.stopServer();
         }
     }
+    */
 
     public int getPort() {
         return webappPort;
+        //        return ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     }
 }

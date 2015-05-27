@@ -1,10 +1,13 @@
 package net.whydah.identity;
 
+/*
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.header.MediaTypes;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+*/
+
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.AppConfig;
@@ -18,8 +21,17 @@ import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.junit.*;
+import org.glassfish.jersey.client.ClientResponse;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -32,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 @Ignore
 public class LogonServiceTest {
     private static URI baseUri;
-    Client restClient;
+    private Client client = ClientBuilder.newClient();
 
     private final static String basepath = "target/LogonServiceTest/";
     private final static String ldappath = basepath + "hsqldb/ldap/";
@@ -93,9 +105,10 @@ public class LogonServiceTest {
 
         }
 
-        String sslVerification = AppConfig.appConfig.getProperty("sslverification");
+        //String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
-        main.startHttpServer(requiredRoleName);
+        //main.startHttpServer(requiredRoleName);
+        main.start();
 
         baseUri = UriBuilder.fromUri("http://localhost/uib/").port(HTTP_PORT).build();
     }
@@ -108,15 +121,10 @@ public class LogonServiceTest {
         }
     }
 
-    @Before
-    public void initRun() throws Exception {
-        restClient = Client.create();
-    }
-
     @Test
     public void welcome() {
-        WebResource webResource = restClient.resource(baseUri);
-        String s = webResource.get(String.class);
+        WebTarget webResource = client.target(baseUri);
+        String s = webResource.request().get(String.class);
         assertTrue(s.contains("Whydah"));
         assertTrue(s.contains("<FORM"));
         assertFalse(s.contains("backtrace"));
@@ -128,21 +136,22 @@ public class LogonServiceTest {
      */
     @Test
     public void testApplicationWadl() {
-        WebResource webResource = restClient.resource(baseUri);
-        String serviceWadl = webResource.path("application.wadl").
-                accept(MediaTypes.WADL).get(String.class);
+        WebTarget webResource = client.target(baseUri);
+        //String serviceWadl = webResource.path("application.wadl").accept(MediaTypes.WADL).get(String.class);
+        String serviceWadl = webResource.path("application.wadl").request().get(String.class);  //TODO MediaTypes.WADL
 //        System.out.println("WADL:"+serviceWadl);
         assertTrue(serviceWadl.length() > 60);
     }
 
     @Test
     public void formLogonOK() throws IOException {
-        WebResource webResource = restClient.resource(baseUri);
-        MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+        WebTarget webResource = client.target(baseUri);
+        MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.add("username", "thomasp");
         formData.add("password", "logMeInPlease");
-        ClientResponse response = webResource.path("logon").type("application/x-www-form-urlencoded").post(ClientResponse.class, formData);
-        String responseBody = response.getEntity(String.class);
+        //ClientResponse response = webResource.path("logon").type("application/x-www-form-urlencoded").post(ClientResponse.class, formData);
+        ClientResponse response = webResource.path("logon").request().post(Entity.form(formData), ClientResponse.class);
+        String responseBody = response.readEntity(String.class);
         System.out.println(responseBody);
         //assertTrue(responseBody.contains("Logon ok"));
         assertTrue(responseBody.contains("username@emailaddress.com"));
@@ -150,12 +159,14 @@ public class LogonServiceTest {
 
     @Test
     public void formLogonFail() throws IOException {
-        WebResource webResource = restClient.resource(baseUri);
-        MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+        WebTarget webResource = client.target(baseUri);
+        MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.add("username", "thomasp");
         formData.add("password", "vrangt");
-        ClientResponse response = webResource.path("logon").type("application/x-www-form-urlencoded").post(ClientResponse.class, formData);
-        String responseBody = response.getEntity(String.class);
+        //ClientResponse response = webResource.path("logon").type("application/x-www-form-urlencoded").post(ClientResponse.class, formData);
+        ClientResponse response = webResource.path("logon").request().post(Entity.form(formData), ClientResponse.class);
+
+        String responseBody = response.readEntity(String.class);
         System.out.println(responseBody);
 
         assertTrue(responseBody.contains("failed"));
@@ -164,10 +175,11 @@ public class LogonServiceTest {
 
     @Test
     public void XMLLogonOK() throws IOException {
-        WebResource webResource = restClient.resource(baseUri);
+        WebTarget webResource = client.target(baseUri);
         String payload = "<?xml version='1.0' encoding='UTF-8' standalone='yes'?><authgreier><auth><dilldall>dilldall</dilldall><user><username>thomasp</username><coffee>yes please</coffee><password>logMeInPlease</password></user></auth></authgreier>";
-        ClientResponse response = webResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
-        String responseXML = response.getEntity(String.class);
+        //ClientResponse response = webResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
+        ClientResponse response = webResource.path("logon").request().post(Entity.xml(payload), ClientResponse.class);
+        String responseXML = response.readEntity(String.class);
         System.out.println(responseXML);
         assertTrue(responseXML.contains("thomasp"));
 
@@ -175,10 +187,11 @@ public class LogonServiceTest {
 
     @Test
     public void XMLLogonFail() throws IOException {
-        WebResource webResource = restClient.resource(baseUri);
+        WebTarget webResource = client.target(baseUri);
         String payload = "<?xml version='1.0' encoding='UTF-8' standalone='yes'?><authgreier><auth><dilldall>dilldall</dilldall><user><username>thomasp</username><coffee>yes please</coffee><password>vrangt</password></user></auth></authgreier>";
-        ClientResponse response = webResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
-        String responseXML = response.getEntity(String.class);
+        //ClientResponse response = webResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
+        ClientResponse response = webResource.path("logon").request().post(Entity.xml(payload), ClientResponse.class);
+        String responseXML = response.readEntity(String.class);
         //System.out.println(responseXML);
         assertTrue(responseXML.contains("logonFailed"));
         assertFalse(responseXML.contains("thomasp"));

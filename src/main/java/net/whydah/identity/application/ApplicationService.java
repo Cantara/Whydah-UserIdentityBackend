@@ -1,12 +1,12 @@
 package net.whydah.identity.application;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -17,7 +17,7 @@ import java.util.UUID;
 /**
  * Created by baardl on 29.03.14.
  */
-@Singleton
+@Service
 public class ApplicationService {
     private static final Logger log = LoggerFactory.getLogger(ApplicationService.class);
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
@@ -25,7 +25,7 @@ public class ApplicationService {
     private final ApplicationDao applicationDao;
     private final AuditLogDao auditLogDao;
 
-    @Inject
+    @Autowired
     public ApplicationService(ApplicationDao applicationDao, AuditLogDao auditLogDao) {
         this.applicationDao = applicationDao;
         this.auditLogDao = auditLogDao;

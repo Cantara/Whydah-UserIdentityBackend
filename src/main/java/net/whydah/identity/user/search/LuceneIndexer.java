@@ -32,7 +32,7 @@ public class LuceneIndexer {
     public static final String FIELD_PERSONREF = "personref";
     public static final String FIELD_MOBILE = "mobile";
 
-    public static final Version LUCENE_VERSION = Version.LUCENE_4_10_3;
+    public static final Version LUCENE_VERSION = Version.LUCENE_4_10_4;
     protected static final Analyzer ANALYZER = new StandardAnalyzer();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LuceneIndexer.class);

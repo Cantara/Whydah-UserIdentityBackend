@@ -1,9 +1,10 @@
 package net.whydah.identity.application;
 
-import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -12,16 +13,15 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+@Component
 @Path("/{applicationtokenid}/{userTokenId}/")
 public class ApplicationsResource {
-
-
     private static final Logger log = LoggerFactory.getLogger(ApplicationsResource.class);
     ApplicationService applicationService;
     ObjectMapper mapper = new ObjectMapper();
 
 
-    @Inject
+    @Autowired
     public ApplicationsResource(ApplicationService applicationService) {
         this.applicationService = applicationService;
     }

@@ -1,9 +1,5 @@
 package net.whydah.identity.user.identity;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
-import com.sun.jersey.api.ConflictException;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.ChangePasswordToken;
@@ -13,10 +9,14 @@ import net.whydah.identity.user.search.LuceneSearch;
 import net.whydah.identity.util.PasswordGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.naming.NamingException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -26,14 +26,14 @@ import java.util.UUID;
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 29.03.14
  */
-@Singleton
+@Service
 public class UserIdentityService {
     private static final Logger log = LoggerFactory.getLogger(UserIdentityService.class);
 
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
     private static final String SALT_ENCODING = "UTF-8";
 
-    //@Inject @Named("internal") private LdapAuthenticatorImpl internalLdapAuthenticator;
+    //@Autowired @Named("internal") private LdapAuthenticatorImpl internalLdapAuthenticator;
     private final LdapAuthenticator primaryLdapAuthenticator;
     private final LdapUserIdentityDao ldapUserIdentityDao;
     private final AuditLogDao auditLogDao;
@@ -45,9 +45,10 @@ public class UserIdentityService {
     private final LuceneSearch searcher;
 
 
-    @Inject
-    public UserIdentityService(@Named("primaryLdap") LdapAuthenticator primaryLdapAuthenticator,
-                               LdapUserIdentityDao ldapUserIdentityDao, AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
+    //@Named("primaryLdap")
+    @Autowired
+    public UserIdentityService(LdapAuthenticator primaryLdapAuthenticator, LdapUserIdentityDao ldapUserIdentityDao,
+                               AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
                                PasswordSender passwordSender, LuceneIndexer luceneIndexer, LuceneSearch searcher) {
         this.primaryLdapAuthenticator = primaryLdapAuthenticator;
         this.ldapUserIdentityDao = ldapUserIdentityDao;
@@ -113,14 +114,15 @@ public class UserIdentityService {
     public UserIdentity addUserIdentityWithGeneratedPassword(UserIdentityRepresentation dto) {
         String username = dto.getUsername();
         if (username == null){
-            throw new ConflictException("Can not create a user without username!");
+            String msg = "Can not create a user without username!";
+            throw new WebApplicationException(msg, Response.Status.CONFLICT);
         }
         try {
             if (ldapUserIdentityDao.usernameExist(username)) {
                 //return Response.status(Response.Status.NOT_ACCEPTABLE).build();
                 String msg = "User already exists in LDAP, could not create user with username=" + dto.getUsername();
                 log.info(msg);
-                throw new ConflictException(msg);
+                throw new WebApplicationException(msg, Response.Status.CONFLICT);
             }
         } catch (NamingException e) {
             throw new RuntimeException("usernameExist failed for username=" + dto.getUsername(), e);
@@ -148,7 +150,9 @@ public class UserIdentityService {
             if (!usersWithSameEmail.isEmpty()) {
                 String msg = "E-mail " + email + " is already in use (in lucene index), could not create user with username=" + username;
                 log.info(msg);
-                throw new ConflictException(msg);
+                //throw new ConflictException(msg);
+                throw new WebApplicationException(msg, Response.Status.CONFLICT);
+
             }
         }
 

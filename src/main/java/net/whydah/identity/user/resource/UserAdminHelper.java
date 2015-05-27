@@ -1,6 +1,5 @@
 package net.whydah.identity.user.resource;
 
-import com.google.inject.Inject;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.AppConfig;
@@ -13,6 +12,8 @@ import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.user.search.LuceneIndexer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
 import javax.ws.rs.core.Response;
@@ -30,6 +31,7 @@ import java.util.UUID;
  * @author <a href="mailto:erik.drolshammer@altran.com">Erik Drolshammer</a>
  * @since 10/4/12
  */
+@Service
 public class UserAdminHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAdminHelper.class);
@@ -40,7 +42,7 @@ public class UserAdminHelper {
     private final AuditLogDao auditLogDao;
     private final UserPropertyAndRoleRepository roleRepository;
 
-    @Inject
+    @Autowired
     public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, LuceneIndexer luceneIndexer, AuditLogDao auditLogDao, UserPropertyAndRoleRepository roleRepository) {
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.luceneIndexer = luceneIndexer;

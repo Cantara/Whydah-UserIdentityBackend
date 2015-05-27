@@ -1,6 +1,5 @@
 package net.whydah.identity.user.resource;
 
-import com.google.inject.Inject;
 import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
@@ -8,6 +7,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -18,6 +19,7 @@ import javax.ws.rs.core.UriInfo;
 /**
  * @author <a href="bard.lind@gmail.com">Bard Lind</a>
  */
+@Component
 @Path("/password/{applciationtokenid}")
 public class PasswordResource {
     private static final Logger log = LoggerFactory.getLogger(PasswordResource.class);
@@ -28,7 +30,7 @@ public class PasswordResource {
     private UriInfo uriInfo;
 
 
-    @Inject
+    @Autowired
     public PasswordResource(UserIdentityService userIdentityService) {
         this.userIdentityService = userIdentityService;
         log.info("Started: PasswordResource");

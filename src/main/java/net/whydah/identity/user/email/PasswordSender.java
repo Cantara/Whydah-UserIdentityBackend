@@ -1,16 +1,16 @@
 package net.whydah.identity.user.email;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import net.whydah.identity.config.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Send reset password email to user.
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 18.08.13
  */
-@Singleton
+@Service
 public class PasswordSender {
     private static final Logger log = LoggerFactory.getLogger(PasswordSender.class);
     private static final String RESET_PASSWORD_SUBJECT = "Whydah password reset";
@@ -20,7 +20,7 @@ public class PasswordSender {
     private final EmailBodyGenerator bodyGenerator;
     private final MailSender mailSender;
 
-    @Inject
+    @Autowired
     public PasswordSender(EmailBodyGenerator bodyGenerator, MailSender mailSender) {
         this.bodyGenerator = bodyGenerator;
         this.mailSender = mailSender;

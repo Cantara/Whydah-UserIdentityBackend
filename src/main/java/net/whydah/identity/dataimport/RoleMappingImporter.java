@@ -1,6 +1,5 @@
 package net.whydah.identity.dataimport;
 
-import com.google.inject.Inject;
 import net.whydah.identity.user.role.UserPropertyAndRole;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import org.slf4j.Logger;
@@ -27,7 +26,6 @@ public class RoleMappingImporter {
 
     private UserPropertyAndRoleRepository roleMappingRepository;
     
-    @Inject
 	public RoleMappingImporter(UserPropertyAndRoleRepository roleMappingRepository) {
 		this.roleMappingRepository = roleMappingRepository;
 	}

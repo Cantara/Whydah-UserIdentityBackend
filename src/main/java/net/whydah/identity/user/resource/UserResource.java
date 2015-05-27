@@ -1,7 +1,5 @@
 package net.whydah.identity.user.resource;
 
-import com.google.inject.Inject;
-import com.sun.jersey.api.ConflictException;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.user.InvalidRoleModificationException;
 import net.whydah.identity.user.NonExistentRoleException;
@@ -14,6 +12,8 @@ import net.whydah.identity.user.role.UserPropertyAndRole;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.naming.NamingException;
 import javax.ws.rs.*;
@@ -27,6 +27,7 @@ import java.util.List;
 /**
  * Administration of users and their data.
  */
+@Component
 @Path("/{applicationtokenid}/{userTokenId}/user")
 public class UserResource {
     private static final Logger log = LoggerFactory.getLogger(UserResource.class);
@@ -40,7 +41,7 @@ public class UserResource {
     @Context
     private UriInfo uriInfo;
 
-    @Inject
+    @Autowired
     public UserResource(UserIdentityService userIdentityService, UserAggregateService userAggregateService, ApplicationDao applicationDao) {
         this.userIdentityService = userIdentityService;
         this.userAggregateService = userAggregateService;
@@ -77,9 +78,9 @@ public class UserResource {
         try {
             userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(representation);
 
-        } catch (ConflictException ise) {
-            log.info("addUserIdentity returned {}, json={}", Response.Status.CONFLICT.toString(), userIdentityJson, ise);
-            return Response.status(Response.Status.CONFLICT).build();
+        } catch (WebApplicationException ise) {
+            log.info("addUserIdentity returned {}, json={}", userIdentityJson, ise);
+            return ise.getResponse();
         } catch (IllegalArgumentException iae) {
             log.info("addUserIdentity returned {}, json={}", Response.Status.BAD_REQUEST.toString(), userIdentityJson, iae);
             return Response.status(Response.Status.BAD_REQUEST).build();
@@ -214,9 +215,10 @@ public class UserResource {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
             }
             return Response.status(Response.Status.CREATED).entity(json).build();
-        } catch (ConflictException ce) {
+        } catch (WebApplicationException ce) {
             log.error("addRole-Conflict. {}", roleJson, ce);
-            return Response.status(Response.Status.CONFLICT).build();
+            //return Response.status(Response.Status.CONFLICT).build();
+            return ce.getResponse();
         } catch (RuntimeException e) {
             log.error("addRole-RuntimeException. {}", roleJson, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();

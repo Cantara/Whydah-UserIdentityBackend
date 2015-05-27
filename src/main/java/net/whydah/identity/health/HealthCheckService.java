@@ -1,24 +1,26 @@
 package net.whydah.identity.health;
 
-import com.google.inject.Inject;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.naming.NamingException;
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2015-01-13
  */
+@Service
 public class HealthCheckService {
     static final String USERADMIN_UID = "useradmin";    //uid of user which should always exist
     private static final Logger log = LoggerFactory.getLogger(HealthCheckService.class);
     private final UserIdentityService identityService;
     private final UserPropertyAndRoleRepository roleRepository;
 
-    @Inject
+    @Autowired
     public HealthCheckService(UserIdentityService identityService, UserPropertyAndRoleRepository roleRepository) {
         this.identityService = identityService;
         this.roleRepository = roleRepository;

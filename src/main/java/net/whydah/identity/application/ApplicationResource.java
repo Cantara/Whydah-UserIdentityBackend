@@ -1,9 +1,9 @@
 package net.whydah.identity.application;
 
-import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -20,7 +20,7 @@ public class ApplicationResource {
     ObjectMapper mapper = new ObjectMapper();
 
 
-    @Inject
+    @Autowired
     public ApplicationResource(ApplicationService applicationService) {
         this.applicationService = applicationService;
     }

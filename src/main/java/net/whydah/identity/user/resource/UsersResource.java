@@ -1,15 +1,18 @@
 package net.whydah.identity.user.resource;
 
-import com.google.inject.Inject;
-import com.sun.jersey.api.view.Viewable;
+//import com.sun.jersey.api.view.Viewable;
+
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import net.whydah.identity.user.search.LuceneSearch;
 import net.whydah.identity.user.search.UserSearch;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -25,6 +28,7 @@ import java.util.List;
 /**
  * Endpoint for collection of users.
  */
+@Component
 @Path("/{applicationtokenid}/{usertokenid}/users")
 public class UsersResource {
     private static final Logger log = LoggerFactory.getLogger(UsersResource.class);
@@ -38,7 +42,7 @@ public class UsersResource {
     @Context
     private UriInfo uriInfo;
 
-    @Inject
+    @Autowired
     public UsersResource(LuceneSearch luceneSearch, UserAggregateService userAggregateService, UserSearch userSearch) {
         this.luceneSearch = luceneSearch;
         this.userAggregateService = userAggregateService;

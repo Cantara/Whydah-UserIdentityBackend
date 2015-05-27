@@ -1,10 +1,11 @@
 package net.whydah.identity.user.role;
 
-import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
@@ -18,11 +19,12 @@ import java.util.UUID;
  *
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2015-01-18
  */
+@Repository
 public class UserPropertyAndRoleDao {
     private static final Logger log = LoggerFactory.getLogger(UserPropertyAndRoleRepository.class);
     private JdbcTemplate jdbcTemplate;
 
-    @Inject
+    @Autowired
     public UserPropertyAndRoleDao(DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }

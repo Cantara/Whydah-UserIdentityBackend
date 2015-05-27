@@ -1,9 +1,12 @@
 package net.whydah.identity.user.resource;
 
+/*
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
+*/
+
 import net.whydah.identity.Main;
 import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
@@ -12,12 +15,18 @@ import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+import org.glassfish.jersey.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -30,8 +39,9 @@ import static org.junit.Assert.*;
 
 
 public class UserAdminTest {
-    private static WebResource baseResource;
-    private static WebResource logonResource;
+    private Client client = ClientBuilder.newClient();
+    private static WebTarget baseResource;
+    private static WebTarget logonResource;
     private static Main main;
 
     @Before
@@ -54,13 +64,14 @@ public class UserAdminTest {
         new IamDataImporter(dataSource).importIamData();
 
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
-        main.startHttpServer(requiredRoleName);
+        //main.startHttpServer(requiredRoleName);   //TODO
+        main.start();
 
         URI baseUri = UriBuilder.fromUri("http://localhost/uib/uib/useradmin/").port(main.getPort()).build();
         URI logonUri = UriBuilder.fromUri("http://localhost/uib/").port(main.getPort()).build();
         //String authentication = "usrtk1";
-        baseResource = Client.create().resource(baseUri)/*.path(authentication + '/')*/;
-        logonResource = Client.create().resource(logonUri);
+        baseResource = client.target(baseUri)/*.path(authentication + '/')*/;
+        logonResource = client.target(logonUri);
     }
 
     private static BasicDataSource initBasicDataSource() {
@@ -84,27 +95,27 @@ public class UserAdminTest {
 
     @Test
     public void find() {
-        WebResource webResource = baseResource.path("users/find/Thomas");
-        String s = webResource.get(String.class);
+        WebTarget webResource = baseResource.path("users/find/Thomas");
+        String s = webResource.request().get(String.class);
         assertTrue(s.contains("\"firstName\":\"Thomas\""));
     }
 
     @Test
     public void getuser() {
-        WebResource webResource = baseResource.path("user/username@emailaddress.com");
-        String s = webResource.get(String.class);
+        WebTarget webResource = baseResource.path("user/username@emailaddress.com");
+        String s = webResource.request().get(String.class);
         //System.out.println(s);
         assertTrue(s.contains("\"firstName\":\"Thomas\""));
     }
 
     @Test
     public void getnonexistinguser() {
-        WebResource webResource = baseResource.path("user/");
-        webResource.path("username@emailaddress.com").get(String.class); // verify that path works with existing user
+        WebTarget webResource = baseResource.path("user/");
+        webResource.path("username@emailaddress.com").request().get(String.class); // verify that path works with existing user
         try {
-            String s = webResource.path("bantelonga@gmail.com").get(String.class);
+            String s = webResource.path("bantelonga@gmail.com").request().get(String.class);
             fail("Expected 404, got " + s);
-        } catch (UniformInterfaceException e) {
+        } catch (NotFoundException e) {
             assertEquals(Response.Status.NOT_FOUND.getStatusCode(), e.getResponse().getStatus());
         }
     }
@@ -113,7 +124,7 @@ public class UserAdminTest {
     public void modifyUser() {
         String uid = doAddUser("1231312", "siqula", "Hoytahl", "Goffse", "siqula@midget.orj", "12121212");
 
-        String s = baseResource.path("user/" + uid).get(String.class);
+        String s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("siqula@midget.orj"));
         assertTrue(s.contains("Hoytahl"));
         assertTrue(s.contains("12121212"));
@@ -128,9 +139,12 @@ public class UserAdminTest {
                 " \"cellPhone\":\"35353535\"\n" +
                 "}";
 
-        baseResource.path("user/" + uid).type("application/json").put(String.class, updateduserjson);
 
-        s = baseResource.path("user/" + uid).get(String.class);
+        //baseResource.path("user/" + uid).type("application/json").put(String.class, updateduserjson);
+        baseResource.path("user/" + uid).request().put(Entity.json(updateduserjson));
+
+
+        s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("siqula@midget.orj"));
         assertTrue(s.contains("Harald"));
         assertFalse(s.contains("Hoytahl"));
@@ -142,24 +156,25 @@ public class UserAdminTest {
     public void deleteUser() {
         String uid = doAddUser("rubblebeard", "frustaalstrom", "Frustaal", "Strom", "frustaalstrom@gmail.com", "12121212");
 
-        ClientResponse deleteResponse = baseResource.path("user/" + uid).delete(ClientResponse.class);
-        deleteResponse.getClientResponseStatus().getFamily().equals(Response.Status.Family.SUCCESSFUL);
+        ClientResponse deleteResponse = baseResource.path("user/" + uid).request().delete(ClientResponse.class);
+        //deleteResponse.getClientResponseStatus().getFamily().equals(Response.Status.Family.SUCCESSFUL);
+        assertEquals(deleteResponse.getStatusInfo().getFamily(), Response.Status.Family.SUCCESSFUL);
 
         try {
-            String s = baseResource.path(uid).get(String.class);
+            String s = baseResource.path(uid).request().get(String.class);
             fail("Expected 404, got " + s);
-        } catch (UniformInterfaceException e) {
+        } catch (NotFoundException e) {
             assertEquals(Response.Status.NOT_FOUND.getStatusCode(), e.getResponse().getStatus());
         }
     }
 
     @Test
     public void deleteUserNotFound() {
-        WebResource webResource = baseResource.path("users/dededede@hotmail.com/delete");
+        WebTarget webResource = baseResource.path("users/dededede@hotmail.com/delete");
         try {
-            String s = webResource.get(String.class);
+            String s = webResource.request().get(String.class);
             fail("Expected 404, got " + s);
-        } catch (UniformInterfaceException e) {
+        } catch (NotFoundException e) {
             assertEquals(Response.Status.NOT_FOUND.getStatusCode(), e.getResponse().getStatus());
         }
 
@@ -213,9 +228,10 @@ public class UserAdminTest {
     public void adduserroleNoJson() {
         String uid = doAddUser("riffraff", "snyper", "Edmund", "Goffse", "snyper@midget.orj", "12121212");
         try {
-            String s = baseResource.path("user/" + uid + "/role").type("application/json").post(String.class, "");
+            //String s = baseResource.path("user/" + uid + "/role").type("application/json").post(String.class, "");
+            String s = baseResource.path("user/" + uid + "/role").request().post(Entity.json(""), String.class);
             fail("Expected 400, got " + s);
-        } catch (UniformInterfaceException e) {
+        } catch (ClientErrorException e) {
             assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), e.getResponse().getStatus());
         }
     }
@@ -224,9 +240,10 @@ public class UserAdminTest {
     public void adduserroleBadJson() {
         String uid = doAddUser("riffraff", "snyper", "Edmund", "Goffse", "snyper@midget.orj", "12121212");
         try {
-            String s = baseResource.path("user/" + uid + "/role").type("application/json").post(String.class, "{ dilldall }");
+            //String s = baseResource.path("user/" + uid + "/role").type("application/json").post(String.class, "{ dilldall }");
+            String s = baseResource.path("user/" + uid + "/role").request().post(Entity.json("{ dilldall }"), String.class);
             fail("Expected 400, got " + s);
-        } catch (UniformInterfaceException e) {
+        } catch (ClientErrorException e) {
             assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), e.getResponse().getStatus());
         }
     }
@@ -239,7 +256,7 @@ public class UserAdminTest {
         try {
             String failedRoleId = doAddUserRole(uid, "testappId", "0005", "KK", "test");
             fail("Expected exception with 409, got roleId " + failedRoleId);
-        } catch (UniformInterfaceException e) {
+        } catch (ClientErrorException e) {
             assertEquals(Response.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
         }
     }
@@ -252,11 +269,11 @@ public class UserAdminTest {
 
         assertEquals(2, doGetUserRoles(uid).size());
         assertNotNull(doGetUserRole(uid, roleId1));
-        baseResource.path("user/" + uid + "/role/" + roleId1).delete();
+        baseResource.path("user/" + uid + "/role/" + roleId1).request().delete();
         assertEquals(1, doGetUserRoles(uid).size());
 
         assertNotNull(doGetUserRole(uid, roleId2));
-        baseResource.path("user/" + uid + "/role/" + roleId2).delete();
+        baseResource.path("user/" + uid + "/role/" + roleId2).request().delete();
         assertEquals(0, doGetUserRoles(uid).size());
     }
 
@@ -279,7 +296,8 @@ public class UserAdminTest {
                 "        \"applicationRoleName\": \"KK\",\n" +
                 "        \"applicationRoleValue\": \"test modified\"}";
 
-        String s = baseResource.path("user/" + uid + "/role/" + roleId).type("application/json").put(String.class, modifiedUserRoleJsonRequest);
+        //String s = baseResource.path("user/" + uid + "/role/" + roleId).type("application/json").put(String.class, modifiedUserRoleJsonRequest);
+        String s = baseResource.path("user/" + uid + "/role/" + roleId).request().put(Entity.json(modifiedUserRoleJsonRequest), String.class);
 
         Map<String, Object> roleAfterModification = doGetUserRole(uid, roleId);
         assertEquals("testappId", roleAfterModification.get("applicationId"));
@@ -292,7 +310,7 @@ public class UserAdminTest {
     @Test
     public void userexists() {
         String uid = doAddUser("1231312", "siqula", "Hoytahl", "Goffse", "siqula@midget.orj", "12121212");
-        String s = baseResource.path("user/" + uid).get(String.class);
+        String s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("Hoytahl"));
     }
 
@@ -302,10 +320,10 @@ public class UserAdminTest {
         doAddUser("1231312", "siqula", "Hoytahl", "Goffse", "siqula@midget.orj", "12121212");
         String uid = "non-existent-uid";
         try {
-            String s = baseResource.path("user/" + uid).get(String.class);
+            String s = baseResource.path("user/" + uid).request().get(String.class);
             fail("Expected 404 NOT FOUND");
-        } catch (UniformInterfaceException e) {
-            assertEquals(ClientResponse.Status.NOT_FOUND.getStatusCode(), e.getResponse().getStatus());
+        } catch (NotFoundException e) {
+            assertEquals(Response.Status.NOT_FOUND.getStatusCode(), e.getResponse().getStatus());
         }
     }
 
@@ -316,8 +334,8 @@ public class UserAdminTest {
         try {
             doAddUser("tifftaff", "snyper", "Another", "Wanderer", "wanderer@midget.orj", "34343434");
             fail("Expected 409 CONFLICT");
-        } catch (UniformInterfaceException e) {
-            assertEquals(ClientResponse.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
+        } catch (ClientErrorException e) {
+            assertEquals(Response.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
         }
     }
 
@@ -328,8 +346,8 @@ public class UserAdminTest {
         try {
             doAddUser("tifftaff", "iamatestuser", "Another", "Wanderer", "snyper@midget.orj", "34343434");
             fail("Expected 409 CONFLICT");
-        } catch (UniformInterfaceException e) {
-            assertEquals(ClientResponse.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
+        } catch (ClientErrorException e) {
+            assertEquals(Response.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
         }
     }
 
@@ -340,10 +358,10 @@ public class UserAdminTest {
 
         assertNotNull(uid);
 
-        String s = baseResource.path("user/" + uid).get(String.class);
+        String s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("snyper@midget.orj"));
         assertTrue(s.contains("Edmund"));
-        String findresult = baseResource.path("users/find/snyper").get(String.class);
+        String findresult = baseResource.path("users/find/snyper").request().get(String.class);
         assertTrue(findresult.contains("snyper@midget.orj"));
         assertTrue(findresult.contains("Edmund"));
     }
@@ -351,7 +369,7 @@ public class UserAdminTest {
     @Test
     public void addUserAllowMissingPersonRef() {
         String uid = doAddUser(null, "tsnyper", "tEdmund", "tGoffse", "tsnyper@midget.orj", "12121212");
-        baseResource.path("user/" + uid).get(String.class);
+        baseResource.path("user/" + uid).request().get(String.class);
     }
 
     @Test
@@ -369,15 +387,15 @@ public class UserAdminTest {
         try {
             doAddUser("triffraff", "tsnyper", "tEdmund", "tGoffse", null, "12121212");
             fail("Expected 400 BAD_REQUEST");
-        } catch (UniformInterfaceException e) {
-            assertEquals(ClientResponse.Status.BAD_REQUEST.getStatusCode(), e.getResponse().getStatus());
+        } catch (ClientErrorException e) {
+            assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), e.getResponse().getStatus());
         }
     }
 
     @Test
     public void addUserWithMissingPhoneNumber() {
         String uid = doAddUser("triffraff", "tsnyper", "tEdmund", "tGoffse", "tsnyper@midget.orj", null);
-        baseResource.path("user/" + uid).get(String.class);
+        baseResource.path("user/" + uid).request().get(String.class);
     }
 
     /*  //TODO not sure what this test is supposed to verify
@@ -395,8 +413,8 @@ public class UserAdminTest {
         try {
             doAddUser("triffraff", "tsnyper", "tEdmund", "lastname", "tsnyper@midget.orj", "12121-bb-212");
             fail("Expected 400 BAD_REQUEST");
-        } catch (UniformInterfaceException e) {
-            assertEquals(ClientResponse.Status.BAD_REQUEST.getStatusCode(), e.getResponse().getStatus());
+        } catch (ClientErrorException e) {
+            assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), e.getResponse().getStatus());
         }
     }
 
@@ -406,20 +424,23 @@ public class UserAdminTest {
     public void resetAndChangePassword() {
         String uid = doAddUser("123123123", "sneile", "Effert", "Huffse", "sneile@midget.orj", "21212121");
 
-        baseResource.path("user/sneile/resetpassword").type("application/json").post(ClientResponse.class);
+        //baseResource.path("user/sneile/resetpassword").type("application/json").post(ClientResponse.class);
+        baseResource.path("user/sneile/resetpassword").request().post(Entity.json(""), ClientResponse.class);
 
         // TODO somehow replace PasswordSender with MockMail in guice context.
-
         //String token = main.getInjector().getInstance(MockMail.class).getToken(uid);
         String token = new MockMail().getToken(uid);
         assertNotNull(token);
 
-        ClientResponse response = baseResource.path("user/sneile/newpassword/" + token).type(MediaType.APPLICATION_JSON).post(ClientResponse.class, "{\"newpassword\":\"naLLert\"}");
-        assertEquals(ClientResponse.Status.OK.getStatusCode(), response.getStatus());
+        //ClientResponse response = baseResource.path("user/sneile/newpassword/" + token).type(MediaType.APPLICATION_JSON).post(ClientResponse.class, "{\"newpassword\":\"naLLert\"}");
+        ClientResponse response = baseResource.path("user/sneile/newpassword/" + token).request().post(Entity.json("{\"newpassword\":\"naLLert\"}"), ClientResponse.class);
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String payload = "<?xml version='1.0' encoding='UTF-8' standalone='yes'?><auth><username>sneile</username><password>naLLert</password></auth>";
-        response = logonResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
-        assertEquals(ClientResponse.Status.OK.getStatusCode(), response.getStatus());
-        String identity = response.getEntity(String.class);
+        //response = logonResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
+        response = logonResource.path("logon").request().post(Entity.json(payload), ClientResponse.class);
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        //String identity = response.getEntity(String.class);
+        String identity = response.readEntity(String.class);
         assertTrue(identity.contains("identity"));
         assertTrue(identity.contains("sneile"));
     }
@@ -427,14 +448,16 @@ public class UserAdminTest {
     @Test
     public void thatEmailCanBeUsedAsUsername() {
         String uid = doAddUser("riffraff", "snyper@midget.orj", "Edmund", "Goffse", "somotheremail@midget.orj", "12121212");
-        String s = baseResource.path("user/" + uid).get(String.class);
+        String s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("snyper@midget.orj"));
     }
 
     private String doAddUser(String userjson) {
-        WebResource webResource = baseResource.path("user");
-        String postResponseJson = webResource.type(MediaType.APPLICATION_JSON).post(String.class, userjson);
-        Map<String, Object> createdUser = null;
+        WebTarget webResource = baseResource.path("user");
+        //String postResponseJson = webResource.type(MediaType.APPLICATION_JSON).post(String.class, userjson);
+        String postResponseJson = webResource.request().post(Entity.json(userjson), String.class);
+
+        Map<String, Object> createdUser;
         try {
             createdUser = new ObjectMapper().readValue(postResponseJson, new TypeReference<Map<String, Object>>() {
             });
@@ -473,7 +496,7 @@ public class UserAdminTest {
     }
 
     private List<Map<String, Object>> doGetUserRoles(String uid) {
-        String postResponseJson = baseResource.path("user/" + uid + "/roles").get(String.class);
+        String postResponseJson = baseResource.path("user/" + uid + "/roles").request().get(String.class);
         List<Map<String, Object>> roles = null;
         try {
             roles = new ObjectMapper().readValue(postResponseJson, new TypeReference<List<Map<String, Object>>>() {
@@ -485,7 +508,7 @@ public class UserAdminTest {
     }
 
     private Map<String, Object> doGetUserRole(String uid, String roleId) {
-        String postResponseJson = baseResource.path("user/" + uid + "/role/" + roleId).get(String.class);
+        String postResponseJson = baseResource.path("user/" + uid + "/role/" + roleId).request().get(String.class);
         Map<String, Object> roles = null;
         try {
             roles = new ObjectMapper().readValue(postResponseJson, new TypeReference<Map<String, Object>>() {
@@ -497,11 +520,14 @@ public class UserAdminTest {
     }
 
     private String doAddUserRole(String uid, String applicationId, String organizationName, String applicationRoleName, String applicationRoleValue) {
-        WebResource webResource = baseResource.path("user/" + uid + "/role");
-        String postResponseJson = webResource.type("application/json").post(String.class, "{\"organizationName\": \"" + organizationName + "\",\n" +
+        WebTarget webResource = baseResource.path("user/" + uid + "/role");
+        String payload = "{\"organizationName\": \"" + organizationName + "\",\n" +
                 "        \"applicationId\": \"" + applicationId + "\",\n" +
                 "        \"applicationRoleName\": \"" + applicationRoleName + "\",\n" +
-                "        \"applicationRoleValue\": \"" + applicationRoleValue + "\"}");
+                "        \"applicationRoleValue\": \"" + applicationRoleValue + "\"}";
+
+        //String postResponseJson = webResource.type("application/json").post(String.class, payload);
+        String postResponseJson = webResource.request().post(Entity.json(payload), String.class);
 
         Map<String, Object> createdUser = null;
         try {

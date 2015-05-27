@@ -1,8 +1,9 @@
 package net.whydah.identity.health;
 
-import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -13,12 +14,13 @@ import javax.ws.rs.core.Response;
 /**
  * Endpoint for health check.
  */
+@Component
 @Path("/health")
 public class HealthResource {
     private static final Logger log = LoggerFactory.getLogger(HealthResource.class);
     private final HealthCheckService healthCheckService;
 
-    @Inject
+    @Autowired
     public HealthResource(HealthCheckService healthCheckService) {
         this.healthCheckService = healthCheckService;
     }
