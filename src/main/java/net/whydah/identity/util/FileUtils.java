@@ -4,12 +4,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.StringJoiner;
 
 public class FileUtils {
     private static final Logger log = LoggerFactory.getLogger(FileUtils.class);
 
 
     public static void deleteDirectories(String... paths) {
+        StringJoiner joiner = new StringJoiner(", ");
+        for (String path : paths) {
+            joiner.add(path);
+        }
+        log.info("Deleting directories {}", joiner.toString());
         for (String path : paths) {
             deleteDirectory(path);
         }
@@ -30,7 +36,7 @@ public class FileUtils {
                         deleteDirectory(file);
                     } else {
                         if(!file.delete()) {
-                            log.warn("Unable to delete directory file " + file);
+                            log.warn("Unable to delete file " + file);
                         }
                     }
                 }
@@ -38,11 +44,13 @@ public class FileUtils {
         }
         boolean exist = path.exists();
         boolean deleted = path.delete();
-        if(exist && !deleted)  {
-            log.warn("Unable to delete directory " + path);
+        if (exist) {
+            if (!deleted) {
+                log.warn("Unable to delete directory " + path);
+            } else {
+                log.debug("Folder {} was deleted successfully.", path.getAbsolutePath());
+            }
         }
-
-        log.info("Folder {} was deleted successfully.", path.getAbsolutePath());
     }
 
 
