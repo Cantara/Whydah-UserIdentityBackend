@@ -4,6 +4,7 @@ package net.whydah.identity.config;
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2015-05-27
  */
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.mvc.freemarker.FreemarkerMvcFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +18,7 @@ public class RESTApplication extends ResourceConfig {
         //https://java.net/jira/browse/JERSEY-2175
         ResourceConfig resourceConfig = packages("net.whydah.identity.user.resource", "net.whydah.identity.application", "net.whydah.identity.health");
         resourceConfig.register(org.glassfish.jersey.server.mvc.freemarker.FreemarkerMvcFeature.class);
-        //resourceConfig.register(CollectionJsonReaderAndWriter.class);
-        //resourceConfig.register(MultiPartFeature.class);
+        resourceConfig.property(FreemarkerMvcFeature.TEMPLATE_BASE_PATH, "/templates");
         log.debug(this.getClass().getSimpleName() + " started!");
     }
 }

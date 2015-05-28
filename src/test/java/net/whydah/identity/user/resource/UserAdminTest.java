@@ -42,8 +42,6 @@ public class UserAdminTest {
 
     @Before
     public void init() throws Exception {
-        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
         ApplicationMode.setDevMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -51,10 +49,6 @@ public class UserAdminTest {
                 .addResource(Resource.create("file:./useridentitybackend_override.properties"))
                 .done()
                 .getConfiguration();
-
-        //String ldapPath = AppConfig.appConfig.getProperty("ldap.embedded.directory");
-        //FileUtils.deleteDirectory(new File(ldapPath));
-        //FileUtils.deleteDirectory(new File("target/bootstrapdata/"));
 
         String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
         String luceneDir = configuration.evaluateToString("lucene.directory");
@@ -64,14 +58,11 @@ public class UserAdminTest {
         main = new Main(configuration.evaluateToInt("service.port"));
         main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
 
-        //DatabaseMigrationHelper dbHelper = main.getInjector().getInstance(DatabaseMigrationHelper.class);
         BasicDataSource dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
-
-        //main.importUsersAndRoles();
         new IamDataImporter(dataSource, configuration).importIamData();
 
         //String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
