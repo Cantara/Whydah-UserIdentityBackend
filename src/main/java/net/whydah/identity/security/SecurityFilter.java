@@ -7,6 +7,8 @@ import net.whydah.identity.user.authentication.SecurityTokenServiceHelper;
 import net.whydah.identity.user.authentication.UserToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -19,6 +21,7 @@ import java.util.List;
  * Sjekker om request path krever autentisering, og i såfall sjekkes authentication.
  * Secured paths are added as comma separated list in filterConfig. Required role is also configured with filterConfig.
  */
+@Component
 public class SecurityFilter implements Filter {
     public static final String OPEN_PATH = "/authenticate";
     public static final String AUTHENTICATE_USER_PATH = "/authenticate";
@@ -33,6 +36,7 @@ public class SecurityFilter implements Filter {
     //private List<String> securedPaths = new ArrayList<>();
     private String requiredRole;
 
+    @Autowired
     public SecurityFilter(SecurityTokenServiceHelper securityTokenHelper, ApplicationTokenService applicationTokenService) {
         this.securityTokenHelper = securityTokenHelper;
         this.applicationTokenService = applicationTokenService;

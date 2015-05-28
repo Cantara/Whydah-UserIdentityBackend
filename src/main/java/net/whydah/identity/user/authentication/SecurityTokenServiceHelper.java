@@ -1,9 +1,13 @@
 package net.whydah.identity.user.authentication;
 
 import net.whydah.identity.user.UserRole;
+import org.constretto.annotation.Configuration;
+import org.constretto.annotation.Configure;
 import org.glassfish.jersey.client.ClientResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -15,6 +19,7 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class SecurityTokenServiceHelper {
     private static final Logger log = LoggerFactory.getLogger(SecurityTokenServiceHelper.class);
     private Client client = ClientBuilder.newClient();
@@ -23,7 +28,9 @@ public class SecurityTokenServiceHelper {
     private String myAppTokenXML;
     //private String myAppTokenId;
 
-    public SecurityTokenServiceHelper(String usertokenserviceUri) {
+    @Autowired
+    @Configure
+    public SecurityTokenServiceHelper(@Configuration("securitytokenservice") String usertokenserviceUri) {
         tokenServiceResource = client.target(usertokenserviceUri);
     }
 

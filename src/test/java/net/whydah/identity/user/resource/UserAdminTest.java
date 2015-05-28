@@ -1,11 +1,5 @@
 package net.whydah.identity.user.resource;
 
-/*
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
-import com.sun.jersey.api.client.WebResource;
-*/
 
 import net.whydah.identity.Main;
 import net.whydah.identity.config.ApplicationMode;
@@ -111,10 +105,11 @@ public class UserAdminTest {
     }
 
     @Test
-    public void find() {
+    public void testFind() {
         WebTarget webResource = baseResource.path("users/find/Thomas");
-        String s = webResource.request().get(String.class);
-        assertTrue(s.contains("\"firstName\":\"Thomas\""));
+        Response response = webResource.request().get(Response.class);
+        String entity = response.readEntity(String.class);
+        assertTrue(entity.contains("\"firstName\":\"Thomas\""));
     }
 
     @Test
@@ -170,12 +165,12 @@ public class UserAdminTest {
     }
 
     @Test
-    public void deleteUser() {
+    public void deleteUserOK() {
         String uid = doAddUser("rubblebeard", "frustaalstrom", "Frustaal", "Strom", "frustaalstrom@gmail.com", "12121212");
 
-        ClientResponse deleteResponse = baseResource.path("user/" + uid).request().delete(ClientResponse.class);
+        Response response = baseResource.path("user/" + uid).request().delete(Response.class);
         //deleteResponse.getClientResponseStatus().getFamily().equals(Response.Status.Family.SUCCESSFUL);
-        assertEquals(deleteResponse.getStatusInfo().getFamily(), Response.Status.Family.SUCCESSFUL);
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.NO_CONTENT.getStatusCode());
 
         try {
             String s = baseResource.path(uid).request().get(String.class);
@@ -372,15 +367,16 @@ public class UserAdminTest {
     @Test
     public void addUser() {
         String uid = doAddUser("riffraff", "snyper", "Edmund", "Gøæøåffse", "snyper@midget.orj", "12121212");
-
         assertNotNull(uid);
 
         String s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("snyper@midget.orj"));
         assertTrue(s.contains("Edmund"));
-        String findresult = baseResource.path("users/find/snyper").request().get(String.class);
-        assertTrue(findresult.contains("snyper@midget.orj"));
-        assertTrue(findresult.contains("Edmund"));
+
+        Response findresult = baseResource.path("users/find/snyper").request().get(Response.class);
+        String entity = findresult.readEntity(String.class);
+        assertTrue(entity.contains("snyper@midget.orj"));
+        assertTrue(entity.contains("Edmund"));
     }
 
     @Test

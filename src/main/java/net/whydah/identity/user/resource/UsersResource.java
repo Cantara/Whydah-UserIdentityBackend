@@ -97,7 +97,8 @@ public class UsersResource {
         model.put("users", users);
         model.put("userbaseurl", uriInfo.getBaseUri());
         log.trace("findUsers returned {} users.", users.size());
-        return Response.ok(new Viewable("/useradmin/users.json.ftl", model)).header("Content-Type", MediaType.APPLICATION_JSON + ";charset=utf-8").build();
+        Response response = Response.ok(new Viewable("/useradmin/users.json.ftl", model)).header("Content-Type", MediaType.APPLICATION_JSON + ";charset=utf-8").build();
+        return response;
     }
 
 
@@ -117,6 +118,7 @@ public class UsersResource {
         model.put("users", users);
         model.put("userbaseurl", uriInfo.getBaseUri());
         log.trace("findUsers returned {} users.", users.size());
-        return Response.ok(new Viewable("/useradmin/users.json.ftl", model)).header("Content-Type", MediaType.APPLICATION_JSON + ";charset=utf-8").build();
+        Response response = Response.ok(new Viewable("/useradmin/users.json.ftl", model)).header("Content-Type", MediaType.APPLICATION_JSON + ";charset=utf-8").build();
+        return response;
     }
 }
