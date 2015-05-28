@@ -47,6 +47,18 @@ public class FileUtils {
         log.info("Folder {} was deleted successfully.", path.getAbsolutePath());
     }
 
+
+    public static void createDirectory(String pathAsString) {
+        File dir = new File(pathAsString);
+        if (!dir.exists()) {
+            boolean dirsCreated = dir.mkdirs();
+            if (!dirsCreated) {
+                log.debug("{} was not successfully created.", dir.getAbsolutePath());
+            }
+        }
+    }
+
+
     public static void close(InputStream is) {
         if (is != null) {
             try {

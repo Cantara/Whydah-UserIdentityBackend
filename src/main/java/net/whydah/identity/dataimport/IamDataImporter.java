@@ -24,11 +24,15 @@ public class IamDataImporter {
     private final BasicDataSource dataSource;
     private final QueryRunner queryRunner;
     private final LdapUserIdentityDao ldapUserIdentityDao;
+    private final String luceneDir;
+    private final UserPropertyAndRoleRepository userPropertyAndRoleRepository;
+
+
     private String applicationsImportSource;
     private String organizationsImportSource;
     private String userImportSource;
     private String roleMappingImportSource;
-    private String luceneDir;
+
 
     public IamDataImporter(BasicDataSource dataSource, ConstrettoConfiguration configuration)  {
         this.dataSource = dataSource;
@@ -36,6 +40,8 @@ public class IamDataImporter {
         this.ldapUserIdentityDao = initLdapUserIdentityDao(configuration);
         //String luceneDir = AppConfig.appConfig.getProperty("lucene.directory");
         this.luceneDir = configuration.evaluateToString("lucene.directory");
+
+        this.userPropertyAndRoleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), new ApplicationDao(dataSource));
 
         /*
         this.applicationsImportSource = AppConfig.appConfig.getProperty("import.applicationssource");
@@ -49,7 +55,19 @@ public class IamDataImporter {
         this.roleMappingImportSource = configuration.evaluateToString("import.rolemappingsource");
     }
 
+
+    //used by tests
     /*
+    @Deprecated
+    public IamDataImporter(BasicDataSource dataSource, LdapUserIdentityDao ldapUserIdentityDao, String luceneDir)  {
+        this.dataSource = dataSource;
+        this.queryRunner = new QueryRunner(dataSource);
+        this.ldapUserIdentityDao = ldapUserIdentityDao;
+        this.luceneDir = luceneDir;
+    }
+    */
+
+      /*
     @Deprecated
 	public IamDataImporter(BasicDataSource dataSource)  {
         this.dataSource = dataSource;
@@ -59,13 +77,6 @@ public class IamDataImporter {
 	}
 	*/
 
-    //used by tests
-    public IamDataImporter(BasicDataSource dataSource, LdapUserIdentityDao ldapUserIdentityDao, String luceneDir)  {
-        this.dataSource = dataSource;
-        this.queryRunner = new QueryRunner(dataSource);
-        this.ldapUserIdentityDao = ldapUserIdentityDao;
-        this.luceneDir = luceneDir;
-    }
 
     //Database migrations should already have been performed before import.
 	public void importIamData() {
@@ -85,8 +96,6 @@ public class IamDataImporter {
             new WhydahUserIdentityImporter(ldapUserIdentityDao, new LuceneIndexer(index)).importUsers(uis);
 
             rmis = openInputStream("RoleMappings", roleMappingImportSource);
-            UserPropertyAndRoleRepository userPropertyAndRoleRepository =
-                    new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), new ApplicationDao(dataSource));
             new RoleMappingImporter(userPropertyAndRoleRepository).importRoleMapping(rmis);
         } finally {
             FileUtils.close(ais);
@@ -144,5 +153,13 @@ public class IamDataImporter {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    //expose for test
+    LdapUserIdentityDao getLdapUserIdentityDao() {
+        return ldapUserIdentityDao;
+    }
+    UserPropertyAndRoleRepository getUserPropertyAndRoleRepository() {
+        return userPropertyAndRoleRepository;
     }
 }

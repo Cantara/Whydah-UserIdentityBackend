@@ -95,7 +95,7 @@ public class Main {
             if (importEnabled) {
                 FileUtils.deleteDirectories(ldapEmbeddedpath, roleDBDirectory, luceneDirectory);
             }
-
+            FileUtils.createDirectory(luceneDirectory);
 
             if (embeddedDSEnabled) {
                 Integer ldapPort = configuration.evaluateToInt("ldap.embedded.port");

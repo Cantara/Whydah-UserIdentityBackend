@@ -12,6 +12,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -91,5 +92,12 @@ public class ApplicationEndpointTest {
         assertFalse("expect incoming id to be ignored by UIB", "id1".equals(applicationResponse.getId()));
         assertEquals(applicationResponse.getName(), "appName1");
         assertNull(applicationResponse.getSecret());    //secret should never be returned
+    }
+
+    @After
+    public void stop() {
+        if (main != null) {
+            main.stop();
+        }
     }
 }

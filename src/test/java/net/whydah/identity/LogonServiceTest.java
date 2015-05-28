@@ -8,20 +8,11 @@ import com.sun.jersey.core.header.MediaTypes;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 */
 
-import net.whydah.identity.application.ApplicationDao;
-import net.whydah.identity.audit.AuditLogDao;
-import net.whydah.identity.config.AppConfig;
+import com.jayway.restassured.RestAssured;
 import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
-import net.whydah.identity.dataimport.IamDataImporter;
-import net.whydah.identity.user.identity.EmbeddedADS;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
-import net.whydah.identity.user.role.UserPropertyAndRoleDao;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
@@ -38,7 +29,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
@@ -50,20 +40,65 @@ public class LogonServiceTest {
     private static URI baseUri;
     private Client client = ClientBuilder.newClient();
 
-    private final static String basepath = "target/LogonServiceTest/";
-    private final static String ldappath = basepath + "hsqldb/ldap/";
-    private final static String dbpath = basepath + "hsqldb/roles";
+    //private final static String basepath = "target/LogonServiceTest/";
+    //private final static String ldappath = basepath + "hsqldb/ldap/";
+    //private final static String dbpath = basepath + "hsqldb/roles";
     //    private final static int LDAP_PORT = 10937;
-    private static String LDAP_URL; // = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
+    //private static String LDAP_URL; // = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
 
-    private static EmbeddedADS ads;
-    private static LdapUserIdentityDao ldapUserIdentityDao;
+    //private static EmbeddedADS ads;
+    //private static LdapUserIdentityDao ldapUserIdentityDao;
     //private static LdapAuthenticator ldapAuthenticator;
-    private static UserPropertyAndRoleRepository roleRepository;
+    //private static UserPropertyAndRoleRepository roleRepository;
     //private static UserAdminHelper userAdminHelper;
+
     private static Main main = null;
 
+    @BeforeClass
+    public static void startServer() {
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
 
+
+        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
+        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
+        String luceneDir = configuration.evaluateToString("lucene.directory");
+        FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneDir);
+
+        main = new Main(configuration.evaluateToInt("service.port"));
+        main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
+
+        BasicDataSource dataSource = initBasicDataSource(configuration);
+        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+
+        main.start();
+        RestAssured.port = main.getPort();
+        RestAssured.basePath = Main.CONTEXT_PATH;
+
+        baseUri = UriBuilder.fromUri("http://localhost/uib/").port(main.getPort()).build();
+    }
+
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
+    }
+
+    /*
     @BeforeClass
     public static void setUp() throws Exception {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
@@ -127,12 +162,13 @@ public class LogonServiceTest {
 
         baseUri = UriBuilder.fromUri("http://localhost/uib/").port(HTTP_PORT).build();
     }
+    */
 
 
     @AfterClass
-    public static void teardown()  {
-        if (ads != null) {
-            ads.stopServer();
+    public static void stop() {
+        if (main != null) {
+            main.stop();
         }
     }
 
@@ -154,7 +190,6 @@ public class LogonServiceTest {
         WebTarget webResource = client.target(baseUri);
         //String serviceWadl = webResource.path("application.wadl").accept(MediaTypes.WADL).get(String.class);
         String serviceWadl = webResource.path("application.wadl").request().get(String.class);  //TODO MediaTypes.WADL
-//        System.out.println("WADL:"+serviceWadl);
         assertTrue(serviceWadl.length() > 60);
     }
 
@@ -167,7 +202,6 @@ public class LogonServiceTest {
         //ClientResponse response = webResource.path("logon").type("application/x-www-form-urlencoded").post(ClientResponse.class, formData);
         ClientResponse response = webResource.path("logon").request().post(Entity.form(formData), ClientResponse.class);
         String responseBody = response.readEntity(String.class);
-        System.out.println(responseBody);
         //assertTrue(responseBody.contains("Logon ok"));
         assertTrue(responseBody.contains("username@emailaddress.com"));
     }
@@ -182,7 +216,6 @@ public class LogonServiceTest {
         ClientResponse response = webResource.path("logon").request().post(Entity.form(formData), ClientResponse.class);
 
         String responseBody = response.readEntity(String.class);
-        System.out.println(responseBody);
 
         assertTrue(responseBody.contains("failed"));
         assertFalse(responseBody.contains("freecodeUser"));
@@ -195,7 +228,6 @@ public class LogonServiceTest {
         //ClientResponse response = webResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
         ClientResponse response = webResource.path("logon").request().post(Entity.xml(payload), ClientResponse.class);
         String responseXML = response.readEntity(String.class);
-        System.out.println(responseXML);
         assertTrue(responseXML.contains("thomasp"));
 
     }
@@ -207,7 +239,6 @@ public class LogonServiceTest {
         //ClientResponse response = webResource.path("logon").type("application/xml").post(ClientResponse.class, payload);
         ClientResponse response = webResource.path("logon").request().post(Entity.xml(payload), ClientResponse.class);
         String responseXML = response.readEntity(String.class);
-        //System.out.println(responseXML);
         assertTrue(responseXML.contains("logonFailed"));
         assertFalse(responseXML.contains("thomasp"));
     }
