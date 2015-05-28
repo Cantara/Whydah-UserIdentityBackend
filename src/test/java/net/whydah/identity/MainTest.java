@@ -4,6 +4,7 @@ import junit.framework.TestCase;
 import net.whydah.identity.util.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+
+@Ignore     //Review: Stil useful?
 public class MainTest extends TestCase {
 
 
