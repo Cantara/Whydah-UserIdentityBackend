@@ -16,7 +16,7 @@ public class EmailBodyGenerator {
     private static final String RESET_PASSWORD_EMAIL_TEMPLATE = "PasswordResetEmail.ftl";
 
     public EmailBodyGenerator() {
-        freemarkerConfig = new Configuration();
+        freemarkerConfig = new Configuration(Configuration.VERSION_2_3_0);
         freemarkerConfig.setTemplateLoader(new ClassTemplateLoader(getClass(), "/templates/email"));
         freemarkerConfig.setDefaultEncoding("UTF-8");
         freemarkerConfig.setLocalizedLookup(false);

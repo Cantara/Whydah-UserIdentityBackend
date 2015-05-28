@@ -83,7 +83,7 @@ public class FileUtils {
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Config file " + fileName +  " not found.", e);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Error reading " + fileName , e);
         }
         return fis;

@@ -14,7 +14,7 @@ public final class PasswordBlacklist {
     private static final Logger log = LoggerFactory.getLogger(PasswordBlacklist.class);
     private static final String PASSWORD_FILE = "common-pw.txt";
 
-    public static final Set pwList = new HashSet();
+    public static final Set<String> pwList = new HashSet<>();
 
     static {
         loadCommonPWFromClasspath();

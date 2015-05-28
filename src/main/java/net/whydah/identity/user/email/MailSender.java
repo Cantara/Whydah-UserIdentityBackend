@@ -45,7 +45,7 @@ public class MailSender {
     */
 
     public void send(String recipients, String subject, String body) {
-        log.debug("Sending email to recipients={}, subject={}, body={}", new String[]{recipients, subject, body});
+        log.debug("Sending email to recipients={}, subject={}, body={}", recipients, subject, body);
 
         //Gmail props
         Properties smtpProperties = new Properties();
