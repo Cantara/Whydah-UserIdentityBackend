@@ -1,7 +1,7 @@
 package net.whydah.identity.user.identity;
 
 import net.whydah.identity.Main;
-import net.whydah.identity.config.ConfigTags;
+import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.util.FileUtils;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
@@ -23,7 +23,8 @@ public class LdapUserIdentityDaoTest {
     @BeforeClass
     public static void setUp() throws Exception {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        ApplicationMode.setDevMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))

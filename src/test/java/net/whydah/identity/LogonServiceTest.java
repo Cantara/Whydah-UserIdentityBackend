@@ -9,7 +9,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 */
 
 import com.jayway.restassured.RestAssured;
-import net.whydah.identity.config.ConfigTags;
+import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -57,7 +57,8 @@ public class LogonServiceTest {
     @BeforeClass
     public static void startServer() {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        //System.setProperty(ApplicationMode.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        ApplicationMode.setDevMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))

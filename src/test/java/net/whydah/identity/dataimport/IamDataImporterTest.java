@@ -2,7 +2,7 @@ package net.whydah.identity.dataimport;
 
 import com.jayway.restassured.RestAssured;
 import net.whydah.identity.Main;
-import net.whydah.identity.config.ConfigTags;
+import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.UserIdentity;
@@ -74,7 +74,8 @@ public class IamDataImporterTest {
     @BeforeClass
     public static void startServer() {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        ApplicationMode.setDevMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))

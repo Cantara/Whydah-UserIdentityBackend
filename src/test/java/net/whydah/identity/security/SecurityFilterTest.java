@@ -4,7 +4,10 @@ import net.whydah.identity.application.authentication.ApplicationTokenService;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.user.authentication.SecurityTokenServiceHelper;
 import net.whydah.identity.user.authentication.UserToken;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +26,18 @@ public class SecurityFilterTest {
     private ApplicationTokenService applicationTokenService;
     private HttpServletRequest request;
     private HttpServletResponse response;
-    FilterChain chain;
+    private FilterChain chain;
+
+    private final static String tokenOther = "<application ID=\"1\"><organizationName>2</organizationName><role name=\"Vaktmester\"/></application>";
+    private final static String tokenBrukeradmin = "<application ID=\"1\"><organizationName>2</organizationName><role name=\"WhydahUserAdmin\"/></application>";
+    private final static String applicationToken = "<application ID=\"abcdefgid\"></application>";
+    private final static String applicationTokenId="abcdefgid";
+    private final static String userAdminUserTokenId ="au123";
+    private final static String userTokenInvalid ="uti123";
+    private final static String userTokenMissingGroup ="utig123";
+
+    //ED: Why should this be necessary?
+    /*
     private static String iamMode = null;
 
     @BeforeClass
@@ -40,6 +54,12 @@ public class SecurityFilterTest {
             System.setProperty(ApplicationMode.IAM_MODE_KEY, iamMode);
         }
     }
+    */
+    @BeforeClass
+    public static void setDefaultApplicationMode() {
+        ApplicationMode.clearTags();
+    }
+
 
     @Before
     public void init() throws ServletException {
@@ -152,13 +172,4 @@ public class SecurityFilterTest {
         verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
         verifyNoMoreInteractions(chain);
     }
-
-    private final static String tokenOther = "<application ID=\"1\"><organizationName>2</organizationName><role name=\"Vaktmester\"/></application>";
-    private final static String tokenBrukeradmin = "<application ID=\"1\"><organizationName>2</organizationName><role name=\"WhydahUserAdmin\"/></application>";
-    private final static String applicationToken = "<application ID=\"abcdefgid\"></application>";
-    private final static String applicationTokenId="abcdefgid";
-    private final static String userAdminUserTokenId ="au123";
-    private final static String userTokenInvalid ="uti123";
-    private final static String userTokenMissingGroup ="utig123";
-
 }
