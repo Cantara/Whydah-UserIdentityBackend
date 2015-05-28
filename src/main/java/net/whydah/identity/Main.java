@@ -1,12 +1,14 @@
 package net.whydah.identity;
 
-import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.config.SSLTool;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.identity.EmbeddedADS;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -50,6 +52,15 @@ public class Main {
 
     // 4. start webserver
     public static void main(String[] args) {
+
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+        /*
         boolean importEnabled = Boolean.parseBoolean(AppConfig.appConfig.getProperty("import.enabled"));
         boolean embeddedDSEnabled = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.embedded"));
 
@@ -61,10 +72,14 @@ public class Main {
         String sslVerification = AppConfig.appConfig.getProperty("sslverification");
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
         Integer webappPort = Integer.valueOf(AppConfig.appConfig.getProperty("service.port"));
+        */
         String version = Main.class.getPackage().getImplementationVersion();
 
+        boolean importEnabled = configuration.evaluateToBoolean("import.enabled");
+        boolean embeddedDSEnabled = configuration.evaluateToBoolean("ldap.embedded");
         log.info("Starting UserIdentityBackend version={}, import.enabled={}, embeddedDSEnabled={}", version, importEnabled, embeddedDSEnabled);
         try {
+            Integer webappPort = configuration.evaluateToInt("service.port");
             final Main main = new Main(webappPort);
 
             Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -74,16 +89,21 @@ public class Main {
                 }
             });
 
+            String ldapEmbeddedpath = configuration.evaluateToString("ldap.embedded.directory");
+            String roleDBDirectory = configuration.evaluateToString("roledb.directory");
+            String luceneDirectory = configuration.evaluateToString("lucene.directory");
+
             if (importEnabled) {
                 FileUtils.deleteDirectories(ldapEmbeddedpath, roleDBDirectory, luceneDirectory);
             }
 
 
             if (embeddedDSEnabled) {
+                Integer ldapPort = configuration.evaluateToInt("ldap.embedded.port");
                 main.startEmbeddedDS(ldapEmbeddedpath, ldapPort);
             }
 
-            BasicDataSource dataSource = initBasicDataSource();
+            BasicDataSource dataSource = initBasicDataSource(configuration);
             new DatabaseMigrationHelper(dataSource).upgradeDatabase();
 
             if (importEnabled) {
@@ -93,6 +113,7 @@ public class Main {
 
 
             // Property-overwrite of SSL verification to support weak ssl certificates
+            String sslVerification = configuration.evaluateToString("sslverification");
             if ("disabled".equalsIgnoreCase(sslVerification)) {
                 SSLTool.disableCertificateValidation();
             }
@@ -118,11 +139,17 @@ public class Main {
         }
     }
 
-    private static BasicDataSource initBasicDataSource() {
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        /*
         String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
         String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
         String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
         String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
+        */
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
 
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName(jdbcdriver);

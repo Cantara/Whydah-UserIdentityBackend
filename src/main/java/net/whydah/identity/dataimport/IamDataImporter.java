@@ -41,10 +41,9 @@ public class IamDataImporter {
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.index = index;
     }
-	
-	public void importIamData() {
-        //Database migrations should already have been performed before import.
 
+    //Database migrations should already have been performed before import.
+	public void importIamData() {
         InputStream ais = null;
         InputStream ois = null;
         InputStream uis = null;
