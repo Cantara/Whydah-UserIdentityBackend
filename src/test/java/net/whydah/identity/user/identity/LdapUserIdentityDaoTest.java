@@ -1,26 +1,53 @@
 package net.whydah.identity.user.identity;
 
-import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.Main;
+import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.util.FileUtils;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
 
 public class LdapUserIdentityDaoTest {
-    private static EmbeddedADS ads;
+    private static Main main = null;
+
     private static LdapUserIdentityDao ldapUserIdentityDao;
     private static LdapAuthenticator ldapAuthenticator;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
 
-        //int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
+        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
+        FileUtils.deleteDirectories(ldapPath);
+
+        main = new Main(configuration.evaluateToInt("service.port"));
+        main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
+
+        String primaryLdapUrl = configuration.evaluateToString("ldap.primary.url");
+        String primaryAdmPrincipal = configuration.evaluateToString("ldap.primary.admin.principal");
+        String primaryAdmCredentials = configuration.evaluateToString("ldap.primary.admin.credentials");
+        String primaryUidAttribute = configuration.evaluateToString("ldap.primary.uid.attribute");
+        String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
+        String readonly = configuration.evaluateToString("ldap.primary.readonly");
+        ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
+        ldapAuthenticator = new LdapAuthenticator(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute);
+
+        /*
+        int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
         int LDAP_PORT = 18389;
         String ldapUrl = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
         String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
@@ -37,14 +64,16 @@ public class LdapUserIdentityDaoTest {
         ads = new EmbeddedADS(workDir);
         ads.startServer(LDAP_PORT);
         Thread.sleep(1000);
+        */
     }
 
     @AfterClass
-    public static void tearDown() throws Exception {
-        if (ads != null) {
-            ads.stopServer();
+    public static void stop() {
+        if (main != null) {
+            main.stop();
         }
     }
+
 
     @Test
     public void testAddUser() throws Exception {

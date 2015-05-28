@@ -1,6 +1,5 @@
 package net.whydah.identity.user.authentication;
 
-import com.jayway.restassured.RestAssured;
 import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
@@ -8,7 +7,10 @@ import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.email.PasswordSender;
-import net.whydah.identity.user.identity.*;
+import net.whydah.identity.user.identity.LdapAuthenticator;
+import net.whydah.identity.user.identity.LdapUserIdentityDao;
+import net.whydah.identity.user.identity.UserIdentity;
+import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
@@ -21,7 +23,9 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.w3c.dom.Document;
 
 import javax.naming.NamingException;
@@ -44,11 +48,11 @@ import static org.junit.Assert.assertNotNull;
  * @since 10/18/12
  */
 public class UserAuthenticationEndpointTest {
-    private final static String basepath = "target/UserAuthenticationEndpointTest/";
-    private final static String ldappath = basepath + "hsqldb/ldap/";
-    private final static String dbpath = basepath + "hsqldb/roles";
+    //private final static String basepath = "target/UserAuthenticationEndpointTest/";
+    //private final static String ldappath = basepath + "hsqldb/ldap/";
+    //private final static String dbpath = basepath + "hsqldb/roles";
 
-    private static EmbeddedADS ads;
+    //private static EmbeddedADS ads;
     private static UserPropertyAndRoleRepository roleRepository;
     private static UserAdminHelper userAdminHelper;
     private static UserIdentityService userIdentityService;
@@ -127,16 +131,9 @@ public class UserAuthenticationEndpointTest {
         Directory index = new NIOFSDirectory(new File(luceneDir));
         userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository, configuration);
     }
-
-    @AfterClass
-    public static void tearDown() throws Exception {
-        if (ads != null) {
-            ads.stopServer();
-        }
-    }
-
-    @Before
-    public void startServer() {
+    /*
+    @BeforeClass
+    public static void startServer() {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
         System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
@@ -158,6 +155,7 @@ public class UserAuthenticationEndpointTest {
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
     }
+    */
 
     private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
@@ -173,13 +171,12 @@ public class UserAuthenticationEndpointTest {
         return dataSource;
     }
 
-    @After
-    public void stop() {
+    @AfterClass
+    public static void stop() {
         if (main != null) {
             main.stop();
         }
     }
-
 
     @Test
     public void testAuthenticateUsingFacebookCredentials() throws NamingException {
