@@ -32,7 +32,7 @@ public final class PasswordBlacklist {
         log.info("Loading properties from classpath: {}", pwfile);
         InputStream is = PasswordBlacklist.class.getClassLoader().getResourceAsStream(pwfile);
         if (is == null) {
-            throw new ConfigurationException("Error reading " + pwfile + " from classpath.");
+            throw new RuntimeException("Error reading " + pwfile + " from classpath.");
         }
         try {
             String line;
@@ -41,7 +41,7 @@ public final class PasswordBlacklist {
                 pwList.add(line);
             }
         } catch (IOException e) {
-            throw new ConfigurationException("Error reading " + pwfile + " from classpath.", e);
+            throw new RuntimeException("Error reading " + pwfile + " from classpath.", e);
         }
     }
 

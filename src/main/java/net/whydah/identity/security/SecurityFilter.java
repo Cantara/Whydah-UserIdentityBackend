@@ -26,7 +26,7 @@ public class SecurityFilter implements Filter {
     //public static final String SECURED_PATHS_PARAM = "securedPaths";
     public static final String REQUIRED_ROLE_USERS = "WhydahUserAdmin";
     //public static final String REQUIRED_ROLE_APPLICATIONS = "WhydahUserAdmin";
-    private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(SecurityFilter.class);
 
     private final SecurityTokenServiceHelper securityTokenHelper;
     private final ApplicationTokenService applicationTokenService;
@@ -47,24 +47,24 @@ public class SecurityFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest servletRequest = (HttpServletRequest) request;
         String pathInfo = servletRequest.getPathInfo();
-        logger.trace("filter path {}", pathInfo);
+        log.trace("filter path {}", pathInfo);
         if (pathInfo == null) {
-            logger.trace("No data in input - probably due to error in URL.  Configured (eg: ...:9995/uib)");
+            log.trace("No data in input - probably due to error in URL.  Configured (eg: ...:9995/uib)");
             return;
         }
 
         if (isOpenPath(pathInfo)) {
-            logger.trace("accessing open path {}", pathInfo);
+            log.trace("accessing open path {}", pathInfo);
             chain.doFilter(request, response);
         } else {
             if (isAuthenticateUserPath(pathInfo)) {
                 //Verify applicationTokenId
                 String applicationTokenId = findPathElement(pathInfo, 1);
                 if (applicationTokenService.verifyApplication(applicationTokenId)) {
-                    logger.trace("application verified {}. Moving to next in chain.", applicationTokenId);
+                    log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
                     chain.doFilter(request, response);
                 } else {
-                    logger.trace("Application not Authorized=" + applicationTokenId);
+                    log.trace("Application not Authorized=" + applicationTokenId);
                     setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
@@ -72,10 +72,10 @@ public class SecurityFilter implements Filter {
                 //TODO bli: Needs improvement -aka dont repeat your self.
                 String applicationTokenId = findPathElement(pathInfo, 2);
                 if (applicationTokenService.verifyApplication(applicationTokenId)) {
-                    logger.trace("application verified {}. Moving to next in chain.", applicationTokenId);
+                    log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
                     chain.doFilter(request, response);
                 } else {
-                    logger.trace("Application not Authorized=" + applicationTokenId);
+                    log.trace("Application not Authorized=" + applicationTokenId);
                     setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
@@ -83,31 +83,31 @@ public class SecurityFilter implements Filter {
                 //Verify userTokenId
                 String usertokenId = findUserTokenId(pathInfo);
                 String applicationTokenId = findApplicationTokenId(pathInfo);
-                logger.debug("usertokenid: {} from path={} ", usertokenId, pathInfo);
+                log.debug("usertokenid: {} from path={} ", usertokenId, pathInfo);
                 if (usertokenId == null) {
-                    logger.trace("Token not found");
+                    log.trace("Token not found");
                     setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_BAD_REQUEST);
                     return;
                 }
-                logger.trace("ApplicationMode -{}-", ApplicationMode.getApplicationMode());
+                log.trace("ApplicationMode -{}-", ApplicationMode.getApplicationMode());
                 if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
-                    logger.warn("Running in DEV mode, security is ommited for users.");
+                    log.warn("Running in DEV mode, security is ommited for users.");
                     Authentication.setAuthenticatedUser(buildMockedUserToken());
                 } else {
                     UserToken userToken = securityTokenHelper.getUserToken(applicationTokenId, usertokenId);
 
                     if (userToken == null) {
-                        logger.trace("Could not find token with tokenID=" + usertokenId);
+                        log.trace("Could not find token with tokenID=" + usertokenId);
                         setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
                         return;
                     }
                     if (!userToken.hasRole(requiredRole)) {
-                        logger.trace("Missing required role {}\n - token:", requiredRole, userToken);
+                        log.trace("Missing required role {}\n - token:", requiredRole, userToken);
                         //TODO  this test is too simple for the Whydah 2.1 release, as it block 3rd part apps
                         //setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_FORBIDDEN);
                         //return;
                     }
-                    logger.debug("setAuthenticatedUser with usertoken: {}", userToken);
+                    log.debug("setAuthenticatedUser with usertoken: {}", userToken);
                     Authentication.setAuthenticatedUser(userToken);
                 }
                 chain.doFilter(request, response);
@@ -182,7 +182,7 @@ public class SecurityFilter implements Filter {
      */
     protected String findUserTokenId(String pathInfo) {
         if (pathInfo != null && !pathInfo.startsWith("/")) {
-            logger.error("Call to UIB does not start with '/' which can be because of configuration problem. Problematic Path: {}", pathInfo);
+            log.error("Call to UIB does not start with '/' which can be because of configuration problem. Problematic Path: {}", pathInfo);
         }
         String tokenIdPath = findPathElement(pathInfo, 2);
         String tokenId = null;
@@ -195,7 +195,7 @@ public class SecurityFilter implements Filter {
 
     protected String findApplicationTokenId(String pathInfo) {
         if (pathInfo != null && !pathInfo.startsWith("/")) {
-            logger.error("Call to UIB does not start with '/' . Problematic Path: {}", pathInfo);
+            log.error("Call to UIB does not start with '/' . Problematic Path: {}", pathInfo);
         }
         String tokenIdPath = findPathElement(pathInfo, 1);
         String tokenId = null;
@@ -210,11 +210,11 @@ public class SecurityFilter implements Filter {
     private boolean isSecuredPath(String pathInfo) {
         for (String securedPath : securedPaths) {
             if (pathInfo.startsWith(securedPath)) {
-                logger.info("Secured: {}", pathInfo);
+                log.info("Secured: {}", pathInfo);
                 return true;
             }
         }
-        logger.info("Not secured: {}", pathInfo);
+        log.info("Not secured: {}", pathInfo);
         return false;
     }
     */
