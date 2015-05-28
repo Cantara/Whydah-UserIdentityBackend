@@ -11,7 +11,9 @@
     <logger name="hsqldb.db" level="DEBUG" />
     -->
     <logger name="org.apache.directory" level="WARN" />
+    <logger name="net.whydah.identity.util.FileUtils" level="INFO" />
     <logger name="net.whydah" level="TRACE" />
+
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
