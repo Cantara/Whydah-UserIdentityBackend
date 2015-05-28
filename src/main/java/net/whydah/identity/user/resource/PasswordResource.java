@@ -1,6 +1,6 @@
 package net.whydah.identity.user.resource;
 
-import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import org.json.JSONException;
@@ -96,7 +96,8 @@ public class PasswordResource {
             try {
                 JSONObject jsonobj = new JSONObject(passwordJson);
                 String newpassword = jsonobj.getString("newpassword");
-                if (AppConfig.pwList.contains(newpassword)) {
+                //if (AppConfig.pwList.contains(newpassword)) {
+                if (PasswordBlacklist.pwList.contains(newpassword)) {
                     log.error("changePasswordForUser-Weak password for username={}", username);
                     return Response.status(Response.Status.NOT_ACCEPTABLE).build();
 
