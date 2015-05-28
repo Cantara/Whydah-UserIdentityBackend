@@ -5,6 +5,7 @@ import java.util.Arrays;
 /**
  * Get application mode from os environment or system property.
  */
+@Deprecated
 public class ApplicationMode {
     public final static String IAM_MODE_KEY = "IAM_MODE";
     public final static String PROD = "PROD";

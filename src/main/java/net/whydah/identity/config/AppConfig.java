@@ -11,6 +11,7 @@ import java.util.Set;
 /**
  * Helper methods for reading configuration.
  */
+@Deprecated
 public final class AppConfig {
     private static final Logger logger = LoggerFactory.getLogger(AppConfig.class);
     public static final String IAM_CONFIG_KEY = "IAM_CONFIG";

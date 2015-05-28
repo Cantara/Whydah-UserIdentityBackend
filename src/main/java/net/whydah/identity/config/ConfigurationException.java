@@ -1,5 +1,6 @@
 package net.whydah.identity.config;
 
+@Deprecated
 public class ConfigurationException extends RuntimeException {
     public ConfigurationException() {
         super();
