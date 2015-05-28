@@ -1,7 +1,5 @@
 package net.whydah.identity.util;
 
-import net.whydah.identity.config.AppConfig;
-import net.whydah.identity.config.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,21 +79,21 @@ public class FileUtils {
             if (file.exists()) {
                 fis = new FileInputStream(file);
             } else {
-                throw new ConfigurationException("Config file " + fileName + " does not exist.");
+                throw new RuntimeException("Config file " + fileName + " does not exist.");
             }
         } catch (FileNotFoundException e) {
-            throw new ConfigurationException("Config file " + fileName +  " not found.", e);
+            throw new RuntimeException("Config file " + fileName +  " not found.", e);
         } catch (IOException e) {
-            throw new ConfigurationException("Error reading " + fileName , e);
+            throw new RuntimeException("Error reading " + fileName , e);
         }
         return fis;
 
     }
 
     public static InputStream openFileOnClasspath(String fileName) {
-        InputStream is = AppConfig.class.getClassLoader().getResourceAsStream(fileName);
+        InputStream is = FileUtils.class.getClassLoader().getResourceAsStream(fileName);
         if(is == null) {
-            throw new ConfigurationException("Error reading " + fileName + " from classpath.");
+            throw new RuntimeException("Error reading " + fileName + " from classpath.");
         }
         return is;
     }
