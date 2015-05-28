@@ -3,6 +3,7 @@ package net.whydah.identity.user.identity;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
@@ -14,6 +15,9 @@ import net.whydah.identity.util.PasswordGenerator;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,7 +41,16 @@ public class UserIdentityServiceTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
         int LDAP_PORT = 19389;
         String ldapUrl = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
         String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
@@ -61,7 +74,7 @@ public class UserIdentityServiceTest {
 
         Directory index = new NIOFSDirectory(new File("lucene"));
 
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository, configuration);
 
         String workDirPath = "target/" + UserIdentityServiceTest.class.getSimpleName();
         File workDir = new File(workDirPath);

@@ -1,8 +1,10 @@
 package net.whydah.identity.user.authentication;
 
+import com.jayway.restassured.RestAssured;
+import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
-import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.email.PasswordSender;
@@ -16,9 +18,10 @@ import net.whydah.identity.util.PasswordGenerator;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
+import org.junit.*;
 import org.w3c.dom.Document;
 
 import javax.naming.NamingException;
@@ -50,10 +53,22 @@ public class UserAuthenticationEndpointTest {
     private static UserAdminHelper userAdminHelper;
     private static UserIdentityService userIdentityService;
 
+    private static Main main = null;
+
+
     @BeforeClass
     public static void setUp() throws Exception {
-    	System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-    	
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+
+        /*
+        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
         int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
         String LDAP_URL = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
         
@@ -73,31 +88,95 @@ public class UserAuthenticationEndpointTest {
         dataSource.setUsername("sa");
         dataSource.setPassword("");
         dataSource.setUrl("jdbc:hsqldb:file:" + dbpath);
+        */
+
+        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
+        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
+        String luceneDir = configuration.evaluateToString("lucene.directory");
+        FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneDir);
+
+        main = new Main(configuration.evaluateToInt("service.port"));
+        main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
+
+        BasicDataSource dataSource = initBasicDataSource(configuration);
+        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+
+        //main.start();
+
 
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
-        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
-        LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
-        LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials");
+
+        String primaryLdapUrl = configuration.evaluateToString("ldap.primary.url");
+        String primaryAdmPrincipal = configuration.evaluateToString("ldap.primary.admin.principal");
+        String primaryAdmCredentials = configuration.evaluateToString("ldap.primary.admin.credentials");
+        String primaryUidAttribute = configuration.evaluateToString("ldap.primary.uid.attribute");
+        String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
+        String readonly = configuration.evaluateToString("ldap.primary.readonly");
+
+        //String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
+        LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
+        LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute);
 
         PasswordGenerator pwg = new PasswordGenerator();
         PasswordSender passwordSender = new PasswordSender(null, null, null);
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, passwordSender, null, null);
 
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
-
         ApplicationDao configDataRepository = new ApplicationDao(dataSource);
         roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
-
-
-        Directory index = new NIOFSDirectory(new File(basepath + "lucene"));
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository);
+        Directory index = new NIOFSDirectory(new File(luceneDir));
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository, configuration);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         if (ads != null) {
             ads.stopServer();
+        }
+    }
+
+    @Before
+    public void startServer() {
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+        //String roleDBDirectory = AppConfig.appConfig.getProperty("roledb.directory");
+        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
+        FileUtils.deleteDirectory(roleDBDirectory);
+
+        BasicDataSource dataSource = initBasicDataSource(configuration);
+        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+
+        main = new Main(6644);
+        main.start();
+        RestAssured.port = main.getPort();
+        RestAssured.basePath = Main.CONTEXT_PATH;
+    }
+
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
+    }
+
+    @After
+    public void stop() {
+        if (main != null) {
+            main.stop();
         }
     }
 

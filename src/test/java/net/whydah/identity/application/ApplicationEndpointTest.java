@@ -68,6 +68,13 @@ public class ApplicationEndpointTest {
         return dataSource;
     }
 
+    @After
+    public void stop() {
+        if (main != null) {
+            main.stop();
+        }
+    }
+
     @Test
     public void testCreateApplication() throws Exception {
         //String url = "http://localhost:" + main.getPort() + "/applicationtokenid1/userTokenId1/application";
@@ -92,12 +99,5 @@ public class ApplicationEndpointTest {
         assertFalse("expect incoming id to be ignored by UIB", "id1".equals(applicationResponse.getId()));
         assertEquals(applicationResponse.getName(), "appName1");
         assertNull(applicationResponse.getSecret());    //secret should never be returned
-    }
-
-    @After
-    public void stop() {
-        if (main != null) {
-            main.stop();
-        }
     }
 }

@@ -11,14 +11,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -50,7 +48,7 @@ public class LuceneIndexer {
     }
     */
 
-    //TODO
+    /*
     private NIOFSDirectory createDirectory(String luceneDir) {
         try {
             File luceneDirectory = new File(luceneDir);
@@ -65,6 +63,7 @@ public class LuceneIndexer {
             throw new RuntimeException(e);
         }
     }
+    */
 
     @Autowired
     public LuceneIndexer(Directory index) {
