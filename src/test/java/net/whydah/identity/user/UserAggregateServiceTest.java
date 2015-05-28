@@ -14,7 +14,8 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertNotNull;
+
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 06/04/14
