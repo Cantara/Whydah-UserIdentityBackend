@@ -108,7 +108,7 @@ public class Main {
 
             if (importEnabled) {
                 // Populate ldap, database and lucene index
-                new IamDataImporter(dataSource).importIamData();
+                new IamDataImporter(dataSource, configuration).importIamData();
             }
 
 

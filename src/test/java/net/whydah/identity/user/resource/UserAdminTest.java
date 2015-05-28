@@ -61,7 +61,7 @@ public class UserAdminTest {
 
         main.startEmbeddedDS(AppConfig.appConfig.getProperty("ldap.embedded.directory"), Integer.valueOf(AppConfig.appConfig.getProperty("ldap.embedded.port")));
         //main.importUsersAndRoles();
-        new IamDataImporter(dataSource).importIamData();
+        new IamDataImporter(dataSource, null, null).importIamData();
 
         String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
         //main.startHttpServer(requiredRoleName);   //TODO

@@ -100,7 +100,7 @@ public class LogonServiceTest {
         try {
             main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
             //main.importUsersAndRoles();
-            new IamDataImporter(dataSource).importIamData();
+            new IamDataImporter(dataSource, ldapUserIdentityDao, index).importIamData();
         } catch (Exception e){
 
         }
