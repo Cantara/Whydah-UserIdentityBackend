@@ -6,6 +6,7 @@ import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.naming.NamingException;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.List;
 /**
  * @author <a href="bard.lind@gmail.com">Bard Lind</a>
  */
+@Service
 public class UserSearch {
     private static final Logger log = LoggerFactory.getLogger(UserSearch.class);
     private final LdapUserIdentityDao ldapUserIdentityDao;

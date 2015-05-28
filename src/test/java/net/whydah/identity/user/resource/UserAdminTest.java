@@ -8,13 +8,16 @@ import com.sun.jersey.api.client.WebResource;
 */
 
 import net.whydah.identity.Main;
-import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
 import org.glassfish.jersey.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +32,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -46,24 +48,39 @@ public class UserAdminTest {
 
     @Before
     public void init() throws Exception {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        String ldapPath = AppConfig.appConfig.getProperty("ldap.embedded.directory");
-        FileUtils.deleteDirectory(new File(ldapPath));
-        FileUtils.deleteDirectory(new File("target/bootstrapdata/"));
-        main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
 
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+        //String ldapPath = AppConfig.appConfig.getProperty("ldap.embedded.directory");
+        //FileUtils.deleteDirectory(new File(ldapPath));
+        //FileUtils.deleteDirectory(new File("target/bootstrapdata/"));
+
+        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
+        String luceneDir = configuration.evaluateToString("lucene.directory");
+        FileUtils.deleteDirectories(ldapPath, "target/bootstrapdata/", luceneDir);
+
+
+        main = new Main(configuration.evaluateToInt("service.port"));
+        main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
 
         //DatabaseMigrationHelper dbHelper = main.getInjector().getInstance(DatabaseMigrationHelper.class);
-        BasicDataSource dataSource = initBasicDataSource();
+        BasicDataSource dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
-        main.startEmbeddedDS(AppConfig.appConfig.getProperty("ldap.embedded.directory"), Integer.valueOf(AppConfig.appConfig.getProperty("ldap.embedded.port")));
-        //main.importUsersAndRoles();
-        new IamDataImporter(dataSource, null, null).importIamData();
 
-        String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
+        //main.importUsersAndRoles();
+        new IamDataImporter(dataSource, configuration).importIamData();
+
+        //String requiredRoleName = AppConfig.appConfig.getProperty("useradmin.requiredrolename");
         //main.startHttpServer(requiredRoleName);   //TODO
         main.start();
 
@@ -74,15 +91,15 @@ public class UserAdminTest {
         logonResource = client.target(logonUri);
     }
 
-    private static BasicDataSource initBasicDataSource() {
-        String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
-        String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
-        String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
-        String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
 
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName(jdbcdriver);
-        dataSource.setUrl(jdbcurl);//"jdbc:hsqldb:file:" + basepath + "hsqldb");
+        dataSource.setUrl(jdbcurl);
         dataSource.setUsername(roledbuser);
         dataSource.setPassword(roledbpasswd);
         return dataSource;

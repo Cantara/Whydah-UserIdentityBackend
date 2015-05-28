@@ -76,12 +76,12 @@ public class UserAuthenticationEndpointTest {
 
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
-        boolean readOnly = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.primary.readonly"));
+        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
         LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
         LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials");
 
         PasswordGenerator pwg = new PasswordGenerator();
-        PasswordSender passwordSender = new PasswordSender(null, null);
+        PasswordSender passwordSender = new PasswordSender(null, null, null);
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, passwordSender, null, null);
 
         new DatabaseMigrationHelper(dataSource).upgradeDatabase();

@@ -11,9 +11,6 @@ import net.whydah.identity.user.role.UserPropertyAndRoleDao;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +31,7 @@ public class IamDataImporterTest {
     private static LdapUserIdentityDao ldapUserIdentityDao;
     private static UserPropertyAndRoleRepository roleRepository;
     private static BasicDataSource dataSource;
-    private static Directory index;
+    //private static Directory index;
 
     @BeforeClass
     public static void init() throws Exception {
@@ -49,7 +46,7 @@ public class IamDataImporterTest {
         ldapdir.mkdirs();
         ads = new EmbeddedADS(ldappath);
         ads.startServer(LDAP_PORT);
-        boolean readOnly = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.primary.readonly"));
+        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
         ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
 
 
@@ -58,14 +55,14 @@ public class IamDataImporterTest {
         dataSource.setUsername("sa");
         dataSource.setPassword("");
         dataSource.setUrl("jdbc:hsqldb:file:" + dbpath);
-        QueryRunner queryRunner = new QueryRunner(dataSource);
+        //QueryRunner queryRunner = new QueryRunner(dataSource);
 
         new DatabaseMigrationHelper(dataSource).upgradeDatabase();
 
         ApplicationDao configDataRepository = new ApplicationDao(dataSource);
         roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
 
-        index = new NIOFSDirectory(new File(lucenePath));
+        //index = new NIOFSDirectory(new File(lucenePath));
     }
     
     @AfterClass
@@ -78,7 +75,7 @@ public class IamDataImporterTest {
     @Test
     public void testDataIsImported() throws Exception {
 		//IamDataImporter iamDataImporter = new IamDataImporter(applicationImporter, organizationImporter, userImporter, roleMappingImporter);
-        new IamDataImporter(dataSource, ldapUserIdentityDao, index).importIamData();
+        new IamDataImporter(dataSource, ldapUserIdentityDao, lucenePath).importIamData();
         
         UserIdentity thomaspUserIdentity = ldapUserIdentityDao.getUserIndentity("thomasp");
         assertEquals("Name must be set", "Thomas", thomaspUserIdentity.getFirstName());

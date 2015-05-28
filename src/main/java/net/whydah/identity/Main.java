@@ -52,7 +52,6 @@ public class Main {
 
     // 4. start webserver
     public static void main(String[] args) {
-
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
@@ -139,13 +138,14 @@ public class Main {
         }
     }
 
+    /*
+     String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
+     String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
+     String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
+     String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
+     */
+    //"jdbc:hsqldb:file:" + basepath + "hsqldb");
     private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
-        /*
-        String jdbcdriver = AppConfig.appConfig.getProperty("roledb.jdbc.driver");
-        String jdbcurl = AppConfig.appConfig.getProperty("roledb.jdbc.url");
-        String roledbuser = AppConfig.appConfig.getProperty("roledb.jdbc.user");
-        String roledbpasswd = AppConfig.appConfig.getProperty("roledb.jdbc.password");
-        */
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
@@ -153,7 +153,7 @@ public class Main {
 
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName(jdbcdriver);
-        dataSource.setUrl(jdbcurl);//"jdbc:hsqldb:file:" + basepath + "hsqldb");
+        dataSource.setUrl(jdbcurl);
         dataSource.setUsername(roledbuser);
         dataSource.setPassword(roledbpasswd);
         return dataSource;

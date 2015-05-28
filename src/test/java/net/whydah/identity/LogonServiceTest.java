@@ -11,6 +11,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.ConfigTags;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.identity.EmbeddedADS;
@@ -21,6 +22,9 @@ import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
 import org.glassfish.jersey.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,9 +66,19 @@ public class LogonServiceTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
 
-        int HTTP_PORT = new Integer(AppConfig.appConfig.getProperty("service.port"));
+        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+
+
+        int HTTP_PORT = configuration.evaluateToInt("service.port");
         int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
         LDAP_URL = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
 
@@ -78,7 +92,8 @@ public class LogonServiceTest {
         } catch (Exception e){
 
         }
-        ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials",Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.primary.readonly")));
+        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
+        ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
         //ldapAuthenticator = new LdapAuthenticator(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials");
 
 
@@ -98,9 +113,9 @@ public class LogonServiceTest {
         Directory index = new NIOFSDirectory(new File(basepath + "lucene"));
         //userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogRepository, roleRepository);
         try {
-            main = new Main(Integer.valueOf(AppConfig.appConfig.getProperty("service.port")));
+            main = new Main(HTTP_PORT);
             //main.importUsersAndRoles();
-            new IamDataImporter(dataSource, ldapUserIdentityDao, index).importIamData();
+            new IamDataImporter(dataSource, ldapUserIdentityDao, basepath + "lucene").importIamData();
         } catch (Exception e){
 
         }

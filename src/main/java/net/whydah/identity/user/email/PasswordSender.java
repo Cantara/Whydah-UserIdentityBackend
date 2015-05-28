@@ -1,6 +1,7 @@
 package net.whydah.identity.user.email;
 
-import net.whydah.identity.config.AppConfig;
+import org.constretto.annotation.Configuration;
+import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +22,11 @@ public class PasswordSender {
     private final MailSender mailSender;
 
     @Autowired
-    public PasswordSender(EmailBodyGenerator bodyGenerator, MailSender mailSender) {
+    @Configure
+    public PasswordSender(EmailBodyGenerator bodyGenerator, MailSender mailSender, @Configuration("ssologinservice") String ssoLoginServiceUrl) {
         this.bodyGenerator = bodyGenerator;
         this.mailSender = mailSender;
-        this.ssoLoginServiceUrl = AppConfig.appConfig.getProperty("ssologinservice");
+        this.ssoLoginServiceUrl = ssoLoginServiceUrl;
     }
 
     public void sendResetPasswordEmail(String username, String token, String userEmail) {

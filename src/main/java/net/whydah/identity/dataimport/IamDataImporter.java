@@ -8,7 +8,6 @@ import net.whydah.identity.user.search.LuceneIndexer;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoConfiguration;
 import org.slf4j.Logger;
@@ -25,19 +24,18 @@ public class IamDataImporter {
     private final BasicDataSource dataSource;
     private final QueryRunner queryRunner;
     private final LdapUserIdentityDao ldapUserIdentityDao;
-    private final Directory index;
     private String applicationsImportSource;
     private String organizationsImportSource;
     private String userImportSource;
     private String roleMappingImportSource;
+    private String luceneDir;
 
     public IamDataImporter(BasicDataSource dataSource, ConstrettoConfiguration configuration)  {
         this.dataSource = dataSource;
         this.queryRunner = new QueryRunner(dataSource);
         this.ldapUserIdentityDao = initLdapUserIdentityDao(configuration);
         //String luceneDir = AppConfig.appConfig.getProperty("lucene.directory");
-        String luceneDir = configuration.evaluateToString("lucene.directory");
-        this.index = initDirectory(luceneDir);
+        this.luceneDir = configuration.evaluateToString("lucene.directory");
 
         /*
         this.applicationsImportSource = AppConfig.appConfig.getProperty("import.applicationssource");
@@ -62,11 +60,11 @@ public class IamDataImporter {
 	*/
 
     //used by tests
-    public IamDataImporter(BasicDataSource dataSource, LdapUserIdentityDao ldapUserIdentityDao, Directory index)  {
+    public IamDataImporter(BasicDataSource dataSource, LdapUserIdentityDao ldapUserIdentityDao, String luceneDir)  {
         this.dataSource = dataSource;
         this.queryRunner = new QueryRunner(dataSource);
         this.ldapUserIdentityDao = ldapUserIdentityDao;
-        this.index = index;
+        this.luceneDir = luceneDir;
     }
 
     //Database migrations should already have been performed before import.
@@ -83,6 +81,7 @@ public class IamDataImporter {
             new OrganizationImporter(queryRunner).importOrganizations(ois);
 
             uis = openInputStream("Users", userImportSource);
+            NIOFSDirectory index = createDirectory(luceneDir);
             new WhydahUserIdentityImporter(ldapUserIdentityDao, new LuceneIndexer(index)).importUsers(uis);
 
             rmis = openInputStream("RoleMappings", roleMappingImportSource);
@@ -127,19 +126,20 @@ public class IamDataImporter {
         String primaryAdmCredentials = configuration.evaluateToString("ldap.primary.admin.credentials");
         String primaryUidAttribute = configuration.evaluateToString("ldap.primary.uid.attribute");
         String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
-        boolean readonly = configuration.evaluateToBoolean("ldap.primary.readonly");
+        String readonly = configuration.evaluateToString("ldap.primary.readonly");
         return new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
+        //return new LdapUserIdentityDao(configuration);
     }
 
-    private Directory initDirectory(String luceneDir) {
-        File luceneDirectory = new File(luceneDir);
-        if (!luceneDirectory.exists()) {
-            boolean dirsCreated = luceneDirectory.mkdirs();
-            if (!dirsCreated) {
-                log.debug("{} was not successfully created.", luceneDirectory.getAbsolutePath());
-            }
-        }
+    private NIOFSDirectory createDirectory(String luceneDir) {
         try {
+            File luceneDirectory = new File(luceneDir);
+            if (!luceneDirectory.exists()) {
+                boolean dirsCreated = luceneDirectory.mkdirs();
+                if (!dirsCreated) {
+                    log.debug("{} was not successfully created.", luceneDirectory.getAbsolutePath());
+                }
+            }
             return new NIOFSDirectory(luceneDirectory);
         } catch (IOException e) {
             throw new RuntimeException(e);

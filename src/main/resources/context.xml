@@ -23,6 +23,20 @@
         <!--<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>-->
     </context:component-scan>
 
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${roledb.jdbc.driver}"/>
+        <property name="url" value="${roledb.jdbc.url}"/>
+        <property name="username" value="${roledb.jdbc.user}"/>
+        <property name="password" value="${roledb.jdbc.password}"/>
+    </bean>
+
+    <bean id="luceneDirectory" class="org.apache.lucene.store.NIOFSDirectory" factory-method="open">
+        <constructor-arg>
+            <bean class="java.io.File">
+                <constructor-arg value="${lucene.directory}" />
+            </bean>
+        </constructor-arg>
+    </bean>
 
     <!-- <bean id="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper"/> -->
     <!-- <bean id="objectMapper" class="com.company.CustomObjectMapper"/>-->

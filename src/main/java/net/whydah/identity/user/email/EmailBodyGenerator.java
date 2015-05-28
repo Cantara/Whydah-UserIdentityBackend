@@ -3,11 +3,13 @@ package net.whydah.identity.user.email;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import org.springframework.stereotype.Component;
 
 import java.io.StringWriter;
 import java.util.HashMap;
 
 
+@Component
 public class EmailBodyGenerator {
     private final Configuration freemarkerConfig;
     private static final String NEW_USER_EMAIL_TEMPLATE = "WelcomeNewUser.ftl";

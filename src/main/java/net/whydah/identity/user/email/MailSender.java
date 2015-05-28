@@ -1,8 +1,11 @@
 package net.whydah.identity.user.email;
 
-import net.whydah.identity.config.AppConfig;
+import org.constretto.annotation.Configuration;
+import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
@@ -12,6 +15,7 @@ import java.util.Properties;
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a>
  */
+@Component
 public class MailSender {
     private static final Logger log = LoggerFactory.getLogger(MailSender.class);
     public static final String FROM_ADDRESS = "notworking@whydah.net";
@@ -26,9 +30,12 @@ public class MailSender {
     private final String smtpUsername;
     private final String smtpPassword;
 
-    public MailSender() {
-        this.smtpUsername = AppConfig.appConfig.getProperty("gmail.username");
-        this.smtpPassword = AppConfig.appConfig.getProperty("gmail.password");
+    @Autowired
+    @Configure
+    public MailSender(@Configuration("gmail.username") String smtpUsername,
+                      @Configuration("gmail.password") String smtpPassword) {
+        this.smtpUsername = smtpUsername;
+        this.smtpPassword = smtpPassword;
     }
 
     /*

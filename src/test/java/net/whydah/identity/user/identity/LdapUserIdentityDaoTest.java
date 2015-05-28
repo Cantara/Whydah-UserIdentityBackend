@@ -23,7 +23,7 @@ public class LdapUserIdentityDaoTest {
         //int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
         int LDAP_PORT = 18389;
         String ldapUrl = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
-        boolean readOnly = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.primary.readonly"));
+        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
         ldapUserIdentityDao = new LdapUserIdentityDao(ldapUrl, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
         ldapAuthenticator = new LdapAuthenticator(ldapUrl, "uid=admin,ou=system", "secret", "uid", "initials");
 

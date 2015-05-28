@@ -11,18 +11,21 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 /**
  * Indexer for adding users to the index.
  */
+@Service
 public class LuceneIndexer {
     public static final String FIELD_FIRSTNAME = "firstname";
     public static final String FIELD_LASTNAME = "surname";
@@ -35,27 +38,50 @@ public class LuceneIndexer {
     public static final Version LUCENE_VERSION = Version.LUCENE_4_10_4;
     protected static final Analyzer ANALYZER = new StandardAnalyzer();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LuceneIndexer.class);
+    private static final Logger log = LoggerFactory.getLogger(LuceneIndexer.class);
     private final Directory index;
 
+    /*
+    @Autowired
+    @Configure
+    public LuceneIndexer(@Configuration("lucene.directory") String luceneDir) {
+        this.index = createDirectory(luceneDir);
+        verifyWriter(index);
+    }
+    */
+
+    //TODO
+    private NIOFSDirectory createDirectory(String luceneDir) {
+        try {
+            File luceneDirectory = new File(luceneDir);
+            if (!luceneDirectory.exists()) {
+                boolean dirsCreated = luceneDirectory.mkdirs();
+                if (!dirsCreated) {
+                    log.debug("{} was not successfully created.", luceneDirectory.getAbsolutePath());
+                }
+            }
+            return new NIOFSDirectory(luceneDirectory);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Autowired
     public LuceneIndexer(Directory index) {
         this.index = index;
+        verifyWriter(index);
+    }
 
+    private void verifyWriter(Directory index) {
         //Open a writer to ensure segments* file is created.
         IndexWriter w = null;
         try {
             w = getWriter();
-            LOGGER.debug("LuceneIndexer initialized. lockId={}", index.getLockID());
+            log.debug("LuceneIndexer initialized. lockId={}", index.getLockID());
         } catch (IOException e) {
-            LOGGER.error("getWriter failed.", e);
+            log.error("getWriter failed.", e);
         } finally {
             closeWriter(w);
-        }
-
-        if (index instanceof FSDirectory) {
-            LOGGER.info("Lucene is using a FSDirectory index with path {}", ((FSDirectory) index).getDirectory().getPath());
-        } else if (index instanceof RAMDirectory) {
-            LOGGER.info("Lucene is using RAMDirectory index");
         }
     }
 
@@ -66,7 +92,7 @@ public class LuceneIndexer {
             Document doc = createLuceneDocument(user);
             w.addDocument(doc);
         } catch (IOException e) {
-            LOGGER.error("addToIndex failed for {}.", user.toString(), e);
+            log.error("addToIndex failed for {}.", user.toString(), e);
         } finally {
             closeWriter(w);
         }
@@ -82,7 +108,7 @@ public class LuceneIndexer {
                     Document doc = createLuceneDocument(user);
                     w.addDocument(doc);
                 } catch (IOException e) {
-                    LOGGER.error("addToIndex failed for {}. User was not added to lucene index.", user.toString(), e);
+                    log.error("addToIndex failed for {}. User was not added to lucene index.", user.toString(), e);
                 }
             }
         } finally {
@@ -96,7 +122,7 @@ public class LuceneIndexer {
             w = getWriter();
             w.updateDocument(new Term(FIELD_UID, user.getUid()), createLuceneDocument(user));
         } catch (IOException e) {
-            LOGGER.error("updating {} failed.", user.toString(), e);
+            log.error("updating {} failed.", user.toString(), e);
         } finally {
             closeWriter(w);
         }
@@ -108,7 +134,7 @@ public class LuceneIndexer {
             w = getWriter();
             w.deleteDocuments(new Term(FIELD_UID, uid));
         } catch (IOException e) {
-            LOGGER.error("removeFromIndex failed. uid={}", uid, e);
+            log.error("removeFromIndex failed. uid={}", uid, e);
         } finally {
             closeWriter(w);
         }
