@@ -96,10 +96,9 @@ public class SecurityFilter implements Filter {
                 setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_BAD_REQUEST);
                 return;
             }
-            //String applicationMode = ApplicationMode.getApplicationMode();
-            //log.trace("ApplicationMode -{}-", applicationMode);
-            if (ApplicationMode.isDevMode()) {
-                log.warn("Running in DEV mode, security is omitted for users.");
+
+            if (ApplicationMode.skipSecurityFilter()) {
+                log.warn("Running in noSecurityFilter mode, security is omitted for users.");
                 Authentication.setAuthenticatedUser(buildMockedUserToken());
                 //TODO Is not this user cleared right after?
             } else {

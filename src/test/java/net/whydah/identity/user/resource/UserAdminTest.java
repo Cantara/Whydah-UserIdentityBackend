@@ -42,7 +42,7 @@ public class UserAdminTest {
 
     @Before
     public void init() throws Exception {
-        ApplicationMode.setDevMode();
+        ApplicationMode.setTags(ApplicationMode.DEV_MODE, ApplicationMode.NO_SECURITY_FILTER);
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
