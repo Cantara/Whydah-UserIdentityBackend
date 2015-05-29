@@ -55,7 +55,7 @@ ln -s $JARFILE $A.jar
 
 
 
-* create useridentitybackend.TEST.properties
+* create useridentitybackend.TEST.properties - TODO Decide which mode should be described here...
 
 ```
 DEFCON=5
@@ -112,10 +112,10 @@ lucene.directory=target/bootstrapdata/lucene
 ```
 
 
-* create start-service.sh
+* create start-service.sh (normal/prod mode)
 ```
 #!/bin/sh
-nohup /usr/bin/java -DIAM_MODE=PROD -DIAM_CONFIG=/home/UserIdentityBackend/useridentitybackend.PROD.properties -jar /home/UserIdentityBackend/UserIdentityBackend.jar
+nohup /usr/bin/java -jar /home/UserIdentityBackend/UserIdentityBackend.jar
 ```
 
 
