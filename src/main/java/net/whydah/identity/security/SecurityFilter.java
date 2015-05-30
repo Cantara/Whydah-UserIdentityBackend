@@ -60,65 +60,64 @@ public class SecurityFilter implements Filter {
         if (isOpenPath(pathInfo)) {
             log.trace("accessing open path {}", pathInfo);
             chain.doFilter(request, response);
-            Authentication.clearAuthentication();
-            return;
-        }
-
-        if (isAuthenticateUserPath(pathInfo)) {
-            //Verify applicationTokenId
-            String applicationTokenId = findPathElement(pathInfo, 1);
-            if (applicationTokenService.verifyApplication(applicationTokenId)) {
-                log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
-                chain.doFilter(request, response);
-            } else {
-                log.trace("Application not Authorized=" + applicationTokenId);
-                setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
-                return;
-            }
-        } else if (isPasswordPath(pathInfo)) {
-            //TODO bli: Needs improvement -aka dont repeat your self.
-            String applicationTokenId = findPathElement(pathInfo, 2);
-            if (applicationTokenService.verifyApplication(applicationTokenId)) {
-                log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
-                chain.doFilter(request, response);
-            } else {
-                log.trace("Application not Authorized=" + applicationTokenId);
-                setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
-                return;
-            }
         } else {
-            //Verify userTokenId
-            String usertokenId = findUserTokenId(pathInfo);
-            String applicationTokenId = findApplicationTokenId(pathInfo);
-            log.debug("usertokenid: {} from path={} ", usertokenId, pathInfo);
-            if (usertokenId == null) {
-                log.trace("Token not found");
-                setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_BAD_REQUEST);
-                return;
-            }
-
-            if (ApplicationMode.skipSecurityFilter()) {
-                log.warn("Running in noSecurityFilter mode, security is omitted for users.");
-                Authentication.setAuthenticatedUser(buildMockedUserToken());
-                //TODO Is not this user cleared right after?
-            } else {
-                UserToken userToken = securityTokenHelper.getUserToken(applicationTokenId, usertokenId);
-
-                if (userToken == null) {
-                    log.trace("Could not find token with tokenID=" + usertokenId);
+            if (isAuthenticateUserPath(pathInfo)) {
+                //Verify applicationTokenId
+                String applicationTokenId = findPathElement(pathInfo, 1);
+                if (applicationTokenService.verifyApplication(applicationTokenId)) {
+                    log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
+                    chain.doFilter(request, response);
+                } else {
+                    log.trace("Application not Authorized=" + applicationTokenId);
                     setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
-                if (!userToken.hasRole(requiredRole)) {
-                    log.trace("Missing required role {}\n - token:", requiredRole, userToken);
-                    //TODO  this test is too simple for the Whydah 2.1 release, as it block 3rd part apps
-                    //setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_FORBIDDEN);
-                    //return;
+            } else if (isPasswordPath(pathInfo)) {
+                //TODO bli: Needs improvement -aka dont repeat your self.
+                String applicationTokenId = findPathElement(pathInfo, 2);
+                if (applicationTokenService.verifyApplication(applicationTokenId)) {
+                    log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
+                    chain.doFilter(request, response);
+                } else {
+                    log.trace("Application not Authorized=" + applicationTokenId);
+                    setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
                 }
-                log.debug("setAuthenticatedUser with usertoken: {}", userToken);
-                Authentication.setAuthenticatedUser(userToken);
+            } else {
+                //Verify userTokenId
+                String usertokenId = findUserTokenId(pathInfo);
+                String applicationTokenId = findApplicationTokenId(pathInfo);
+                log.debug("usertokenid: {} from path={} ", usertokenId, pathInfo);
+                if (usertokenId == null) {
+                    log.trace("Token not found");
+                    setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+                //log.trace("ApplicationMode -{}-", ApplicationMode.getApplicationMode());
+                //if (ApplicationMode.getApplicationMode().equals(ApplicationMode.DEV)) {
+                //log.warn("Running in DEV mode, security is ommited for users.");
+                if (ApplicationMode.skipSecurityFilter()) {
+                    log.warn("Running in noSecurityFilter mode, security is omitted for users.");
+                    Authentication.setAuthenticatedUser(buildMockedUserToken());
+                } else {
+                    UserToken userToken = securityTokenHelper.getUserToken(applicationTokenId, usertokenId);
+
+                    if (userToken == null) {
+                        log.trace("Could not find token with tokenID=" + usertokenId);
+                        setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
+                        return;
+                    }
+                    if (!userToken.hasRole(requiredRole)) {
+                        log.trace("Missing required role {}\n - token:", requiredRole, userToken);
+                        //TODO  this test is too simple for the Whydah 2.1 release, as it block 3rd part apps
+                        //setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_FORBIDDEN);
+                        //return;
+                    }
+                    log.debug("setAuthenticatedUser with usertoken: {}", userToken);
+                    Authentication.setAuthenticatedUser(userToken);
+                }
+                chain.doFilter(request, response);
             }
-            chain.doFilter(request, response);
         }
         Authentication.clearAuthentication();
     }
