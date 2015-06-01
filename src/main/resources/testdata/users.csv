@@ -1,6 +1,6 @@
 #userId, username, password, firstName, lastName, email, cellPhone, personRef
 username@emailaddress.com, thomasp, logMeInPlease, Thomas, Pringle, username@emailaddress.com, +46707771841, 1
 erik.drolshammer, erikd, secretPw, Erik, Drolshammer, erik.drolshammer@altran.com, +47123456, 2
-useradmin, admin, admin, User, Admin, useradmin@altran.com, +1555406789, 0
+useradmin, useradmin, useradmin567, User, Admin, useradmin@altran.com, +1555406789, 0
 test.me@example.com, testMe, testMe1234, test, me, test.me@example.com, +47123456789, 0
 change.me@example.com, changeMe, changeMe1234, change, me, test.me@example.com, +47123456789, 0
