@@ -16,7 +16,18 @@ public class RESTApplication extends ResourceConfig {
 
     public RESTApplication() {
         //https://java.net/jira/browse/JERSEY-2175
-        ResourceConfig resourceConfig = packages("net.whydah.identity.user.resource", "net.whydah.identity.application", "net.whydah.identity.health");
+        /*
+        net.whydah.identity.application.ApplicationsResource
+        net.whydah.identity.application.ApplicationResource
+        net.whydah.identity.user.resource.PasswordResource
+        net.whydah.identity.user.authentication.UserAuthenticationEndpoint
+        net.whydah.identity.health.HealthResource
+        net.whydah.identity.user.resource.UsersResource
+        net.whydah.identity.user.resource.UserResource
+         */
+        //ResourceConfig resourceConfig = packages("net.whydah.identity.application", "net.whydah.identity.user", "net.whydah.identity.health");
+        //Looks like recursive scanning is not working when specifying multiple packages.
+        ResourceConfig resourceConfig = packages("net.whydah.identity");
         resourceConfig.register(org.glassfish.jersey.server.mvc.freemarker.FreemarkerMvcFeature.class);
         resourceConfig.property(FreemarkerMvcFeature.TEMPLATE_BASE_PATH, "/templates");
         log.debug(this.getClass().getSimpleName() + " started!");
