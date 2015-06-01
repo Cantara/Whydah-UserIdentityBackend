@@ -16,8 +16,11 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 public class Main {
     public static final String CONTEXT_PATH = "/uib";
@@ -52,6 +55,11 @@ public class Main {
 
     // 4. start webserver
     public static void main(String[] args) {
+        LogManager.getLogManager().reset();
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+        LogManager.getLogManager().getLogger("").setLevel(Level.INFO);
+
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))

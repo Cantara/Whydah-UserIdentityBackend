@@ -9,6 +9,7 @@
     <!--
     <logger name="org.springframework.jdbc.core" level="DEBUG" />
     <logger name="hsqldb.db" level="DEBUG" />
+    <logger name="org.glassfish.jersey" level="TRACE" />
     -->
     <logger name="org.apache.directory" level="WARN" />
     <logger name="net.whydah.identity.util.FileUtils" level="INFO" />

@@ -1,14 +1,7 @@
-package net.whydah.identity;
-
-/*
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.core.header.MediaTypes;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
-*/
+package net.whydah.identity.user.authentication;
 
 import com.jayway.restassured.RestAssured;
+import net.whydah.identity.Main;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;

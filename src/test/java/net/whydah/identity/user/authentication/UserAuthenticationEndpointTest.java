@@ -1,10 +1,13 @@
 package net.whydah.identity.user.authentication;
 
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.http.ContentType;
 import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
+import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.email.PasswordSender;
 import net.whydah.identity.user.identity.LdapAuthenticator;
@@ -26,6 +29,7 @@ import org.constretto.model.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.w3c.dom.Document;
 
 import javax.naming.NamingException;
@@ -38,7 +42,10 @@ import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
+import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -62,7 +69,11 @@ public class UserAuthenticationEndpointTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        LogManager.getLogManager().reset();
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+        LogManager.getLogManager().getLogger("").setLevel(Level.INFO);
+
         ApplicationMode.setDevMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -106,8 +117,9 @@ public class UserAuthenticationEndpointTest {
         BasicDataSource dataSource = initBasicDataSource(configuration);
         new DatabaseMigrationHelper(dataSource).upgradeDatabase();
 
-        //main.start();
+        new IamDataImporter(dataSource, configuration).importIamData();
 
+        main.start();
 
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
@@ -131,7 +143,37 @@ public class UserAuthenticationEndpointTest {
         roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
         Directory index = new NIOFSDirectory(new File(luceneDir));
         userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository, configuration);
+
+        RestAssured.port = main.getPort();
+        RestAssured.basePath = Main.CONTEXT_PATH;
     }
+
+    @Test
+    public void testAuthenticateUser() throws Exception {
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                " <usercredential>\n" +
+                "    <params>\n" +
+                "        <username>testMe</username>\n" +
+                "        <password>testMe1234</password>\n" +
+                "    </params>\n" +
+                "</usercredential>";
+
+        //https://whydahdev.altrancloud.com/uib/9bf31c7ff062936a96d3c8bd1f8f2ff3/authenticate/user
+        String path = "/{applicationtokenid}/authenticate/user";
+        com.jayway.restassured.response.Response response = given()
+                .body(xml)
+                .contentType(ContentType.XML)
+                .log().everything()
+                .expect()
+                .statusCode(200)
+                .log().ifError()
+                .when()
+                .post(path, "notValidApplicationtokenid");
+
+        String responseAsString = response.body().asString();
+        //TODO verify XML from response.
+    }
+
     /*
     @BeforeClass
     public static void startServer() {
