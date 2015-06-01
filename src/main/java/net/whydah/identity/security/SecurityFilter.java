@@ -23,35 +23,6 @@ import java.util.List;
  */
 @Component
 public class SecurityFilter implements Filter {
-    //Erik's thoughts so far
-    //private static final String[] OPEN_PATHS = {"/health", "/authenticate/application"};
-    //Suggestion to change to POST /application/authenticate
-
-    //starts with /{applicationTokenId}: {applicationTokenId}/authenticate/user/
-    // 1. Fetch applicationToken from STS
-    // 2. Verify application is authorized
-
-    //starts with /{applicationTokenId}/{userTokenId}
-    // /{applicationTokenId}/{userTokenId}/user/, /{applicationTokenId}/{userTokenId}/users,
-    // /{applicationTokenId}/{userTokenId}/application, /{applicationTokenId}/{userTokenId}/applications
-    // 1. Fetch applicationToken from STS
-    // 2. Verify application is authorized
-    // 3. Fetch userTokenId from STS
-    // 4. Verify user is authorized
-
-
-
-    //Suggest to deprecate PasswordResource and use PUT on user instead.
-    //Reset password should be exposed by UserAdminService.
-    //a) An Administrator uses the reset password option in Whydah UserAdminWebApp (or similar) => We have a userTokenID
-    // UserAdminService will send PUT request to UIB with tmp password and send email to user with reset password link
-
-    //b) An user has forgotten his/her password from SSOLoginWebApp (or similar) => We do not have any userTokenID, only a username
-    // In this scenario we can use the userTokenID of a user which represents the SSOLoginWebApp.
-    //OR we skip checking the userToken. TODO Decide.
-
-
-
     public static final String OPEN_PATH = "/authenticate";
     public static final String AUTHENTICATE_USER_PATH = "/authenticate";
     public static final String PASSWORD_RESET_PATH = "/password";
@@ -63,7 +34,7 @@ public class SecurityFilter implements Filter {
     private final SecurityTokenServiceHelper securityTokenHelper;
     private final ApplicationTokenService applicationTokenService;
     //private List<String> securedPaths = new ArrayList<>();
-    private String requiredRole;
+    //private String requiredRole;
 
     @Autowired
     public SecurityFilter(SecurityTokenServiceHelper securityTokenHelper, ApplicationTokenService applicationTokenService) {
@@ -73,7 +44,7 @@ public class SecurityFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        requiredRole = REQUIRED_ROLE_USERS;
+        //requiredRole = REQUIRED_ROLE_USERS;
     }
 
     @Override
@@ -136,8 +107,8 @@ public class SecurityFilter implements Filter {
                         setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
                         return;
                     }
-                    if (!userToken.hasRole(requiredRole)) {
-                        log.trace("Missing required role {}\n - token:", requiredRole, userToken);
+                    if (!userToken.hasRole(REQUIRED_ROLE_USERS)) {
+                        log.trace("Missing required role {}\n - userToken={}", REQUIRED_ROLE_USERS, userToken);
                         //TODO  this test is too simple for the Whydah 2.1 release, as it block 3rd part apps
                         //setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_FORBIDDEN);
                         //return;

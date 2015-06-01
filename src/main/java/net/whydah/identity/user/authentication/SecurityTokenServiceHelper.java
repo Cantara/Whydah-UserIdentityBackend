@@ -3,7 +3,6 @@ package net.whydah.identity.user.authentication;
 import net.whydah.identity.user.UserRole;
 import org.constretto.annotation.Configuration;
 import org.constretto.annotation.Configure;
-import org.glassfish.jersey.client.ClientResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,18 +34,18 @@ public class SecurityTokenServiceHelper {
     }
 
     public UserToken getUserToken(String appTokenId, String usertokenid) {
-        log.debug("usertokenid={}", usertokenid);
-        log.debug("myAppTokenXML={}", myAppTokenXML);
+        //log.debug("usertokenid={}", usertokenid);
+        //log.debug("myAppTokenXML={}", myAppTokenXML);
         MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.add("usertokenid", usertokenid);
         formData.add("apptoken", myAppTokenXML);    //TODO myAppTokenXML is never set...
+
         try {
             WebTarget usertokenTarget = tokenServiceResource.path("user").path(appTokenId).path("get_usertoken_by_usertokenid");
-            //MediaType.APPLICATION_FORM_URLENCODED_TYPE
-            ClientResponse response = usertokenTarget.request().post(Entity.form(formData), ClientResponse.class);
-            log.info("Accessing:" + "tokenservice/user/" + appTokenId + "/get_usertoken_by_usertokenid");
+            log.info("getUserToken from STS: {}, usertokenid={}, myAppTokenXML={}", usertokenTarget.getUri().toString(), usertokenid, myAppTokenXML);
+
+            Response response = usertokenTarget.request().post(Entity.form(formData), Response.class);
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                //String usertoken = response.getEntity(String.class);
                 String usertoken = response.readEntity(String.class);
                 log.debug("usertoken: {}", usertoken);
                 return new UserToken(usertoken);
@@ -55,13 +54,21 @@ public class SecurityTokenServiceHelper {
             List<UserRole> roles = new ArrayList<>();
             roles.add(new UserRole("9999", "99999", "mockrole"));
             return new UserToken("MockUserToken", roles);
-        } catch (Exception che) {  //was ClientHandlerException when using Jersey 1.6
-            if (che.getCause() instanceof java.net.ConnectException) {
+        } catch (Exception e) {  //was ClientHandlerException when using Jersey 1.6
+            if (e.getCause() instanceof java.net.ConnectException) {
+                log.error("Could not connect to SecurityTokenService to verify applicationTokenId {}, userTokenId {}", appTokenId, usertokenid);
+            } else {
+                log.error("getUserToken failed", e);
+            }
+            return null;
+            /*
+            if (e.getCause() instanceof java.net.ConnectException) {
                 log.error("Could not connect to SecurityTokenService to verify applicationTokenId {}, userTokenId {}", appTokenId, usertokenid);
                 return null;
             } else {
-                throw che;
+                throw e;
             }
+            */
         }
     }
     /*
