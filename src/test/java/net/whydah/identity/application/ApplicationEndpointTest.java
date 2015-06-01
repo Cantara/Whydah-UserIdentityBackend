@@ -1,5 +1,6 @@
 package net.whydah.identity.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
@@ -8,7 +9,6 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;

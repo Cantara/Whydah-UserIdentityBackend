@@ -1,5 +1,6 @@
 package net.whydah.identity.user.resource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.user.InvalidRoleModificationException;
 import net.whydah.identity.user.NonExistentRoleException;
@@ -9,7 +10,6 @@ import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

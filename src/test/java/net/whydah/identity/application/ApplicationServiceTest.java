@@ -1,7 +1,7 @@
 package net.whydah.identity.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.audit.AuditLogDao;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;

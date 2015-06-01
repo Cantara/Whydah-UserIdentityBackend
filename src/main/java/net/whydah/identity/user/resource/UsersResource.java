@@ -1,13 +1,12 @@
 package net.whydah.identity.user.resource;
 
-//import com.sun.jersey.api.view.Viewable;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import net.whydah.identity.user.search.LuceneSearch;
 import net.whydah.identity.user.search.UserSearch;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

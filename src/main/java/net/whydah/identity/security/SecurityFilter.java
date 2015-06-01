@@ -23,6 +23,35 @@ import java.util.List;
  */
 @Component
 public class SecurityFilter implements Filter {
+    //Erik's thoughts so far
+    //private static final String[] OPEN_PATHS = {"/health", "/authenticate/application"};
+    //Suggestion to change to POST /application/authenticate
+
+    //starts with /{applicationTokenId}: {applicationTokenId}/authenticate/user/
+    // 1. Fetch applicationToken from STS
+    // 2. Verify application is authorized
+
+    //starts with /{applicationTokenId}/{userTokenId}
+    // /{applicationTokenId}/{userTokenId}/user/, /{applicationTokenId}/{userTokenId}/users,
+    // /{applicationTokenId}/{userTokenId}/application, /{applicationTokenId}/{userTokenId}/applications
+    // 1. Fetch applicationToken from STS
+    // 2. Verify application is authorized
+    // 3. Fetch userTokenId from STS
+    // 4. Verify user is authorized
+
+
+
+    //Suggest to deprecate PasswordResource and use PUT on user instead.
+    //Reset password should be exposed by UserAdminService.
+    //a) An Administrator uses the reset password option in Whydah UserAdminWebApp (or similar) => We have a userTokenID
+    // UserAdminService will send PUT request to UIB with tmp password and send email to user with reset password link
+
+    //b) An user has forgotten his/her password from SSOLoginWebApp (or similar) => We do not have any userTokenID, only a username
+    // In this scenario we can use the userTokenID of a user which represents the SSOLoginWebApp.
+    //OR we skip checking the userToken. TODO Decide.
+
+
+
     public static final String OPEN_PATH = "/authenticate";
     public static final String AUTHENTICATE_USER_PATH = "/authenticate";
     public static final String PASSWORD_RESET_PATH = "/password";
@@ -87,9 +116,9 @@ public class SecurityFilter implements Filter {
                 //Verify userTokenId
                 String usertokenId = findUserTokenId(pathInfo);
                 String applicationTokenId = findApplicationTokenId(pathInfo);
-                log.debug("usertokenid: {} from path={} ", usertokenId, pathInfo);
+                log.debug("applicationTokenId={}, usertokenid={}, full path={} ", applicationTokenId, usertokenId, pathInfo);
                 if (usertokenId == null) {
-                    log.trace("Token not found");
+                    log.trace("userTokenId not found");
                     setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_BAD_REQUEST);
                     return;
                 }

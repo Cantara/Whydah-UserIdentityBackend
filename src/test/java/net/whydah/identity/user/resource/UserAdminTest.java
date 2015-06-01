@@ -1,14 +1,14 @@
 package net.whydah.identity.user.resource;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.Main;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;

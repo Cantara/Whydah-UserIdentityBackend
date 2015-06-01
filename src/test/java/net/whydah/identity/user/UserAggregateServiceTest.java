@@ -1,9 +1,9 @@
 package net.whydah.identity.user;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.resource.UserAggregateRepresentation;
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,8 +1,8 @@
 package net.whydah.identity.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
