@@ -46,8 +46,7 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 
 /**
@@ -55,11 +54,6 @@ import static org.junit.Assert.assertNotNull;
  * @since 10/18/12
  */
 public class UserAuthenticationEndpointTest {
-    //private final static String basepath = "target/UserAuthenticationEndpointTest/";
-    //private final static String ldappath = basepath + "hsqldb/ldap/";
-    //private final static String dbpath = basepath + "hsqldb/roles";
-
-    //private static EmbeddedADS ads;
     private static UserPropertyAndRoleRepository roleRepository;
     private static UserAdminHelper userAdminHelper;
     private static UserIdentityService userIdentityService;
@@ -81,30 +75,6 @@ public class UserAuthenticationEndpointTest {
                 .addResource(Resource.create("file:./useridentitybackend_override.properties"))
                 .done()
                 .getConfiguration();
-
-
-        /*
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
-        String LDAP_URL = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
-        
-    	FileUtils.deleteDirectory(new File(basepath));
-
-        File ldapdir = new File(ldappath);
-        ldapdir.mkdirs();
-        ads = new EmbeddedADS(ldappath);
-        try {
-            ads.startServer(LDAP_PORT);
-        } catch (Exception e){
-
-        }
-
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
-        dataSource.setUsername("sa");
-        dataSource.setPassword("");
-        dataSource.setUrl("jdbc:hsqldb:file:" + dbpath);
-        */
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
         String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
@@ -149,56 +119,58 @@ public class UserAuthenticationEndpointTest {
     }
 
     @Test
-    public void testAuthenticateUser() throws Exception {
+    public void testAuthenticateUserOK() throws Exception {
+        String userName = "testMe";
         String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                 " <usercredential>\n" +
                 "    <params>\n" +
-                "        <username>testMe</username>\n" +
+                "        <username>" + userName + "</username>\n" +
                 "        <password>testMe1234</password>\n" +
                 "    </params>\n" +
                 "</usercredential>";
 
-        //https://whydahdev.altrancloud.com/uib/9bf31c7ff062936a96d3c8bd1f8f2ff3/authenticate/user
         String path = "/{applicationtokenid}/authenticate/user";
         com.jayway.restassured.response.Response response = given()
                 .body(xml)
                 .contentType(ContentType.XML)
                 .log().everything()
                 .expect()
-                .statusCode(200)
+                .statusCode(Response.Status.OK.getStatusCode())
                 .log().ifError()
                 .when()
                 .post(path, "notValidApplicationtokenid");
 
         String responseAsString = response.body().asString();
-        //TODO verify XML from response.
+        UserAggregate user = UserAggregate.fromXML(responseAsString);
+        assertEquals(user.getUsername(), userName);
+        assertEquals(user.getFirstName(), "test");
+        assertEquals(user.getLastName(), "me");
+        assertEquals(user.getUid(), "test.me@example.com");
+        assertEquals(user.getEmail(), "test.me@example.com");
+        assertNull(user.getRoles());
     }
 
-    /*
-    @BeforeClass
-    public static void startServer() {
-        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
-        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-                .done()
-                .getConfiguration();
+    @Test
+    public void testAuthenticateUserForbidden() throws Exception {
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                " <usercredential>\n" +
+                "    <params>\n" +
+                "        <username>testMe</username>\n" +
+                "        <password>wrongPassword</password>\n" +
+                "    </params>\n" +
+                "</usercredential>";
 
-        //String roleDBDirectory = AppConfig.appConfig.getProperty("roledb.directory");
-        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
-        FileUtils.deleteDirectory(roleDBDirectory);
-
-        BasicDataSource dataSource = initBasicDataSource(configuration);
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
-
-        main = new Main(6644);
-        main.start();
-        RestAssured.port = main.getPort();
-        RestAssured.basePath = Main.CONTEXT_PATH;
+        String path = "/{applicationtokenid}/authenticate/user";
+        given()
+                .body(xml)
+                .contentType(ContentType.XML)
+                .log().everything()
+                .expect()
+                .statusCode(Response.Status.FORBIDDEN.getStatusCode())
+                .log().ifError()
+                .when()
+                .post(path, "notValidApplicationtokenid");
     }
-    */
 
     private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
