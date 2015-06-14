@@ -3,6 +3,7 @@ package net.whydah.identity;
 import junit.framework.TestCase;
 import net.whydah.identity.util.FileUtils;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -17,6 +18,16 @@ public class MainTest extends TestCase {
     @BeforeClass
     public static void init() {
     	FileUtils.deleteDirectory(new File("target/ssotest/"));
+    }
+
+    @Test
+    public void testIAMOverride() {
+        String override = System.getenv("IAM_MODE");
+        if (override != null){
+            Logger logger = LoggerFactory.getLogger(getClass());
+            logger.warn(String.format("%n%n%n%n%n%n%n%n%n%nYou are overriding IAM_MODE. This is known to create" +
+                    "issues when running unit tests. Please unset this environment variable.%n%n%n%n%n%n%n%n%n%n"));
+        }
     }
 
     @AfterClass
