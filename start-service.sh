@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #  If IAM_MODE not set, use PROD
 if [ -z "$IAM_MODE" ]; then 
@@ -9,7 +9,7 @@ fi
 # If Version is from source, find the artifact
 if [ "$Version" = "FROM_SOURCE" ]; then 
     # Find the bult artifact
-    Version=$(find target/* -name *.jar | grep SNAPSHOT | grep -v original | grep -v lib)
+    Version=$(find target/* -name '*.jar' | grep SNAPSHOT | grep -v original | grep -v lib)
 else
     Version=UserIdentityBackend.jar
 fi
