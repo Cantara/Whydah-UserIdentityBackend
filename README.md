@@ -1,6 +1,8 @@
 UserIdentityBackend
 ===================
 
+![Build Status](http://jenkins.capraconsulting.no/buildStatus/icon?job=Whydah-UserIdentityBackend)
+
 Stores UserIdentities and their relation to Roles, Applications and Organizations.
 Requires SecurityTokenService if authorization is turned on. 
 
