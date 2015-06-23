@@ -70,27 +70,29 @@ public class UserResource {
         try {
             representation = mapper.readValue(userIdentityJson, UserIdentityRepresentation.class);
         } catch (IOException e) {
-            log.error("addUserIdentity, invalid json. userIdentityJson={}", userIdentityJson, e);
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            String msg = "addUserIdentity, invalid json";
+            log.info(msg + ". userIdentityJson={}", userIdentityJson, e);
+            return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
         }
 
         UserIdentity userIdentity;
         try {
             userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(representation);
-
-        } catch (WebApplicationException ise) {
-            log.info("addUserIdentity returned {}, json={}", userIdentityJson, ise);
-            return ise.getResponse();
-        } catch (IllegalArgumentException iae) {
-            log.info("addUserIdentity returned {}, json={}", Response.Status.BAD_REQUEST.toString(), userIdentityJson, iae);
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        } catch (InvalidUserIdentityFieldException e) {
-            log.info("addUserIdentity returned {} because {}", Response.Status.BAD_REQUEST.toString(), e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        } catch (IllegalStateException conflictException) {
+            Response response = Response.status(Response.Status.CONFLICT).entity(conflictException.getMessage()).build();
+            log.info("addUserIdentity returned {} {} because {}. \njson {}",
+                    response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), conflictException.getMessage(), userIdentityJson);
+            return response;
+        } catch (IllegalArgumentException|InvalidUserIdentityFieldException badRequestException) {
+            Response response = Response.status(Response.Status.BAD_REQUEST).entity(badRequestException.getMessage()).build();
+            log.info("addUserIdentity returned {} {} because {}. \njson {}",
+                    response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), badRequestException.getMessage(), userIdentityJson);
+            return response;
         } catch (RuntimeException e) {
             log.error("addUserIdentity-RuntimeExeption ", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+
         try {
             String newUserAsJson;
             newUserAsJson = mapper.writeValueAsString(userIdentity);

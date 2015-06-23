@@ -311,7 +311,7 @@ public class UserAdminTest {
 
 
     @Test
-    public void userexists() {
+    public void testGetExistingUser() {
         String uid = doAddUser("1231312", "siqula", "Hoytahl", "Goffse", "siqula@midget.orj", "12121212");
         String s = baseResource.path("user/" + uid).request().get(String.class);
         assertTrue(s.contains("Hoytahl"));
@@ -319,7 +319,7 @@ public class UserAdminTest {
 
 
     @Test
-    public void usernotexists() {
+    public void testGetNonExistingUser() {
         doAddUser("1231312", "siqula", "Hoytahl", "Goffse", "siqula@midget.orj", "12121212");
         String uid = "non-existent-uid";
         try {
@@ -332,25 +332,29 @@ public class UserAdminTest {
 
 
     @Test
-    public void thatAddUserWillRespondWithConflictWhenUsernameAlreadyExists() {
+    public void testAddUserWillRespondWithConflictWhenUsernameAlreadyExists() {
         doAddUser("riffraff", "snyper", "Edmund", "Goffse", "snyper@midget.orj", "12121212");
         try {
             doAddUser("tifftaff", "snyper", "Another", "Wanderer", "wanderer@midget.orj", "34343434");
             fail("Expected 409 CONFLICT");
         } catch (ClientErrorException e) {
             assertEquals(Response.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
+            String entity = e.getResponse().readEntity(String.class);
+            assertNotNull(entity);
         }
     }
 
 
     @Test
-    public void thatAddUserWillRespondWithConflictWhenEmailIsAlreadyInUseByAnotherUser() {
+    public void testAddUserWillRespondWithConflictWhenEmailIsAlreadyInUseByAnotherUser() {
         doAddUser("riffraff", "another", "Edmund", "Goffse", "snyper@midget.orj", "12121212");
         try {
             doAddUser("tifftaff", "iamatestuser", "Another", "Wanderer", "snyper@midget.orj", "34343434");
             fail("Expected 409 CONFLICT");
         } catch (ClientErrorException e) {
             assertEquals(Response.Status.CONFLICT.getStatusCode(), e.getResponse().getStatus());
+            String entity = e.getResponse().readEntity(String.class);
+            assertNotNull(entity);
         }
     }
 

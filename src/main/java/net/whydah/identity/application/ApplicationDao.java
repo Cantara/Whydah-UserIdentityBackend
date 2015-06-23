@@ -33,8 +33,8 @@ public class ApplicationDao {
 
         String jdbcDriverString = dataSource.getDriverClassName();
         if (jdbcDriverString.contains("mysql")) {
-            APPLICATION_SQL = "SELECT Id, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName from Application WHERE id=? GROUP BY ID";
-            APPLICATIONS_SQL = "SELECT Id, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName from Application GROUP BY ID ORDER BY Name ASC";
+            APPLICATIONS_SQL = "SELECT Id, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName from Application GROUP BY Id ORDER BY Name ASC";
+            APPLICATION_SQL =  "SELECT Id, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName from Application WHERE Id=? GROUP BY Id";
         }
     }
 

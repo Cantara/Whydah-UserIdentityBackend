@@ -13,6 +13,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class LuceneSearchTest {
+    private static final String emailWithUnderScore = "_temp_username_1434635221960@someDomain.com";
 
     @Test
     public void testSearch() throws IOException {
@@ -66,7 +67,7 @@ public class LuceneSearchTest {
     }
 
     @Test
-    public void testWildcardSearch() throws IOException {
+    public void testWildcardSearch() throws Exception {
         Directory index = new RAMDirectory();
         addUsers(index);
 
@@ -76,6 +77,9 @@ public class LuceneSearchTest {
         result = luceneSearch.search("Ola");
         assertEquals(1, result.size());
         result = luceneSearch.search("ola@");
+        assertEquals(1, result.size());
+
+        result = luceneSearch.search(emailWithUnderScore);
         assertEquals(1, result.size());
     }
 
@@ -97,7 +101,7 @@ public class LuceneSearchTest {
             add(createUser("kari.norman@example.com", "Kari", "norman", "kari.norman@example.com", "kari.norman@example.com"));
             add(createUser("ola@example.com", "Ola", "Norman", "ola@example.com", "ola@example.com"));
             add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
-
+            add(createUser(emailWithUnderScore, "first", "last", emailWithUnderScore, emailWithUnderScore));
         }};
         luceneIndexer.addToIndex(users);
         return luceneIndexer;

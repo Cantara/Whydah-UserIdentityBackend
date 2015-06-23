@@ -15,8 +15,6 @@ import org.springframework.stereotype.Service;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.naming.NamingException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -115,14 +113,13 @@ public class UserIdentityService {
         String username = dto.getUsername();
         if (username == null){
             String msg = "Can not create a user without username!";
-            throw new WebApplicationException(msg, Response.Status.CONFLICT);
+            throw new IllegalStateException(msg);
         }
         try {
             if (ldapUserIdentityDao.usernameExist(username)) {
-                //return Response.status(Response.Status.NOT_ACCEPTABLE).build();
-                String msg = "User already exists in LDAP, could not create user with username=" + dto.getUsername();
-                log.info(msg);
-                throw new WebApplicationException(msg, Response.Status.CONFLICT);
+                //in LDAP
+                String msg = "User already exists, could not create user with username=" + dto.getUsername();
+                throw new IllegalStateException(msg);
             }
         } catch (NamingException e) {
             throw new RuntimeException("usernameExist failed for username=" + dto.getUsername(), e);
@@ -140,19 +137,14 @@ public class UserIdentityService {
             try {
                 internetAddress.validate();
             } catch (AddressException e) {
-                //log.error(String.format("E-mail: %s is of wrong format.", email));
-                //return Response.status(Response.Status.BAD_REQUEST).build();
-                //TODO use BadRequestException from jersey 2.7
                 throw new IllegalArgumentException(String.format("E-mail: %s is of wrong format.", email));
             }
 
             List<UserIdentityRepresentation> usersWithSameEmail = searcher.search(email);
             if (!usersWithSameEmail.isEmpty()) {
-                String msg = "E-mail " + email + " is already in use (in lucene index), could not create user with username=" + username;
-                log.info(msg);
-                //throw new ConflictException(msg);
-                throw new WebApplicationException(msg, Response.Status.CONFLICT);
-
+                //(in lucene index)
+                String msg = "E-mail " + email + " is already in use, could not create user with username=" + username;
+                throw new IllegalStateException(msg);
             }
         }
 
