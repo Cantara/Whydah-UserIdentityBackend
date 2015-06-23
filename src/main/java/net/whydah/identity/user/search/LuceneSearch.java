@@ -37,7 +37,7 @@ public class LuceneSearch {
     }
 
     public List<UserIdentityRepresentation> search(String queryString) {
-        String wildCardQuery = buildWildCardQuery(queryString.replace("_","").trim());
+        String wildCardQuery = buildWildCardQuery(queryString);
         String[] fields = {
                 LuceneIndexer.FIELD_FIRSTNAME,
                 LuceneIndexer.FIELD_LASTNAME,
@@ -98,7 +98,8 @@ public class LuceneSearch {
     }
 
     private String buildWildCardQuery(String queryString) {
-        String[] queryitems = queryString.replace('_', ' ').split(" ");
+        queryString=queryString.replace("_","").trim();
+        String[] queryitems = queryString.split(" ");
         StringBuilder strb = new StringBuilder();
         for (String queryitem : queryitems) {
             strb.append(queryitem).append("^2 ");
