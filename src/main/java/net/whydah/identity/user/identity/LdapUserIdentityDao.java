@@ -1,8 +1,12 @@
 package net.whydah.identity.user.identity;
 
 
+import org.constretto.annotation.Configuration;
+import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import javax.naming.*;
 import javax.naming.directory.*;
@@ -12,6 +16,7 @@ import java.util.Hashtable;
 /**
  * https://wiki.cantara.no/display/whydah/UserIdentity+LDAP+mapping
  */
+@Repository
 public class LdapUserIdentityDao {
     private static final Logger log = LoggerFactory.getLogger(LdapUserIdentityDao.class);
     static final String ATTRIBUTE_NAME_TEMPPWD_SALT = "destinationIndicator";
@@ -38,15 +43,33 @@ public class LdapUserIdentityDao {
     private boolean connected = false;
 
 
-    public LdapUserIdentityDao(String ldapUrl, String admPrincipal, String admCredentials, String uidAttribute, String usernameAttribute, boolean readOnly) {
+    //public LdapUserIdentityDao(String ldapUrl, String admPrincipal, String admCredentials, String uidAttribute, String usernameAttribute, boolean readOnly) {
+
+    @Autowired
+    @Configure
+    public LdapUserIdentityDao(@Configuration("ldap.primary.url") String primaryLdapUrl,
+                             @Configuration("ldap.primary.admin.principal") String primaryAdmPrincipal,
+                             @Configuration("ldap.primary.admin.credentials") String primaryAdmCredentials,
+                             @Configuration("ldap.primary.uid.attribute") String primaryUidAttribute,
+                             @Configuration("ldap.primary.username.attribute") String primaryUsernameAttribute,
+                             @Configuration("ldap.primary.readonly") String readOnly) {
+    /*
+    public LdapUserIdentityDao(ConstrettoConfiguration configuration) {
+        String primaryLdapUrl = configuration.evaluateToString("ldap.primary.url");
+        String primaryAdmPrincipal = configuration.evaluateToString("ldap.primary.admin.principal");
+        String primaryAdmCredentials = configuration.evaluateToString("ldap.primary.admin.credentials");
+        String primaryUidAttribute = configuration.evaluateToString("ldap.primary.uid.attribute");
+        String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
+        boolean readonly = configuration.evaluateToBoolean("ldap.primary.readonly");
+    */
         admenv = new Hashtable<>(4);
-        admenv.put(Context.PROVIDER_URL, ldapUrl);
+        admenv.put(Context.PROVIDER_URL, primaryLdapUrl);
         admenv.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-        admenv.put(Context.SECURITY_PRINCIPAL, admPrincipal);
-        admenv.put(Context.SECURITY_CREDENTIALS, admCredentials);
-        this.uidAttribute = uidAttribute;
-        this.usernameAttribute = usernameAttribute;
-        this.readOnly = readOnly;
+        admenv.put(Context.SECURITY_PRINCIPAL, primaryAdmPrincipal);
+        admenv.put(Context.SECURITY_CREDENTIALS, primaryAdmCredentials);
+        this.uidAttribute = primaryUidAttribute;
+        this.usernameAttribute = primaryUsernameAttribute;
+        this.readOnly = Boolean.parseBoolean(readOnly);
 
     }
 
@@ -54,9 +77,8 @@ public class LdapUserIdentityDao {
         try {
             ctx = new InitialDirContext(admenv);
         } catch (NamingException ne) {
-            log.error("NamingException in setUP()" + ne.getLocalizedMessage(), ne);
+            log.error("NamingException in setUp()" + ne.getLocalizedMessage(), ne);
             connected = false;
-
         } catch (Exception e) {
             log.error("Exception in setUP()" + e.getLocalizedMessage(), e);
             connected = false;

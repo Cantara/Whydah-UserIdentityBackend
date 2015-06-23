@@ -1,9 +1,10 @@
 package net.whydah.identity.application;
 
-import com.google.inject.Inject;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -12,16 +13,15 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+@Component
 @Path("/{applicationtokenid}/{userTokenId}/")
 public class ApplicationsResource {
-
-
     private static final Logger log = LoggerFactory.getLogger(ApplicationsResource.class);
     ApplicationService applicationService;
     ObjectMapper mapper = new ObjectMapper();
 
 
-    @Inject
+    @Autowired
     public ApplicationsResource(ApplicationService applicationService) {
         this.applicationService = applicationService;
     }
@@ -47,20 +47,18 @@ public class ApplicationsResource {
     public Response getApplications(){
         log.trace("getApplications is called ");
         try {
+            List<String> availableOrgNames =  new LinkedList<>();
+            List<String> availableRoleNames =  new LinkedList<>();
             List<Application> applications = applicationService.getApplications();
-            List<String> availableOrgNames =  new LinkedList<String>();
-            List<String> availableRoleNames =  new LinkedList<String>();
-            for (int i = 0; i < applications.size() ; i++) {
-                Application a =applications.get(i);
-                if (!availableOrgNames.contains(a.getDefaultOrgName())){
+            for (Application a : applications) {
+                if (!availableOrgNames.contains(a.getDefaultOrgName())) {
                     availableOrgNames.add(a.getDefaultOrgName());
                 }
-                if (!availableRoleNames.contains(a.getDefaultRoleName())){
+                if (!availableRoleNames.contains(a.getDefaultRoleName())) {
                     availableRoleNames.add(a.getDefaultRoleName());
                 }
             }
-            for (int i = 0; i < applications.size() ; i++) {
-                Application application = applications.get(i);
+            for (Application application : applications) {
                 application.setAvailableOrgNames(availableOrgNames);
                 //application.setAvailableRoleNames(availableRoleNames);    //TODO
             }

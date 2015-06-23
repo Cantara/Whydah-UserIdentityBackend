@@ -1,8 +1,9 @@
 package net.whydah.identity.user.identity;
 
+import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.audit.AuditLogDao;
-import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
@@ -14,6 +15,9 @@ import net.whydah.identity.util.PasswordGenerator;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,25 +26,70 @@ import org.mockito.Mockito;
 import javax.ws.rs.core.Response;
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 02/04/14
  */
 public class UserIdentityServiceTest {
-    private static EmbeddedADS ads;
+    //private static EmbeddedADS ads;
     private static LdapUserIdentityDao ldapUserIdentityDao;
     private static PasswordGenerator passwordGenerator;
-    private static UserPropertyAndRoleRepository roleRepository;
     private static LuceneIndexer luceneIndexer;
     private static UserAdminHelper userAdminHelper;
 
+    private static Main main = null;
+
+
     @BeforeClass
     public static void setUp() throws Exception {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
+        //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+        ApplicationMode.setDevMode();
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+
+        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
+        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
+        String luceneDir = configuration.evaluateToString("lucene.directory");
+        FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneDir);
+
+        main = new Main(configuration.evaluateToInt("service.port"));
+        main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
+
+        BasicDataSource dataSource = initBasicDataSource(configuration);
+        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+
+
+        String primaryLdapUrl = configuration.evaluateToString("ldap.primary.url");
+        String primaryAdmPrincipal = configuration.evaluateToString("ldap.primary.admin.principal");
+        String primaryAdmCredentials = configuration.evaluateToString("ldap.primary.admin.credentials");
+        String primaryUidAttribute = configuration.evaluateToString("ldap.primary.uid.attribute");
+        String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
+        String readonly = configuration.evaluateToString("ldap.primary.readonly");
+
+        ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
+
+
+        ApplicationDao configDataRepository = new ApplicationDao(dataSource);
+        UserPropertyAndRoleRepository roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
+
+        Directory index = new NIOFSDirectory(new File(luceneDir));
+        luceneIndexer = new LuceneIndexer(index);
+        AuditLogDao auditLogDao = new AuditLogDao(dataSource);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneIndexer, auditLogDao, roleRepository, configuration);
+        passwordGenerator = new PasswordGenerator();
+
+        /*
         int LDAP_PORT = 19389;
         String ldapUrl = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
-        boolean readOnly = Boolean.parseBoolean(AppConfig.appConfig.getProperty("ldap.primary.readonly"));
+        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
         ldapUserIdentityDao = new LdapUserIdentityDao(ldapUrl, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
 
 
@@ -52,16 +101,6 @@ public class UserIdentityServiceTest {
 
         new DatabaseMigrationHelper(dataSource).upgradeDatabase();
 
-        AuditLogDao auditLogDao = new AuditLogDao(dataSource);
-
-        ApplicationDao configDataRepository = new ApplicationDao(dataSource);
-        roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
-
-
-
-        Directory index = new NIOFSDirectory(new File("lucene"));
-
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository);
 
         String workDirPath = "target/" + UserIdentityServiceTest.class.getSimpleName();
         File workDir = new File(workDirPath);
@@ -77,16 +116,30 @@ public class UserIdentityServiceTest {
         ads = new EmbeddedADS(workDir);
         ads.startServer(LDAP_PORT);
         Thread.sleep(1000);
+        */
 
-        passwordGenerator = new PasswordGenerator();
+
+    }
+
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
     }
 
     @AfterClass
-    public static void tearDown() throws Exception {
-        if (ads != null) {
-            ads.stopServer();
+    public static void stop() {
+        if (main != null) {
+            main.stop();
         }
-
     }
 
     @Test

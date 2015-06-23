@@ -3,7 +3,6 @@ package net.whydah.identity.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -11,6 +10,7 @@ import java.util.Set;
 /**
  * Helper methods for reading configuration.
  */
+@Deprecated
 public final class AppConfig {
     private static final Logger logger = LoggerFactory.getLogger(AppConfig.class);
     public static final String IAM_CONFIG_KEY = "IAM_CONFIG";

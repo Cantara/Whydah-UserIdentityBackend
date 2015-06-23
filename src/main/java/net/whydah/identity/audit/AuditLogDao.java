@@ -1,13 +1,15 @@
 package net.whydah.identity.audit;
 
-import com.google.inject.Inject;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class AuditLogDao {
     private JdbcTemplate jdbcTemplate;
 
-    @Inject
+    @Autowired
     public AuditLogDao(BasicDataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }

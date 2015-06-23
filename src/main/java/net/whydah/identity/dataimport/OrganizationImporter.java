@@ -1,6 +1,5 @@
 package net.whydah.identity.dataimport;
 
-import com.google.inject.Inject;
 import org.apache.commons.dbutils.QueryRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +20,6 @@ public class OrganizationImporter {
 	
 	private QueryRunner queryRunner;
 	
-	@Inject
 	public OrganizationImporter(QueryRunner queryRunner) {
 		this.queryRunner = queryRunner;
 	}

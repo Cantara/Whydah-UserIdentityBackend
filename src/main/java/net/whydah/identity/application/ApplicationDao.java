@@ -1,13 +1,13 @@
 package net.whydah.identity.application;
 
 import com.google.common.base.Joiner;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,16 +18,16 @@ import java.util.List;
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a>
  */
-@Singleton
+@Repository
 public class ApplicationDao {
     private static final Logger log = LoggerFactory.getLogger(ApplicationDao.class);
 
     private static String APPLICATIONS_SQL = "SELECT Id, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName from Application";
-    private static String APPLICATION_SQL = APPLICATIONS_SQL + " WHERE id=?";
+    private static String APPLICATION_SQL =  "SELECT Id, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName from Application WHERE id=?";
 
     private JdbcTemplate jdbcTemplate;
 
-    @Inject
+    @Autowired
     public ApplicationDao(BasicDataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
 

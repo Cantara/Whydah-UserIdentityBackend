@@ -1,7 +1,10 @@
 package net.whydah.identity.util;
 
+import org.springframework.stereotype.Component;
+
 import java.util.Random;
 
+@Component
 public class PasswordGenerator {
     private static final Random RANDOM = new Random(System.currentTimeMillis());
     private static final int LENGTH = 16;

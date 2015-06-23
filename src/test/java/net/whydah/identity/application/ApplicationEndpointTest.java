@@ -1,12 +1,18 @@
 package net.whydah.identity.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import net.whydah.identity.Main;
-import net.whydah.identity.config.AppConfig;
+import net.whydah.identity.config.ApplicationMode;
+import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import org.apache.commons.dbcp.BasicDataSource;
+import org.constretto.ConstrettoBuilder;
+import org.constretto.ConstrettoConfiguration;
+import org.constretto.model.Resource;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -25,16 +31,47 @@ public class ApplicationEndpointTest {
 
     @Before
     public void startServer() {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        String roleDBDirectory = AppConfig.appConfig.getProperty("roledb.directory");
+        ApplicationMode.setTags(ApplicationMode.DEV_MODE, ApplicationMode.NO_SECURITY_FILTER);
+        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+                .done()
+                .getConfiguration();
+
+        //String roleDBDirectory = AppConfig.appConfig.getProperty("roledb.directory");
+        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
         FileUtils.deleteDirectory(roleDBDirectory);
+
+        BasicDataSource dataSource = initBasicDataSource(configuration);
+        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+
         main = new Main(6644);
-        main.upgradeDatabase();
-        main.startHttpServer(null, null);
+        main.start();
         RestAssured.port = main.getPort();
-        RestAssured.basePath = Main.contextpath;
+        RestAssured.basePath = Main.CONTEXT_PATH;
         mapper = new ObjectMapper();
-        //mapper.findAndRegisterModules();
+    }
+
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
+    }
+
+    @After
+    public void stop() {
+        if (main != null) {
+            main.stop();
+        }
     }
 
     @Test

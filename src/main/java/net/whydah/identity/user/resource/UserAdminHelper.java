@@ -1,9 +1,7 @@
 package net.whydah.identity.user.resource;
 
-import com.google.inject.Inject;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
-import net.whydah.identity.config.AppConfig;
 import net.whydah.identity.security.Authentication;
 import net.whydah.identity.user.authentication.UserToken;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
@@ -11,8 +9,11 @@ import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.role.UserPropertyAndRole;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.user.search.LuceneIndexer;
+import org.constretto.ConstrettoConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
 import javax.ws.rs.core.Response;
@@ -26,12 +27,13 @@ import java.util.UUID;
 
 /**
  * Helper class to avoid code duplication between UserResource and UserAuthenticationEndpoint.
+ * Should probably be refactored to a more proper service.
  *
  * @author <a href="mailto:erik.drolshammer@altran.com">Erik Drolshammer</a>
  * @since 10/4/12
  */
+@Service
 public class UserAdminHelper {
-
     private static final Logger logger = LoggerFactory.getLogger(UserAdminHelper.class);
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
@@ -40,12 +42,49 @@ public class UserAdminHelper {
     private final AuditLogDao auditLogDao;
     private final UserPropertyAndRoleRepository roleRepository;
 
-    @Inject
-    public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, LuceneIndexer luceneIndexer, AuditLogDao auditLogDao, UserPropertyAndRoleRepository roleRepository) {
+    private String defaultApplicationId;
+    private String defaultApplicationName;
+    private String defaultOrganizationName;
+    private String defaultRoleName;
+    private String defaultRoleValue;
+    private String netIQapplicationId;
+    private String netIQapplicationName;
+    private String netIQorganizationName;
+    private String netIQRoleName;
+    private String fbapplicationId;
+    private String fbapplicationName;
+    private String fborganizationName;
+    private String fbRoleName;
+
+    @Autowired
+    public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, LuceneIndexer luceneIndexer,
+                           AuditLogDao auditLogDao, UserPropertyAndRoleRepository roleRepository,
+                           ConstrettoConfiguration configuration) {
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.luceneIndexer = luceneIndexer;
         this.auditLogDao = auditLogDao;
         this.roleRepository = roleRepository;
+
+        //AppConfig configuration = AppConfig.appConfig;
+        initAddUserDefaults(configuration);
+    }
+
+    private void initAddUserDefaults(ConstrettoConfiguration configuration) {
+        this.defaultApplicationId = configuration.evaluateToString("adduser.defaultapplication.id");
+        this.defaultApplicationName = configuration.evaluateToString("adduser.defaultapplication.name");
+        this.defaultOrganizationName = configuration.evaluateToString("adduser.defaultorganization.name");
+        this.defaultRoleName = configuration.evaluateToString("adduser.defaultrole.name");
+        this.defaultRoleValue = configuration.evaluateToString("adduser.defaultrole.value");
+
+        this.netIQapplicationId = configuration.evaluateToString("adduser.netiq.defaultapplication.id");
+        this.netIQapplicationName = configuration.evaluateToString("adduser.netiq.defaultapplication.name");
+        this.netIQorganizationName = configuration.evaluateToString("adduser.netiq.defaultorganization.name");
+        this.netIQRoleName = configuration.evaluateToString("adduser.netiq.defaultrole.name");
+
+        this.fbapplicationId = configuration.evaluateToString("adduser.facebook.defaultapplication.id");
+        this.fbapplicationName = configuration.evaluateToString("adduser.facebook.defaultapplication.name");
+        this.fborganizationName = configuration.evaluateToString("adduser.facebook.defaultorganization.name");
+        this.fbRoleName = configuration.evaluateToString("adduser.facebook.defaultrole.name");
     }
 
     public Response addUser(UserIdentity newIdentity) {
@@ -122,18 +161,12 @@ public class UserAdminHelper {
     public void addDefaultWhydahUserRole(UserIdentity userIdentity) {
         UserPropertyAndRole role = new UserPropertyAndRole();
 
-        String applicationId = AppConfig.appConfig.getProperty("adduser.defaultapplication.id");
-        String applicationName = AppConfig.appConfig.getProperty("adduser.defaultapplication.name");
-        String organizationName = AppConfig.appConfig.getProperty("adduser.defaultorganization.name");
-        String roleName = AppConfig.appConfig.getProperty("adduser.defaultrole.name");
-        String roleValue = AppConfig.appConfig.getProperty("adduser.defaultrole.value");
-
         role.setUid(userIdentity.getUid());
-        role.setApplicationId(applicationId);
-        role.setApplicationName(applicationName);
-        role.setOrganizationName(organizationName);
-        role.setApplicationRoleName(roleName);
-        role.setApplicationRoleValue(roleValue);
+        role.setApplicationId(defaultApplicationId);
+        role.setApplicationName(defaultApplicationName);
+        role.setOrganizationName(defaultOrganizationName);
+        role.setApplicationRoleName(defaultRoleName);
+        role.setApplicationRoleValue(defaultRoleValue);
         role.setApplicationRoleValue(userIdentity.getEmail());  // Provide NetIQ identity as rolevalue
 //        logger.debug("AaddDefaultWhydahUserRole - dding Role: {}", role);
 
@@ -183,10 +216,6 @@ public class UserAdminHelper {
     private void addDefaultNetIQRole(UserIdentity userIdentity) {
         UserPropertyAndRole role;
         role = new UserPropertyAndRole();
-        String netIQapplicationId = AppConfig.appConfig.getProperty("adduser.netiq.defaultapplication.id");
-        String netIQapplicationName = AppConfig.appConfig.getProperty("adduser.netiq.defaultapplication.name");
-        String netIQorganizationName = AppConfig.appConfig.getProperty("adduser.netiq.defaultorganization.name");
-        String netIQRoleName = AppConfig.appConfig.getProperty("adduser.netiq.defaultrole.name");
         role.setUid(userIdentity.getUid());
         role.setApplicationId(netIQapplicationId);
         role.setApplicationName(netIQapplicationName);
@@ -199,10 +228,6 @@ public class UserAdminHelper {
     private void addDefaultFacebookRole(UserIdentity userIdentity, String roleValue) {
         UserPropertyAndRole role;
         role = new UserPropertyAndRole();
-        String fbapplicationId = AppConfig.appConfig.getProperty("adduser.facebook.defaultapplication.id");
-        String fbapplicationName = AppConfig.appConfig.getProperty("adduser.facebook.defaultapplication.name");
-        String fborganizationName = AppConfig.appConfig.getProperty("adduser.facebook.defaultorganization.name");
-        String fbRoleName = AppConfig.appConfig.getProperty("adduser.facebook.defaultrole.name");
         role.setUid(userIdentity.getUid());
         role.setApplicationId(fbapplicationId);
         role.setApplicationName(fbapplicationName);

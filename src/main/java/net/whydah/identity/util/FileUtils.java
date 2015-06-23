@@ -1,17 +1,21 @@
 package net.whydah.identity.util;
 
-import net.whydah.identity.config.AppConfig;
-import net.whydah.identity.config.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.StringJoiner;
 
 public class FileUtils {
     private static final Logger log = LoggerFactory.getLogger(FileUtils.class);
 
 
     public static void deleteDirectories(String... paths) {
+        StringJoiner joiner = new StringJoiner(", ");
+        for (String path : paths) {
+            joiner.add(path);
+        }
+        log.info("Deleting directories {}", joiner.toString());
         for (String path : paths) {
             deleteDirectory(path);
         }
@@ -32,7 +36,7 @@ public class FileUtils {
                         deleteDirectory(file);
                     } else {
                         if(!file.delete()) {
-                            log.warn("Unable to delete directory file " + file);
+                            log.warn("Unable to delete file " + file);
                         }
                     }
                 }
@@ -40,12 +44,26 @@ public class FileUtils {
         }
         boolean exist = path.exists();
         boolean deleted = path.delete();
-        if(exist && !deleted)  {
-            log.warn("Unable to delete directory " + path);
+        if (exist) {
+            if (!deleted) {
+                log.warn("Unable to delete directory " + path);
+            } else {
+                log.debug("Folder {} was deleted successfully.", path.getAbsolutePath());
+            }
         }
-
-        log.info("Folder {} was deleted successfully.", path.getAbsolutePath());
     }
+
+
+    public static void createDirectory(String pathAsString) {
+        File dir = new File(pathAsString);
+        if (!dir.exists()) {
+            boolean dirsCreated = dir.mkdirs();
+            if (!dirsCreated) {
+                log.debug("{} was not successfully created.", dir.getAbsolutePath());
+            }
+        }
+    }
+
 
     public static void close(InputStream is) {
         if (is != null) {
@@ -69,21 +87,21 @@ public class FileUtils {
             if (file.exists()) {
                 fis = new FileInputStream(file);
             } else {
-                throw new ConfigurationException("Config file " + fileName + " does not exist.");
+                throw new RuntimeException("Config file " + fileName + " does not exist.");
             }
         } catch (FileNotFoundException e) {
-            throw new ConfigurationException("Config file " + fileName +  " not found.", e);
-        } catch (IOException e) {
-            throw new ConfigurationException("Error reading " + fileName , e);
+            throw new RuntimeException("Config file " + fileName +  " not found.", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error reading " + fileName , e);
         }
         return fis;
 
     }
 
     public static InputStream openFileOnClasspath(String fileName) {
-        InputStream is = AppConfig.class.getClassLoader().getResourceAsStream(fileName);
+        InputStream is = FileUtils.class.getClassLoader().getResourceAsStream(fileName);
         if(is == null) {
-            throw new ConfigurationException("Error reading " + fileName + " from classpath.");
+            throw new RuntimeException("Error reading " + fileName + " from classpath.");
         }
         return is;
     }

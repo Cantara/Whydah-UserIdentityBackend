@@ -1,6 +1,8 @@
 package net.whydah.identity.user;
 
-import com.sun.jersey.core.util.Base64;
+//import com.sun.jersey.core.util.Base64;
+
+import org.glassfish.jersey.internal.util.Base64;
 
 import java.io.UnsupportedEncodingException;
 
@@ -15,13 +17,14 @@ public class ChangePasswordToken {
         this.password = password;
     }
 
+    //TODO Should probably use private static final Base64.Decoder base64Decoder from java instead
     public static ChangePasswordToken fromTokenString(String outerTokenstring, byte[] salt) {
         try {
-            String outerToken = Base64.base64Decode(outerTokenstring);
+            String outerToken = Base64.decodeAsString(outerTokenstring);
             String[] outerTokenelems = outerToken.split(":");
             String user1 = outerTokenelems[0];
             String timeout1 = outerTokenelems[1];
-            String encodedInnerToken = Base64.base64Decode(outerTokenelems[2]);
+            String encodedInnerToken = Base64.decodeAsString(outerTokenelems[2]);
             byte[] innerTokenbytes = null;
 			try {
 				innerTokenbytes = encodedInnerToken.getBytes("UTF-8");
@@ -52,12 +55,12 @@ public class ChangePasswordToken {
     public String generateTokenString(byte[] salt) {
         long timestamp = System.currentTimeMillis() + lifetime;
         String innerToken = userid + ":" + password + ":" + timestamp;
-        byte[] innerTokenBytes = Base64.encode(innerToken);
+        byte[] innerTokenBytes = Base64.encode(innerToken.getBytes());
         for (int i = 0; i < innerTokenBytes.length; i++) {
             innerTokenBytes[i] = (byte) (innerTokenBytes[i] ^ salt[i % salt.length]);
         }
         String outerToken = userid + ":" + timestamp + ":" + new String(Base64.encode(innerTokenBytes));
-        return new String(Base64.encode(outerToken));
+        return new String(Base64.encode(outerToken.getBytes()));
     }
 
     public String getUserid() {

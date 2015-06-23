@@ -1,7 +1,7 @@
 package net.whydah.identity.user.identity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.directory.api.ldap.model.schema.syntaxCheckers.TelephoneNumberSyntaxChecker;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;

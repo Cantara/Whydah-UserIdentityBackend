@@ -2,8 +2,6 @@ package net.whydah.identity.user.authentication;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
-import com.google.inject.Inject;
-import com.sun.jersey.api.view.Viewable;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.identity.UserIdentity;
@@ -11,8 +9,11 @@ import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRole;
 import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
+import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -41,6 +42,7 @@ import java.util.List;
  * Service for authorization of users and finding UserAggregate with corresponding applications, organizations and roles.
  * This not a RESTful endpoint. This is a http RPC endpoint.
  */
+@Component
 @Path("/{applicationTokenId}/authenticate/user")
 public class UserAuthenticationEndpoint {
     private static final Logger log = LoggerFactory.getLogger(UserAuthenticationEndpoint.class);
@@ -50,10 +52,10 @@ public class UserAuthenticationEndpoint {
     private final UserIdentityService userIdentityService;
     //private final String hostname;
 
-    @Inject
+    @Autowired
     private AuditLogDao auditLogDao;
 
-    @Inject
+    @Autowired
     public UserAuthenticationEndpoint(UserPropertyAndRoleRepository roleRepository, UserAdminHelper userAdminHelper,
                                       UserIdentityService userIdentityService) {
         this.roleRepository = roleRepository;

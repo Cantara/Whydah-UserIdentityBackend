@@ -1,11 +1,12 @@
 package net.whydah.identity.user.search;
 
-import com.google.inject.Inject;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.naming.NamingException;
 import java.util.ArrayList;
@@ -14,13 +15,14 @@ import java.util.List;
 /**
  * @author <a href="bard.lind@gmail.com">Bard Lind</a>
  */
+@Service
 public class UserSearch {
     private static final Logger log = LoggerFactory.getLogger(UserSearch.class);
     private final LdapUserIdentityDao ldapUserIdentityDao;
     private final LuceneSearch luceneSearch;
     private final LuceneIndexer luceneIndexer;
 
-    @Inject
+    @Autowired
     public UserSearch(LdapUserIdentityDao ldapUserIdentityDao, LuceneSearch luceneSearch, LuceneIndexer luceneIndexer) {
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.luceneSearch = luceneSearch;

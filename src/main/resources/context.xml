@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:constretto="http://constretto.org/schema/constretto"
+
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+               http://constretto.org/schema/constretto http://constretto.org/schema/constretto/constretto-1.2.xsd">
+
+
+
+    <constretto:configuration>
+        <constretto:stores>
+            <constretto:properties-store>
+                <constretto:resource location="classpath:useridentitybackend.properties"/>
+                <constretto:resource location="file:./useridentitybackend_override.properties"/>
+            </constretto:properties-store>
+        </constretto:stores>
+    </constretto:configuration>
+
+    <context:component-scan base-package="net.whydah.identity">
+        <!--<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>-->
+    </context:component-scan>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${roledb.jdbc.driver}"/>
+        <property name="url" value="${roledb.jdbc.url}"/>
+        <property name="username" value="${roledb.jdbc.user}"/>
+        <property name="password" value="${roledb.jdbc.password}"/>
+    </bean>
+
+    <bean id="luceneDirectory" class="org.apache.lucene.store.NIOFSDirectory" factory-method="open">
+        <constructor-arg>
+            <bean class="java.io.File">
+                <constructor-arg value="${lucene.directory}" />
+            </bean>
+        </constructor-arg>
+    </bean>
+
+    <!-- <bean id="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper"/> -->
+    <!-- <bean id="objectMapper" class="com.company.CustomObjectMapper"/>-->
+</beans>

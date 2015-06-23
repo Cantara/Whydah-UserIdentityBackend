@@ -1,7 +1,11 @@
 package net.whydah.identity.user.identity;
 
+import org.constretto.annotation.Configuration;
+import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
@@ -13,6 +17,7 @@ import java.util.Hashtable;
 /**
  * LDAP authentication.
  */
+@Service
 public class LdapAuthenticator {
     private static final Logger log = LoggerFactory.getLogger(LdapAuthenticator.class);
     private final Hashtable<String,String> baseenv;
@@ -21,7 +26,14 @@ public class LdapAuthenticator {
     private final String usernameAttribute;
     //private static final String uidAttributeForActiveDirectory = "userprincipalname";
 
-    public LdapAuthenticator(String ldapUrl, String admPrincipal, String admCredentials, String uidAttribute, String usernameAttribute) {
+    @Autowired
+    @Configure
+    public LdapAuthenticator(@Configuration("ldap.primary.url") String ldapUrl,
+                             @Configuration("ldap.primary.admin.principal") String admPrincipal,
+                             @Configuration("ldap.primary.admin.credentials") String admCredentials,
+                             @Configuration("ldap.primary.uid.attribute") String uidAttribute,
+                             @Configuration("ldap.primary.username.attribute") String usernameAttribute) {
+
         log.info("Initialize LdapAuthenticator with ldapUrl={}, admPrincipal={}, uidAttribute={}, usernameAttribute={}", ldapUrl, admPrincipal, uidAttribute, usernameAttribute);
         baseenv = new Hashtable<>();
         baseenv.put(Context.PROVIDER_URL, ldapUrl);

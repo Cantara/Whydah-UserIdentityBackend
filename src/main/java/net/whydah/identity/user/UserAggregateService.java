@@ -1,8 +1,5 @@
 package net.whydah.identity.user;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.sun.jersey.api.ConflictException;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
@@ -16,8 +13,12 @@ import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.user.search.LuceneIndexer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.naming.NamingException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.List;
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 29.03.14
  */
-@Singleton
+@Service
 public class UserAggregateService {
     private static final Logger log = LoggerFactory.getLogger(UserAggregateService.class);
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
@@ -35,7 +36,7 @@ public class UserAggregateService {
     private final LuceneIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
 
-    @Inject
+    @Autowired
     public UserAggregateService(UserIdentityService userIdentityService, UserPropertyAndRoleRepository userPropertyAndRoleRepository,
                                 LuceneIndexer luceneIndexer, AuditLogDao auditLogDao) {
         this.luceneIndexer = luceneIndexer;
@@ -148,7 +149,7 @@ public class UserAggregateService {
 
         if (userPropertyAndRoleRepository.hasRole(uid, role)) {
             String msg = "User with uid=" + uid + " already has this role. " + role.toString();
-            throw new ConflictException(msg);
+            throw new WebApplicationException(msg, Response.Status.CONFLICT);
         }
 
         userPropertyAndRoleRepository.addUserPropertyAndRole(role);
