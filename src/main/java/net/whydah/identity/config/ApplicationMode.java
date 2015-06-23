@@ -1,6 +1,5 @@
 package net.whydah.identity.config;
 
-import java.util.StringJoiner;
 
 /**
  * Mange Constretto configuration tags and get application mode from os environment or system property.
@@ -25,11 +24,8 @@ public class ApplicationMode {
     }
 
     public static void setTags(String... tags) {
-        StringJoiner joiner = new StringJoiner(",");
-        for (String tag : tags) {
-            joiner.add(tag);
-        }
-        System.setProperty(CONSTRETTO_TAGS, joiner.toString());
+        String tagsAsString = String.join(",", tags);
+        System.setProperty(CONSTRETTO_TAGS, tagsAsString);
     }
 
     public static void clearTags() {

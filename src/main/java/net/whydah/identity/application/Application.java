@@ -1,7 +1,6 @@
 package net.whydah.identity.application;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +155,7 @@ public class Application {
     public String toString() {
         String availableOrgNamesString = "";
         if (this.availableOrgNames != null) {
-            availableOrgNamesString = Joiner.on(", ").join(this.availableOrgNames);
+            availableOrgNamesString = String.join(",", this.availableOrgNames);
         }
 
         String roleNamesString = null;

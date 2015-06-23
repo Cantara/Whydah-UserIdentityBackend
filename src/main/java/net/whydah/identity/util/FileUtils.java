@@ -4,18 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.StringJoiner;
 
 public class FileUtils {
     private static final Logger log = LoggerFactory.getLogger(FileUtils.class);
 
 
     public static void deleteDirectories(String... paths) {
-        StringJoiner joiner = new StringJoiner(", ");
-        for (String path : paths) {
-            joiner.add(path);
-        }
-        log.info("Deleting directories {}", joiner.toString());
+        String directoriesAsString = String.join(",", paths);
+        log.info("Deleting directories {}", directoriesAsString);
         for (String path : paths) {
             deleteDirectory(path);
         }

@@ -1,6 +1,5 @@
 package net.whydah.identity.application;
 
-import com.google.common.base.Joiner;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,7 @@ public class ApplicationDao {
     public Application create(Application application) {
         Application applicationStored = null;
         String sql = "INSERT INTO Application (ID, Name, Secret, AvailableOrgNames, DefaultRoleName, DefaultOrgName) VALUES (?,?,?,?,?,?)";
-        String availableOrgNames = Joiner.on(",").join(application.getAvailableOrgNames());
+        String availableOrgNames = String.join(",", application.getAvailableOrgNames());
         int numRowsUpdated = jdbcTemplate.update(sql, application.getId(), application.getName(), application.getSecret(),
                 availableOrgNames, application.getDefaultRoleName(), application.getDefaultOrgName());
 

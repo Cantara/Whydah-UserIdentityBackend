@@ -1,7 +1,5 @@
 package net.whydah.identity.user.authentication;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.identity.UserIdentity;
@@ -32,10 +30,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -160,23 +155,28 @@ public class UserAuthenticationEndpoint {
         }
     }
 
-    static String getFacebookDataAsString(InputStream input) {
-        String facebookUserAsString = null;
-        InputStreamReader reader = null;
+    static String getFacebookDataAsString(InputStream is) {
+        BufferedReader br = null;
+        StringBuilder sb = new StringBuilder();
+        String line;
         try {
-            reader = new InputStreamReader(input, Charsets.UTF_8);
-            facebookUserAsString = CharStreams.toString(reader);
+            br = new BufferedReader(new InputStreamReader(is));
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
         } catch (IOException e) {
             log.warn("Error parsing inputStream as string.", e);
         } finally {
-            if (reader != null) {
+            if (br != null) {
                 try {
-                    reader.close();
+                    br.close();
                 } catch (IOException e) {
                     log.info("Could not close reader.");
                 }
             }
         }
+        String facebookUserAsString = sb.toString();
+
         log.debug("facebookUserAsString=" + facebookUserAsString);
         return facebookUserAsString;
     }
