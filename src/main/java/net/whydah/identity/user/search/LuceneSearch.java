@@ -27,7 +27,7 @@ import java.util.List;
 public class LuceneSearch {
     private static final Logger logger = LoggerFactory.getLogger(LuceneSearch.class);
     protected static final Analyzer ANALYZER = new StandardAnalyzer();  //use LuceneIndexer.ANALYZER?
-    private static final int MAX_HITS = 200;
+    private static final int MAX_HITS = 500;
     private final Directory index;
 
 
@@ -37,7 +37,7 @@ public class LuceneSearch {
     }
 
     public List<UserIdentityRepresentation> search(String queryString) {
-        String wildCardQuery = buildWildCardQuery(queryString);
+        String wildCardQuery = buildWildCardQuery(queryString.replace("_","").trim());
         String[] fields = {
                 LuceneIndexer.FIELD_FIRSTNAME,
                 LuceneIndexer.FIELD_LASTNAME,
