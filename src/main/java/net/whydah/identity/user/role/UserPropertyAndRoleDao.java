@@ -40,7 +40,6 @@ public class UserPropertyAndRoleDao {
     }
 
     public List<UserPropertyAndRole> getUserPropertyAndRoles(String uid) {
-        log.debug("getUserPropertyAndRoles for uid={}", uid);
         String sql = "SELECT RoleID, UserID, AppID, OrganizationName, RoleName, RoleValues FROM UserRoles WHERE UserID=?";
         List<UserPropertyAndRole> roles = this.jdbcTemplate.query(sql, new String[]{uid}, new UserPropertyAndRoleMapper());
         log.debug("Found {} roles for uid={}", (roles != null ? roles.size() : "null"), uid);
@@ -75,22 +74,22 @@ public class UserPropertyAndRoleDao {
         return count;
     }
 
-    //TODO Can it be private/protected?
-    public boolean hasRole(String uid, UserPropertyAndRole role) {
+    boolean hasRole(String uid, UserPropertyAndRole role) {
         List<UserPropertyAndRole> existingRoles = getUserPropertyAndRoles(uid);
         for (UserPropertyAndRole existingRole : existingRoles) {
-            log.trace("hasRole - checking existing.applicationID {} against applicationID {}", existingRole.getApplicationId(), role.getApplicationId());
-            log.trace("hasRole - checking existing.getOrganizationName {} against getOrganizationName {}", existingRole.getOrganizationName(), role.getOrganizationName());
-            log.trace("hasRole - checking existing.getApplicationRoleName {} against getApplicationRoleName {}", existingRole.getApplicationRoleName(), role.getApplicationRoleName());
+            log.trace("hasRole - checking existing.applicationID {} against applicationID {} " +
+                    "\n & existing.getOrganizationName {} against getOrganizationName {}" +
+                    "\n & existing.getApplicationRoleName {} against getApplicationRoleName {}",
+                    existingRole.getApplicationId(), role.getApplicationId(),
+                    existingRole.getOrganizationName(), role.getOrganizationName(),
+                    existingRole.getApplicationRoleName(), role.getApplicationRoleName());
             boolean roleExist = existingRole.getApplicationId().equals(role.getApplicationId())
                     && existingRole.getOrganizationName().equals(role.getOrganizationName())
                     && existingRole.getApplicationRoleName().equals(role.getApplicationRoleName());
             if (roleExist) {
-                log.trace("Found role");
                 return true;
             }
         }
-        log.trace("Not Found role");
         return false;
     }
 
@@ -116,8 +115,7 @@ public class UserPropertyAndRoleDao {
                 userPropertyAndRole.getApplicationRoleValue()
 
         );
-        log.trace(rows + " roles added");
-        log.trace(sql + ":" + userPropertyAndRole);
+        log.trace("{} roles added, sql: {}", rows, userPropertyAndRole);
     }
 
 

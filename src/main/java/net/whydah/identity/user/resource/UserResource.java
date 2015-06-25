@@ -34,8 +34,6 @@ public class UserResource {
 
     private final UserIdentityService userIdentityService;
     private final UserAggregateService userAggregateService;
-    private final ApplicationDao applicationDao;
-
     private final ObjectMapper mapper;
 
     @Context
@@ -45,7 +43,6 @@ public class UserResource {
     public UserResource(UserIdentityService userIdentityService, UserAggregateService userAggregateService, ApplicationDao applicationDao) {
         this.userIdentityService = userIdentityService;
         this.userAggregateService = userAggregateService;
-        this.applicationDao = applicationDao;
         this.mapper = new ObjectMapper();
         log.info("Started: UserResource");
     }
@@ -172,8 +169,8 @@ public class UserResource {
 
     @DELETE
     @Path("/{uid}")
-    public Response deleteUserAggregate(@PathParam("uid") String uid) {
-        log.trace("deleteUserAggregate: uid={}", uid);
+    public Response deleteUserIdentityAndRoles(@PathParam("uid") String uid) {
+        log.trace("deleteUserIdentityAndRoles: uid={}", uid);
 
         try {
             userAggregateService.deleteUserAggregateByUid(uid);
@@ -186,6 +183,8 @@ public class UserResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
 
 
     // ROLES
@@ -315,6 +314,4 @@ public class UserResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-
 }

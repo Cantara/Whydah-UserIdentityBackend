@@ -5,7 +5,6 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
 import net.whydah.identity.user.authentication.UserToken;
 import net.whydah.identity.user.identity.UserIdentity;
-import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.resource.RoleRepresentationRequest;
 import net.whydah.identity.user.role.UserPropertyAndRole;
@@ -46,15 +45,15 @@ public class UserAggregateService {
     }
 
 
-    public UserAggregate getUserAggregateByUsername(String username) {
+    public UserAggregate getUserAggregateByUsernameOrUid(String usernameOrUid) {
         UserIdentity userIdentity;
         try {
-            userIdentity = userIdentityService.getUserIdentity(username);
+            userIdentity = userIdentityService.getUserIdentity(usernameOrUid);
         } catch (NamingException e) {
-            throw new RuntimeException("userIdentityService.getUserIdentity with username=" + username, e);
+            throw new RuntimeException("userIdentityService.getUserIdentity with usernameOrUid=" + usernameOrUid, e);
         }
         if (userIdentity == null) {
-            log.trace("getUserAggregateByUsername could not find user with username={}", username);
+            log.trace("getUserAggregateByUsernameOrUid could not find user with usernameOrUid={}", usernameOrUid);
             return null;
         }
         List<UserPropertyAndRole> userPropertyAndRoles = userPropertyAndRoleRepository.getUserPropertyAndRoles(userIdentity.getUid());
@@ -66,24 +65,6 @@ public class UserAggregateService {
         return newUserIdentity;
     }
 
-
-    public UserIdentityRepresentation updateUserIdentity(String username, String userJson) {
-        UserIdentity newUserIdentity = UserIdentity.fromJson(userJson);
-
-        try {
-            UserIdentity userIdentity = userIdentityService.getUserIdentity(username);
-            if (userIdentity == null) {
-                return null;
-            }
-
-            userIdentityService.updateUserIdentity(username, newUserIdentity);
-            luceneIndexer.update(newUserIdentity);
-            audit(ActionPerformed.MODIFIED, "user", newUserIdentity.toString());
-        } catch (NamingException e) {
-            throw new RuntimeException("updateUserIdentity failed for username=" + username + ", newUserIdentity=" + newUserIdentity, e);
-        }
-        return newUserIdentity;
-    }
 
     public void deleteUserAggregateByUid(String uid) {
         UserIdentity userIdentity;

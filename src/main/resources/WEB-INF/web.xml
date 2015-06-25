@@ -29,7 +29,7 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>javax.ws.rs.Application</param-name>
-            <param-value>net.whydah.identity.config.RESTApplication</param-value>
+            <param-value>net.whydah.identity.config.JerseyApplication</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>

@@ -87,7 +87,6 @@ public class SecurityFilter implements Filter {
                 //Verify userTokenId
                 String usertokenId = findUserTokenId(pathInfo);
                 String applicationTokenId = findApplicationTokenId(pathInfo);
-                log.debug("applicationTokenId={}, usertokenid={}, full path={} ", applicationTokenId, usertokenId, pathInfo);
                 if (usertokenId == null) {
                     log.trace("userTokenId not found");
                     setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_BAD_REQUEST);

@@ -51,7 +51,6 @@ public class ApplicationService {
 
     public List<Application> getApplications() {
         List<Application> applications = applicationDao.getApplications();
-        log.trace("Found applications:" + applications.size());
         return applications;
     }
 

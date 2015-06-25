@@ -163,7 +163,7 @@ public class LdapUserIdentityDao {
             setUp();
         }
         try {
-            UserIdentity olduser = getUserIndentityForUid(uid);
+            UserIdentity olduser = getUserIndentityByUid(uid);
             updateLdapAttributesForUser(uid, newuser, olduser);
             log.debug("updateUserIdentityForUid updated LDAP - newuser={} olduser:{]", newuser, olduser);
         } catch (NamingException ne) {
@@ -247,17 +247,17 @@ public class LdapUserIdentityDao {
         return uidAttribute + '=' + uid + "," + USERS_OU;
     }
 
-    public UserIdentity getUserIndentity(String username) throws NamingException {
+    public UserIdentity getUserIndentity(String usernameOrUid) throws NamingException {
         if (!connected) {
             setUp();
         }
 
-        Attributes attributes = getUserAttributesForUsernameOrUid(username);
+        Attributes attributes = getUserAttributesForUsernameOrUid(usernameOrUid);
         UserIdentity id = fromLdapAttributes(attributes);
         return id;
     }
 
-    public UserIdentity getUserIndentityForUid(String uid) throws NamingException {
+    public UserIdentity getUserIndentityByUid(String uid) throws NamingException {
         if (!connected) {
             setUp();
         }
@@ -294,18 +294,17 @@ public class LdapUserIdentityDao {
     }
 
 
-    private Attributes getUserAttributesForUsernameOrUid(String username) throws NamingException {
-        Attributes userAttributesForUsername = getUserAttributesForUsername(username);
+    private Attributes getUserAttributesForUsernameOrUid(String usernameOrUid) throws NamingException {
+        Attributes userAttributesForUsername = getUserAttributesForUsername(usernameOrUid);
         if (userAttributesForUsername != null) {
             return userAttributesForUsername;
         }
 
-        log.debug("No attributes found for username=" + username + ", trying uid");
-        return getAttributesForUid(username);
+        log.debug("No attributes found for username=" + usernameOrUid + ", trying uid");
+        return getAttributesForUid(usernameOrUid);
     }
 
     private Attributes getAttributesForUid(String uid) throws NamingException {
-        log.debug("getAttributesForUid, uid=" + uid);
         SearchControls constraints = new SearchControls();
         constraints.setSearchScope(SearchControls.SUBTREE_SCOPE);
         NamingEnumeration results = null;
@@ -325,7 +324,7 @@ public class LdapUserIdentityDao {
             SearchResult searchResult = (SearchResult) results.next();
             return searchResult.getAttributes();
         }
-        log.trace("No attributes found for uid. Search on: {}={}", uidAttribute, uid);
+        log.trace("getAttributesForUid found no attributes for {}={}.", uidAttribute, uid);
         return null;
     }
 
@@ -358,7 +357,7 @@ public class LdapUserIdentityDao {
                 throw pre;
             }
         }
-        log.trace("No attributes found for username. Search on: {}={}", usernameAttribute, username);
+        log.trace("getUserAttributesForUsername found no attributes for {}={}.", usernameAttribute, username);
         return null;
     }
 

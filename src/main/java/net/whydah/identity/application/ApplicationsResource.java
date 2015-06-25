@@ -45,7 +45,7 @@ public class ApplicationsResource {
     @Path("/applications")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getApplications(){
-        log.trace("getApplications is called ");
+        log.trace("getApplications is called.");
         try {
             List<String> availableOrgNames =  new LinkedList<>();
             List<String> availableRoleNames =  new LinkedList<>();
@@ -64,16 +64,16 @@ public class ApplicationsResource {
             }
 
             String applicationCreatedJson = buildApplicationsJson(applications);
-            log.trace("Returning applications: "+applicationCreatedJson);
+            log.trace("Returning {} applications: {}", applications.size(), applicationCreatedJson);
             return Response.ok(applicationCreatedJson).build();
         } catch (IllegalArgumentException iae) {
-            log.error("getApplications: Invalid json.",  iae);
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            log.error("getApplications failed because Invalid json. {}.",  iae);
+            return Response.status(Response.Status.BAD_REQUEST).entity(iae.getMessage()).build();
         } catch (IllegalStateException ise) {
-            log.error(ise.getMessage());
-            return Response.status(Response.Status.CONFLICT).build();
+            log.error("getApplications failed because {}.", ise.getMessage());
+            return Response.status(Response.Status.CONFLICT).entity(ise.getMessage()).build();
         } catch (RuntimeException e) {
-            log.error("", e);
+            log.error("getApplications failed because {}.", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -83,7 +83,6 @@ public class ApplicationsResource {
         String applicationsCreatedJson = null;
         try {
             applicationsCreatedJson = mapper.writeValueAsString(applications);
-            log.debug("Applications.json:",applicationsCreatedJson);
         } catch (IOException e) {
             log.warn("Could not convert application to Json {}", applications.toString());
         }

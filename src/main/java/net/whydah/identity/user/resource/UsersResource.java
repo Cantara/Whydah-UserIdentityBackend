@@ -2,7 +2,6 @@ package net.whydah.identity.user.resource;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.UserIdentityRepresentation;
 import net.whydah.identity.user.search.LuceneSearch;
@@ -49,12 +48,15 @@ public class UsersResource {
         this.mapper = new ObjectMapper();
     }
 
-    /**
+    /*
      * Get user details.
+     *
      *
      * @param username Username
      * @return user details and roles.
      */
+    /*
+    @Deprecated //ED: I think this endpoint should be removed! Use /useraggregate/uid instead...
     @GET
     @Path("/username/{username}")
     @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
@@ -63,7 +65,7 @@ public class UsersResource {
 
         UserAggregate user;
         try {
-            user = userAggregateService.getUserAggregateByUsername(username);
+            user = userAggregateService.getUserAggregateByUsernameOrUid(username);
             if (user == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("{\"error\":\"user not found\"}'").build();
             }
@@ -78,7 +80,7 @@ public class UsersResource {
         model.put("userbaseurl", uriInfo.getBaseUri());
         return Response.ok(new Viewable("/useradmin/user.json.ftl", model)).header("Content-Type", MediaType.APPLICATION_JSON + ";charset=utf-8").build();
     }
-
+    */
 
     /**
      * Find users.
