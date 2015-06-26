@@ -101,13 +101,13 @@ public class SecurityFilter implements Filter {
                 } else {
                     UserToken userToken = securityTokenHelper.getUserToken(applicationTokenId, usertokenId);
 
-                    if (userToken == null) {
-                        log.trace("Could not find token with tokenID=" + usertokenId);
+                    if (userToken == null || userToken.toString().length()<10) {
+                        log.warn("Could not find usertoken with tokenID=" + usertokenId+ " or had problems connecting to SecurityTokenService");
                         setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_UNAUTHORIZED);
                         return;
                     }
                     if (!userToken.hasRole(REQUIRED_ROLE_USERS)) {
-                        log.trace("Missing required role {}\n - userToken={}", REQUIRED_ROLE_USERS, userToken);
+                        log.warn("Missing required role {}\n - userToken={}", REQUIRED_ROLE_USERS, userToken);
                         //TODO  this test is too simple for the Whydah 2.1 release, as it block 3rd part apps
                         //setResponseStatus((HttpServletResponse) response, HttpServletResponse.SC_FORBIDDEN);
                         //return;

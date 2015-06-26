@@ -62,11 +62,11 @@
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
         <apache.ds.version>2.0.0-M17</apache.ds.version>
-        <slf4j.version>1.7.12</slf4j.version>
         <lucene.version>4.10.4</lucene.version>
         <jersey.version>2.18</jersey.version>
-        <jetty.version>9.2.2.v20140723</jetty.version>
+        <jetty.version>9.3.0.v20150612</jetty.version>
         <spring.version>4.1.6.RELEASE</spring.version>
+        <slf4j.version>1.7.12</slf4j.version>
     </properties>
 
     <repositories>
@@ -159,7 +159,6 @@
             <artifactId>jetty-webapp</artifactId>
             <version>${jetty.version}</version>
         </dependency>
-
 
         <dependency>
             <groupId>org.constretto</groupId>
@@ -295,7 +294,7 @@
             <artifactId>jcl-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <!-- Jerset use jul -->
+        <!-- Jersey use jul -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
@@ -312,6 +311,14 @@
             <artifactId>logback-classic</artifactId>
             <version>1.1.3</version>
         </dependency>
+        <!-- javax.mail and javax.activation is used by logback SmtpAppender -->
+        <dependency>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+            <version>1.1.1</version>
+            <scope>runtime</scope>
+        </dependency>
+
 
         <!-- Apache DS dependencies -->
         <dependency>
