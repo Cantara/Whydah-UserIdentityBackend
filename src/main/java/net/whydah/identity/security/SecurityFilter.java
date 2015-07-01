@@ -96,11 +96,12 @@ public class SecurityFilter implements Filter {
         //Authenticate and authorize userTokenId
         /* Paths:
         /{applicationtokenid}/{userTokenId}/application
-        /{applicationtokenid}/{userTokenId}/verifyApplicationAuth
         /{applicationtokenid}/{userTokenId}/applications
-        /{applicationtokenid}/{usertokenid}/useraggregate
         /{applicationtokenid}/{userTokenId}/user
+        /{applicationtokenid}/{usertokenid}/useraggregate
         /{applicationtokenid}/{usertokenid}/users
+
+        /{applicationtokenid}/{userTokenId}/verifyApplicationAuth
          */
         //String usertokenId = pathElement2;
         String usertokenId = pathElement2.substring(1); //strip leading /

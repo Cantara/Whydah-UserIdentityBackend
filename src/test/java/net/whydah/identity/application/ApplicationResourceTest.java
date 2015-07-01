@@ -81,7 +81,7 @@ public class ApplicationResourceTest {
     @Test
     public void testCreateApplication() throws Exception {
         app = new Application("ignoredId", "appName1");
-        app.setSecret("secret1");
+        app.getSecurity().setSecret("secret1");
         app.setDefaultRoleName("originalDefaultRoleName");
         String json = ApplicationSerializer.toJson(app);
 
@@ -103,7 +103,7 @@ public class ApplicationResourceTest {
         assertNotEquals(app.getId(), applicationResponse.getId());
         appId1FromCreatedResponse = applicationResponse.getId();
         assertEquals(applicationResponse.getName(), app.getName());
-        assertEquals(applicationResponse.getSecret(), app.getSecret());
+        assertEquals(applicationResponse.getSecurity().getSecret(), app.getSecurity().getSecret());
         assertEquals(applicationResponse.getDefaultRoleName(), app.getDefaultRoleName());
     }
 

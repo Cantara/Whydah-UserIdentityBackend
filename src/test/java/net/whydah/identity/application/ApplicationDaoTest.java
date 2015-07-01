@@ -2,7 +2,7 @@ package net.whydah.identity.application;
 
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.sso.application.Application;
-import net.whydah.sso.application.Role;
+import net.whydah.sso.application.ApplicationRole;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,12 +46,12 @@ public class ApplicationDaoTest {
     @Test
     public void testAddAndGet() {
         Application application = new Application("appId1", "appName1");
-        application.setSecret("verySecretKeyHere");
+        application.getSecurity().setSecret("verySecretKeyHere");
         application.setDefaultRoleName("defaultRoleName1");
         application.setDefaultOrganizationName("defaultOrgName1");
         application.setDescription("description1");
-        application.addRole(new Role("roleId1", "roleName1"));
-        application.addRole(new Role("roleId2", "roleName2"));
+        application.addRole(new ApplicationRole("roleId1", "roleName1"));
+        application.addRole(new ApplicationRole("roleId2", "roleName2"));
         application.setOrganizationNames(Arrays.asList("orgName1", "orgName2", "orgName3"));
 
         applicationDao.create(application);
@@ -63,6 +63,6 @@ public class ApplicationDaoTest {
         assertEquals(application.getDefaultOrganizationName(), fromDb.getDefaultOrganizationName());
         assertEquals(fromDb.getRoles().size(), 2);
         assertEquals(fromDb.getOrganizationNames().size(), 3);
-        assertEquals(fromDb.getSecret(), application.getSecret());
+        assertEquals(fromDb.getSecurity().getSecret(), application.getSecurity().getSecret());
     }
 }

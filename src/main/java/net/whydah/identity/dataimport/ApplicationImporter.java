@@ -74,7 +74,7 @@ public class ApplicationImporter {
                 Application application = new Application(applicatinId, applicationName);
                 application.setDefaultRoleName(defaultRoleName);
                 application.setDefaultOrganizationName(defaultOrganizationId);
-                application.setSecret(applicationSecret);
+                application.getSecurity().setSecret(applicationSecret);
 	            applications.add(application);
 	        }
 			return applications;
