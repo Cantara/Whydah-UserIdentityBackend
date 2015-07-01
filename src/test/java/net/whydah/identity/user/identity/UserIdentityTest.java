@@ -11,7 +11,7 @@ public class UserIdentityTest {
     @Test
     public void testValidateCellPhoneOK() {
         UserIdentity userIdentity = new UserIdentity("uid1", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", "", "personRef1");
-        String[] telephoneNumbers = new String[]{"12345678", "+47 12345678", "+4799999999", "90 90 90 90", null};
+        String[] telephoneNumbers = new String[]{"12345678", "+47 12345678", "+4799999999", "90 90 90 90", "", null};
 
         for (String telephoneNumber : telephoneNumbers) {
             userIdentity.setCellPhone(telephoneNumber);

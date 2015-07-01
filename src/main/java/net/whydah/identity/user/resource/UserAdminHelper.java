@@ -7,7 +7,7 @@ import net.whydah.identity.user.authentication.UserToken;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
+import net.whydah.identity.user.role.UserPropertyAndRoleDao;
 import net.whydah.identity.user.search.LuceneIndexer;
 import org.constretto.ConstrettoConfiguration;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class UserAdminHelper {
     private final LdapUserIdentityDao ldapUserIdentityDao;
     private final LuceneIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
-    private final UserPropertyAndRoleRepository roleRepository;
+    private final UserPropertyAndRoleDao userPropertyAndRoleDao;
 
     private String defaultApplicationId;
     private String defaultApplicationName;
@@ -58,12 +58,12 @@ public class UserAdminHelper {
 
     @Autowired
     public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, LuceneIndexer luceneIndexer,
-                           AuditLogDao auditLogDao, UserPropertyAndRoleRepository roleRepository,
+                           AuditLogDao auditLogDao, UserPropertyAndRoleDao userPropertyAndRoleDao,
                            ConstrettoConfiguration configuration) {
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.luceneIndexer = luceneIndexer;
         this.auditLogDao = auditLogDao;
-        this.roleRepository = roleRepository;
+        this.userPropertyAndRoleDao = userPropertyAndRoleDao;
 
         //AppConfig configuration = AppConfig.appConfig;
         initAddUserDefaults(configuration);
@@ -172,12 +172,12 @@ public class UserAdminHelper {
 
 
         addDefaultRole(userIdentity, role);
-//        if (roleRepository.hasRole(userIdentity.getUid(), role)) {
+//        if (userPropertyAndRoleDao.hasRole(userIdentity.getUid(), role)) {
 //            logger.warn("addDefaultWhydahUserRole - Role already exist. " + role.toString());
 //            return;
 //        }
 
-//        roleRepository.addUserPropertyAndRole(role);
+//        userPropertyAndRoleDao.addUserPropertyAndRole(role);
 //        String value = "uid=" + userIdentity + ", username=" + userIdentity.getUsername() + ", appid=" + role.getApplicationId() + ", role=" + role.getApplicationRoleName();
 //        audit(ActionPerformed.ADDED, "role", value);
     }
@@ -240,15 +240,15 @@ public class UserAdminHelper {
     private void addDefaultRole(UserIdentity userIdentity, UserPropertyAndRole role) {
         logger.debug("Adding Role: {}", role);
 
-        if (roleRepository.hasRole(userIdentity.getUid(), role)) {
+        if (userPropertyAndRoleDao.hasRole(userIdentity.getUid(), role)) {
             logger.warn("addDefaultRole - Role already exist. " + role.toString());
-            // roleRepository.deleteUserRole(userIdentity.getUid(), role.getApplicationId(), role.getOrganizationId(), role.getRoleName());
+            // userPropertyAndRoleDao.deleteUserRole(userIdentity.getUid(), role.getApplicationId(), role.getOrganizationId(), role.getRoleName());
         }
 
         String value = "uid=" + userIdentity + ", username=" + userIdentity.getUsername() + ", appid=" + role.getApplicationId() + ", role=" + role.getApplicationRoleName();
         try {
             if (userIdentity != null) {
-                roleRepository.addUserPropertyAndRole(role);
+                userPropertyAndRoleDao.addUserPropertyAndRole(role);
                 audit(ActionPerformed.ADDED, "role", value);
             }
         } catch (Exception e) {

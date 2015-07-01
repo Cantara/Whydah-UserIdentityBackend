@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
+@Ignore
 public class SecurityFilterTest {
     private static final Logger log = LoggerFactory.getLogger(SecurityFilterTest.class);
     private SecurityFilter securityFilter;

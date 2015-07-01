@@ -35,7 +35,7 @@ public class UserIdentity extends UserIdentityRepresentation implements Serializ
         this.lastName = lastName;
         this.personRef = personRef;
         this.email = email;
-        this.cellPhone = cellPhone;
+        setCellPhone(cellPhone);
         this.password = password;
     }
 

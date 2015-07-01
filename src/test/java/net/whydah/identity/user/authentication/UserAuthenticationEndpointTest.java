@@ -4,11 +4,13 @@ import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
+import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregate;
+import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.email.PasswordSender;
 import net.whydah.identity.user.identity.LdapAuthenticator;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
@@ -16,7 +18,6 @@ import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.user.search.LuceneIndexer;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.identity.util.PasswordGenerator;
@@ -29,7 +30,6 @@ import org.constretto.model.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.w3c.dom.Document;
 
 import javax.naming.NamingException;
@@ -42,8 +42,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.*;
@@ -54,21 +52,25 @@ import static org.junit.Assert.*;
  * @since 10/18/12
  */
 public class UserAuthenticationEndpointTest {
-    private static UserPropertyAndRoleRepository roleRepository;
+    private static DatabaseMigrationHelper dbHelper;
+    private static UserPropertyAndRoleDao userPropertyAndRoleDao;
     private static UserAdminHelper userAdminHelper;
     private static UserIdentityService userIdentityService;
 
     private static Main main = null;
+    private static ApplicationService applicationService;
 
 
     @BeforeClass
     public static void setUp() throws Exception {
+        /*
         LogManager.getLogManager().reset();
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
         LogManager.getLogManager().getLogger("").setLevel(Level.INFO);
+        */
 
-        ApplicationMode.setDevMode();
+        ApplicationMode.setCIMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
@@ -85,14 +87,17 @@ public class UserAuthenticationEndpointTest {
         main.startEmbeddedDS(ldapPath, configuration.evaluateToInt("ldap.embedded.port"));
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+        dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.cleanDatabase();
+        dbHelper.upgradeDatabase();
+
+        userPropertyAndRoleDao = new UserPropertyAndRoleDao(dataSource);
+        applicationService = new ApplicationService(new ApplicationDao(dataSource), new AuditLogDao(dataSource));
+        assertEquals(userPropertyAndRoleDao.countUserRolesInDB(), 0);
 
         new IamDataImporter(dataSource, configuration).importIamData();
 
         main.start();
-
-        AuditLogDao auditLogDao = new AuditLogDao(dataSource);
-
 
         String primaryLdapUrl = configuration.evaluateToString("ldap.primary.url");
         String primaryAdmPrincipal = configuration.evaluateToString("ldap.primary.admin.principal");
@@ -105,14 +110,14 @@ public class UserAuthenticationEndpointTest {
         LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
         LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute);
 
+        AuditLogDao auditLogDao = new AuditLogDao(dataSource);
         PasswordGenerator pwg = new PasswordGenerator();
         PasswordSender passwordSender = new PasswordSender(null, null, null);
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, passwordSender, null, null);
 
-        ApplicationDao configDataRepository = new ApplicationDao(dataSource);
-        roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
+
         Directory index = new NIOFSDirectory(new File(luceneDir));
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, roleRepository, configuration);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, new LuceneIndexer(index), auditLogDao, userPropertyAndRoleDao, configuration);
 
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
@@ -205,7 +210,9 @@ public class UserAuthenticationEndpointTest {
         String email = "e@mail.com";
         newIdentity.setEmail(email);
 
-        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(roleRepository, userAdminHelper, userIdentityService);
+        UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userPropertyAndRoleDao,
+                applicationService, null, null);
+        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService);
 
         String roleValue = "roleValue";
         Response response = resource.createAndAuthenticateUser(newIdentity, roleValue, false);

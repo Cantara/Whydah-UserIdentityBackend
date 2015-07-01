@@ -2,11 +2,11 @@ package net.whydah.identity.user.authentication;
 
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregate;
+import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ import java.util.List;
 public class UserAuthenticationEndpoint {
     private static final Logger log = LoggerFactory.getLogger(UserAuthenticationEndpoint.class);
 
-    private final UserPropertyAndRoleRepository roleRepository;
+    private final UserAggregateService userAggregateService;
     private final UserAdminHelper userAdminHelper;
     private final UserIdentityService userIdentityService;
     //private final String hostname;
@@ -51,9 +51,9 @@ public class UserAuthenticationEndpoint {
     private AuditLogDao auditLogDao;
 
     @Autowired
-    public UserAuthenticationEndpoint(UserPropertyAndRoleRepository roleRepository, UserAdminHelper userAdminHelper,
+    public UserAuthenticationEndpoint(UserAggregateService userAggregateService, UserAdminHelper userAdminHelper,
                                       UserIdentityService userIdentityService) {
-        this.roleRepository = roleRepository;
+        this.userAggregateService = userAggregateService;
         this.userAdminHelper = userAdminHelper;
         this.userIdentityService = userIdentityService;
         //this.hostname = getLocalhostName();
@@ -99,7 +99,7 @@ public class UserAuthenticationEndpoint {
             return Response.status(Response.Status.FORBIDDEN).entity(entity).build();
         }
 
-        List<UserPropertyAndRole> roles = roleRepository.getUserPropertyAndRoles(id.getUid());
+        List<UserPropertyAndRole> roles = userAggregateService.getUserPropertyAndRoles(id.getUid());
         UserAggregate userAggregate = new UserAggregate(id, roles);
         log.info("Authentication ok for user with username={}", username);
 

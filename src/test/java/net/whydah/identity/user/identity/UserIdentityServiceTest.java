@@ -7,7 +7,6 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.resource.UserAdminHelper;
 import net.whydah.identity.user.role.UserPropertyAndRoleDao;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.user.search.LuceneIndexer;
 import net.whydah.identity.user.search.LuceneSearch;
 import net.whydah.identity.util.FileUtils;
@@ -46,7 +45,7 @@ public class UserIdentityServiceTest {
     public static void setUp() throws Exception {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
         //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
-        ApplicationMode.setDevMode();
+        ApplicationMode.setCIMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
@@ -78,12 +77,12 @@ public class UserIdentityServiceTest {
 
 
         ApplicationDao configDataRepository = new ApplicationDao(dataSource);
-        UserPropertyAndRoleRepository roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
+        UserPropertyAndRoleDao userPropertyAndRoleDao = new UserPropertyAndRoleDao(dataSource);
 
         Directory index = new NIOFSDirectory(new File(luceneDir));
         luceneIndexer = new LuceneIndexer(index);
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneIndexer, auditLogDao, roleRepository, configuration);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneIndexer, auditLogDao, userPropertyAndRoleDao, configuration);
         passwordGenerator = new PasswordGenerator();
 
         /*

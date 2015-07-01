@@ -1,7 +1,6 @@
 package net.whydah.identity.user.resource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.user.InvalidRoleModificationException;
 import net.whydah.identity.user.NonExistentRoleException;
 import net.whydah.identity.user.UserAggregateService;
@@ -40,7 +39,7 @@ public class UserResource {
     private UriInfo uriInfo;
 
     @Autowired
-    public UserResource(UserIdentityService userIdentityService, UserAggregateService userAggregateService, ApplicationDao applicationDao) {
+    public UserResource(UserIdentityService userIdentityService, UserAggregateService userAggregateService) {
         this.userIdentityService = userIdentityService;
         this.userAggregateService = userAggregateService;
         this.mapper = new ObjectMapper();
@@ -141,15 +140,14 @@ public class UserResource {
         try {
             userIdentity = mapper.readValue(userIdentityJson, UserIdentity.class);
         } catch (IOException e) {
-            log.error("updateUserIdentityForUsername, invalid json. userIdentityJson={}", userIdentityJson, e);
+            log.error("updateUserIdentity failed for uid={}, invalid json. userIdentityJson={}", uid, userIdentityJson, e);
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         try {
-            UserIdentity updatedUserIdentity = userAggregateService.updateUserIdentity(uid, userIdentity);
-
+            userIdentityService.updateUserIdentity(uid, userIdentity);
             try {
-                String json = mapper.writeValueAsString(updatedUserIdentity);
+                String json = mapper.writeValueAsString(userIdentity);
                 return Response.ok(json).build();
             } catch (IOException e) {
                 log.error("Error converting to json. {}", userIdentity.toString(), e);
@@ -157,10 +155,10 @@ public class UserResource {
             }
         } catch (InvalidUserIdentityFieldException iuife) {
             log.warn("updateUserIdentity returned {} because {}.", Response.Status.BAD_REQUEST.toString(), iuife.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(iuife.getMessage()).build();
         } catch (IllegalArgumentException iae) {
             log.info("updateUserIdentity: Invalid json={}", userIdentityJson, iae);
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid json").build();
         } catch (RuntimeException e) {
             log.error("updateUserIdentity: RuntimeError json={}", userIdentityJson, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();

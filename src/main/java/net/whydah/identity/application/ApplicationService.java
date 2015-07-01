@@ -1,14 +1,11 @@
 package net.whydah.identity.application;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.whydah.sso.application.Application;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -19,7 +16,6 @@ import java.util.UUID;
  */
 @Service
 public class ApplicationService {
-    private static final Logger log = LoggerFactory.getLogger(ApplicationService.class);
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
     private final ApplicationDao applicationDao;
@@ -31,38 +27,40 @@ public class ApplicationService {
         this.auditLogDao = auditLogDao;
     }
 
-    public Application createApplication(Application application) {
-        application.setId(UUID.randomUUID().toString());
-        Application persisted = applicationDao.create(application);
-        audit(ActionPerformed.ADDED, "application", application.toString());
-        return persisted;
+    public Application create(Application application) {
+        return create(UUID.randomUUID().toString(), application);
     }
-
-    private void audit(String action, String what, String value) {
-        String now = sdf.format(new Date());
-        ActionPerformed actionPerformed = new ActionPerformed(value, now, action, what, value);
-        auditLogDao.store(actionPerformed);
+    //used by ApplicationImporter, should be remove later
+    public Application create(String applicationId, Application application) {
+        application.setId(applicationId);
+        int numRowsAffected = applicationDao.create(application);
+        audit(ActionPerformed.ADDED, application.getId() + ", " + application.getName());
+        return application;
     }
-
 
     public Application getApplication(String applicationId) {
         return applicationDao.getApplication(applicationId);
     }
 
     public List<Application> getApplications() {
-        List<Application> applications = applicationDao.getApplications();
-        return applications;
+        return applicationDao.getApplications();
     }
 
-    public static String toJson(Application application) {
-        String applicationJson = null;
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            applicationJson =  mapper.writeValueAsString(application);
-        } catch (IOException e) {
-            log.info("Could not create json from this object {}", application.toString(), e);
-        }
-        log.trace("JSON serialization:",applicationJson);
-        return applicationJson;
+    public int update(Application application) {
+        int numRowsAffected = applicationDao.update(application);
+        audit(ActionPerformed.MODIFIED, application.getId() + ", " + application.getName());
+        return numRowsAffected;
+    }
+
+    public int delete(String applicationId) {
+        int numRowsAffected = applicationDao.delete(applicationId);
+        audit(ActionPerformed.DELETED, applicationId);
+        return numRowsAffected;
+    }
+
+    private void audit(String action, String value) {
+        String now = sdf.format(new Date());
+        ActionPerformed actionPerformed = new ActionPerformed(value, now, action, "application", value);
+        auditLogDao.store(actionPerformed);
     }
 }

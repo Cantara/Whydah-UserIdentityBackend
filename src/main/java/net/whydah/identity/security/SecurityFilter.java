@@ -23,16 +23,17 @@ import java.util.List;
  */
 @Component
 public class SecurityFilter implements Filter {
-    public static final String OPEN_PATH = "/authenticate";
-    public static final String AUTHENTICATE_USER_PATH = "/authenticate";
-    public static final String PASSWORD_RESET_PATH = "/password";
-    //public static final String SECURED_PATHS_PARAM = "securedPaths";
-    public static final String REQUIRED_ROLE_USERS = "WhydahUserAdmin";
-    //public static final String REQUIRED_ROLE_APPLICATIONS = "WhydahUserAdmin";
     private static final Logger log = LoggerFactory.getLogger(SecurityFilter.class);
 
-    private final SecurityTokenServiceHelper securityTokenHelper;
     private final ApplicationTokenService applicationTokenService;
+    private final SecurityTokenServiceHelper securityTokenHelper;
+
+    //public static final String OPEN_PATH = "/authenticate";
+    //public static final String AUTHENTICATE_USER_PATH = "/authenticate";
+    //public static final String PASSWORD_RESET_PATH = "/password";
+    //public static final String SECURED_PATHS_PARAM = "securedPaths";
+    //public static final String REQUIRED_ROLE_USERS = "WhydahUserAdmin";
+    //public static final String REQUIRED_ROLE_APPLICATIONS = "WhydahUserAdmin";
     //private List<String> securedPaths = new ArrayList<>();
     //private String requiredRole;
 
@@ -47,6 +48,104 @@ public class SecurityFilter implements Filter {
         //requiredRole = REQUIRED_ROLE_USERS;
     }
 
+
+    Integer authenticateAndAuthorizeRequest(String pathInfo) {
+        //Open paths without authentication
+        log.trace("filter path {}", pathInfo);
+        if (pathInfo.startsWith("/health")) {
+            return null;
+        }
+        //TODO See ApplicationAuthenticationEndpoint
+
+        if (ApplicationMode.skipSecurityFilter()) {
+            log.warn("Running in noSecurityFilter mode, security is omitted for users.");
+            Authentication.setAuthenticatedUser(buildMockedUserToken());
+            return null;
+        }
+
+
+        //Require authenticated and authorized applicationtokenid
+        String pathElement1 = findPathElement(pathInfo, 1);
+        //match /password/{applicationtokenid}
+        if (pathElement1.startsWith("/password")) {  //TODO change path
+            String applicationTokenId = findPathElement(pathInfo, 2);
+            boolean applicationVerified = applicationTokenService.verifyApplication(applicationTokenId);
+            if (applicationVerified) {
+                log.trace("application verified {}. Moving to next in chain.", applicationTokenId);
+                return null;
+            } else {
+                log.trace("Application not Authorized=" + applicationTokenId);
+                return HttpServletResponse.SC_UNAUTHORIZED;
+            }
+        }
+        String applicationTokenId = pathElement1.substring(1); //strip leading /
+        boolean applicationVerified = applicationTokenService.verifyApplication(applicationTokenId);
+        if (!applicationVerified) {
+            log.trace("Application not Authorized=" + pathElement1);
+            return HttpServletResponse.SC_UNAUTHORIZED;
+        }
+
+
+        //match /{applicationTokenId}/authenticate/user
+        String pathElement2 = findPathElement(pathInfo, 2);
+        if (pathElement2.equals("/authenticate")) {
+            log.debug("{} was matched to /{applicationTokenId}/authenticate/user", pathInfo);
+            return null;
+        }
+
+        //Authenticate and authorize userTokenId
+        /* Paths:
+        /{applicationtokenid}/{userTokenId}/application
+        /{applicationtokenid}/{userTokenId}/verifyApplicationAuth
+        /{applicationtokenid}/{userTokenId}/applications
+        /{applicationtokenid}/{usertokenid}/useraggregate
+        /{applicationtokenid}/{userTokenId}/user
+        /{applicationtokenid}/{usertokenid}/users
+         */
+        //String usertokenId = pathElement2;
+        String usertokenId = pathElement2.substring(1); //strip leading /
+        UserToken userToken = securityTokenHelper.getUserToken(applicationTokenId, usertokenId);
+        if (userToken == null || userToken.toString().length() < 10) {
+            return HttpServletResponse.SC_UNAUTHORIZED;
+        }
+
+        //TODO verify required user role
+
+        Authentication.setAuthenticatedUser(userToken);
+        return null;
+    }
+
+    UserToken buildMockedUserToken() {
+        List<UserRole> roles = new ArrayList<>();
+        roles.add(new UserRole("9999", "99999", "mockrole"));
+        return new UserToken("MockUserToken", roles);
+    }
+
+    protected String findPathElement(String pathInfo, int elementNumber) {
+        String pathElement = null;
+        if (pathInfo != null) {
+            String[] pathElements = pathInfo.split("/");
+            if (pathElements.length > elementNumber) {
+                pathElement = "/" + pathElements[elementNumber];
+            }
+        }
+        return pathElement;
+    }
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        HttpServletRequest servletRequest = (HttpServletRequest) request;
+
+        Integer statusCode = authenticateAndAuthorizeRequest(servletRequest.getPathInfo());
+        if (statusCode == null) {
+            chain.doFilter(request, response);
+        } else {
+            ((HttpServletResponse) response).setStatus(statusCode);
+        }
+    }
+
+
+    /*
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest servletRequest = (HttpServletRequest) request;
@@ -122,12 +221,6 @@ public class SecurityFilter implements Filter {
     }
 
 
-    private UserToken buildMockedUserToken() {
-        List<UserRole> roles = new ArrayList<>();
-        roles.add(new UserRole("9999", "99999", "mockrole"));
-        return new UserToken("MockUserToken", roles);
-    }
-
     private boolean isAuthenticateUserPath(String pathInfo) {
         boolean isAuthenticateUserPath = false;
         String pathElement = findPathElement(pathInfo, 2);
@@ -153,17 +246,6 @@ public class SecurityFilter implements Filter {
         return authenticataApplicationOnly;
     }
 
-    protected String findPathElement(String pathInfo, int elementNumber) {
-        String pathElement = null;
-        if (pathInfo != null) {
-            String[] pathElements = pathInfo.split("/");
-            if (pathElements.length > elementNumber) {
-                pathElement = "/" + pathElements[elementNumber];
-            }
-        }
-        return pathElement;
-    }
-
     protected boolean isOpenPath(String pathInfo) {
         if (pathInfo.startsWith(OPEN_PATH)) {
             return true;
@@ -178,12 +260,27 @@ public class SecurityFilter implements Filter {
         response.setStatus(statuscode);
     }
 
+    protected String findApplicationTokenId(String pathInfo) {
+        if (pathInfo != null && !pathInfo.startsWith("/")) {
+            log.error("Call to UIB does not start with '/' . Problematic Path: {}", pathInfo);
+        }
+        String tokenIdPath = findPathElement(pathInfo, 1);
+        String tokenId = null;
+        if (tokenIdPath != null) {
+            tokenId = tokenIdPath.substring(1);
+        }
+        return tokenId;
+
+    }
+    */
+
     /**
      * Plukker element 2 fra path som usertokenid. F.eks. /useradmin/1kj2h1j12jh/users/add gir 1kj2h1j12jh.
      *
      * @param pathInfo fra servletRequest.getPathInfo()
      * @return authentication
      */
+    @Deprecated
     protected String findUserTokenId(String pathInfo) {
         if (pathInfo != null && !pathInfo.startsWith("/")) {
             log.error("Call to UIB does not start with '/' which can be because of configuration problem. Problematic Path: {}", pathInfo);
@@ -197,18 +294,6 @@ public class SecurityFilter implements Filter {
 
     }
 
-    protected String findApplicationTokenId(String pathInfo) {
-        if (pathInfo != null && !pathInfo.startsWith("/")) {
-            log.error("Call to UIB does not start with '/' . Problematic Path: {}", pathInfo);
-        }
-        String tokenIdPath = findPathElement(pathInfo, 1);
-        String tokenId = null;
-        if (tokenIdPath != null) {
-            tokenId = tokenIdPath.substring(1);
-        }
-        return tokenId;
-
-    }
 
     /*
     private boolean isSecuredPath(String pathInfo) {

@@ -1,6 +1,7 @@
 package net.whydah.identity.dataimport;
 
-import org.apache.commons.dbutils.QueryRunner;
+import net.whydah.identity.application.ApplicationService;
+import net.whydah.sso.application.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,12 +22,13 @@ public class ApplicationImporter {
 	private static final int DEFAULTORGANIZATIONNAME = 3;
     private static final int APPLICATIONSECRET = 4;
 
-	private QueryRunner queryRunner;
+    private ApplicationService applicationService;
 
-	public ApplicationImporter(QueryRunner queryRunner) {
-		this.queryRunner = queryRunner;
-	}
-	
+
+    public ApplicationImporter(ApplicationService applicationService) {
+        this.applicationService = applicationService;
+    }
+
 	public void importApplications(InputStream applicationsSource) {
 		List<Application> applications = parseApplications(applicationsSource);
 		saveApplications(applications);
@@ -37,14 +38,15 @@ public class ApplicationImporter {
 	private void saveApplications(List<Application> applications) {
         for (Application application: applications) {
             try {
+                applicationService.create(application.getId(), application);
+                /*
                 queryRunner.update("INSERT INTO Application (Id, Name, DefaultRoleName, DefaultOrgName, Secret) values (?, ?, ?, ?, ?)",
                         application.getId(), application.getName(), application.getDefaultRoleName(), application.getDefaultOrganizationId(),application.getApplicationSecret());
+                */
                 log.info("Imported Application. Id {}, Name {}", application.getId(), application.getName());
-            } catch(SQLException e) {
-                log.error("Unable to persist application:", application.toString());
             } catch(Exception e) {
-                log.error("Unable to persist applications.", e);
-                throw new RuntimeException("Unable to persist applications.", e);
+                log.error("Unable to persist application: {}", application.toString(), e);
+                throw new RuntimeException("Unable to persist application: " + application.toString(), e);
             }
         }
 	}
@@ -69,8 +71,10 @@ public class ApplicationImporter {
 	        	String defaultRoleName = cleanString(lineArray[DEFAULTROLE]);
 	        	String defaultOrganizationId = cleanString(lineArray[DEFAULTORGANIZATIONNAME]);
                 String applicationSecret = cleanString(lineArray[APPLICATIONSECRET]);
-
-	        	Application application = new Application(applicatinId, applicationName, defaultRoleName, defaultOrganizationId,applicationSecret);
+                Application application = new Application(applicatinId, applicationName);
+                application.setDefaultRoleName(defaultRoleName);
+                application.setDefaultOrganizationName(defaultOrganizationId);
+                application.setSecret(applicationSecret);
 	            applications.add(application);
 	        }
 			return applications;

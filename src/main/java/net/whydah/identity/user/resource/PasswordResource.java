@@ -20,7 +20,7 @@ import javax.ws.rs.core.UriInfo;
  * @author <a href="bard.lind@gmail.com">Bard Lind</a>
  */
 @Component
-@Path("/password/{applciationtokenid}")
+@Path("/password/{applicationtokenid}")
 public class PasswordResource {
     private static final Logger log = LoggerFactory.getLogger(PasswordResource.class);
 

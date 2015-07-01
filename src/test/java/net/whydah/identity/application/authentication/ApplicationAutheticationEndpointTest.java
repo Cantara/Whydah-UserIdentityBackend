@@ -1,5 +1,6 @@
 package net.whydah.identity.application.authentication;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
@@ -10,6 +11,7 @@ import static org.junit.Assert.assertEquals;
  * @author Stig Lau
  */
 public class ApplicationAutheticationEndpointTest {
+    @Ignore
     @Test
     public void simplefunctionaltestofAppAuthentication(){
         Response result = new ApplicationAuthenticationEndpoint().authenticateApplication("some random input");

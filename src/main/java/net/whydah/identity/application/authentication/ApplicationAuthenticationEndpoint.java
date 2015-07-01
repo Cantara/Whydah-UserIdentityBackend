@@ -1,6 +1,6 @@
 package net.whydah.identity.application.authentication;
 
-import net.whydah.identity.application.Application;
+import net.whydah.sso.application.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,14 +28,29 @@ public class ApplicationAuthenticationEndpoint {
         //FIXME real implementation of ApplicationAuthenticationEndpoint.
 
         Application mockApplication = new Application("9999", "applicationNameMock");
-        String applicationXml = mockApplication.toXML();
+        //String applicationXml = mockApplication.toXML();
         //String applicationXml = "";
-        log.debug("Application authentication ok. XML: {}", applicationXml);
-        return Response.status(Response.Status.OK).entity(applicationXml).build();
+        //log.debug("Application authentication ok. XML: {}", applicationXml);
+        //return Response.status(Response.Status.OK).entity(applicationXml).build();
         /*
         ApplicationToken applicationToken = new ApplicationToken(new MockApplicationCredential().toXML());
         log.warn("Accessing insecure mock. Application Validation is Ommited!");
         return Response.status(Response.Status.OK).entity(applicationToken.toXML()).build();
         */
+        return null;
     }
+
+    //@Path("/{applicationtokenid}/{userTokenId}/")
+    /*
+    @POST
+    @Path("/verifyApplicationAuth")
+    @Consumes(MediaType.APPLICATION_XML)
+    @Produces(MediaType.APPLICATION_XML)
+    public Response verifyApplicationAuth(String applicationCredential) {
+        log.trace("verifyApplicationAuth is called ");
+
+        //FIXME check applicationSecret against applicationID
+        return Response.ok().build();
+    }
+    */
 }

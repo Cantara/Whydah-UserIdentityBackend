@@ -54,6 +54,10 @@ public class UserIdentityRepresentation {
         this.email = email;
     }
     public void setCellPhone(String cellPhone) {
+        if (cellPhone != null && cellPhone.isEmpty()) {
+            this.cellPhone = null;
+            return;
+        }
         this.cellPhone = cellPhone;
     }
     public void setPassword(String password) {

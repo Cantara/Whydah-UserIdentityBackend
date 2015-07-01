@@ -21,7 +21,7 @@ import java.util.UUID;
  */
 @Repository
 public class UserPropertyAndRoleDao {
-    private static final Logger log = LoggerFactory.getLogger(UserPropertyAndRoleRepository.class);
+    private static final Logger log = LoggerFactory.getLogger(UserPropertyAndRoleDao.class);
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -74,7 +74,7 @@ public class UserPropertyAndRoleDao {
         return count;
     }
 
-    boolean hasRole(String uid, UserPropertyAndRole role) {
+    public boolean hasRole(String uid, UserPropertyAndRole role) {
         List<UserPropertyAndRole> existingRoles = getUserPropertyAndRoles(uid);
         for (UserPropertyAndRole existingRole : existingRoles) {
             log.trace("hasRole - checking existing.applicationID {} against applicationID {} " +

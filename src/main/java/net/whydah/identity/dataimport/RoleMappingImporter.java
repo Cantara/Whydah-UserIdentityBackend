@@ -1,7 +1,7 @@
 package net.whydah.identity.dataimport;
 
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
+import net.whydah.identity.user.role.UserPropertyAndRoleDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,10 +24,10 @@ public class RoleMappingImporter {
 	private static final int ROLEVALUE = 5;
 
 
-    private UserPropertyAndRoleRepository roleMappingRepository;
+    private UserPropertyAndRoleDao userPropertyAndRoleDao;
     
-	public RoleMappingImporter(UserPropertyAndRoleRepository roleMappingRepository) {
-		this.roleMappingRepository = roleMappingRepository;
+	public RoleMappingImporter(UserPropertyAndRoleDao userPropertyAndRoleDao) {
+		this.userPropertyAndRoleDao = userPropertyAndRoleDao;
 	}
 
     public void importRoleMapping(InputStream roleMappingSource) {
@@ -92,7 +92,8 @@ public class RoleMappingImporter {
 
     private void saveRoleMapping(List<UserPropertyAndRole> roles) {
         for (UserPropertyAndRole userPropertyAndRole : roles) {
-            roleMappingRepository.addUserPropertyAndRole(userPropertyAndRole);
+            //userPropertyAndRoleDao.addUserPropertyAndRole(userPropertyAndRole);
+            userPropertyAndRoleDao.addUserPropertyAndRole(userPropertyAndRole);
         }
     }
 }

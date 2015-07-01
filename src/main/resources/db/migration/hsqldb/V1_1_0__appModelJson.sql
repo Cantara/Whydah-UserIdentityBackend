@@ -1,0 +1,7 @@
+DROP TABLE Role IF EXISTS;
+DROP TABLE Application IF EXISTS;
+
+CREATE TABLE Application (
+  id varchar(64) PRIMARY KEY,
+  json LONGVARCHAR
+);

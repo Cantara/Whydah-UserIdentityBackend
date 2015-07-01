@@ -3,12 +3,10 @@ package net.whydah.identity.application.authentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Path;
-
 /**
  * Created by baardl on 22.03.14.
  */
-@Path("/application")
+//@Path("/application")
 public class StubbedApplicationAccessRepository implements ApplicationAccessRepository {
     private static final Logger logger = LoggerFactory.getLogger(StubbedApplicationAccessRepository.class);
 

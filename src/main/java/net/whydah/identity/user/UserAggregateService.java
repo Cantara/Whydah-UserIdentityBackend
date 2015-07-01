@@ -1,5 +1,6 @@
 package net.whydah.identity.user;
 
+import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
@@ -8,8 +9,9 @@ import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.resource.RoleRepresentationRequest;
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
+import net.whydah.identity.user.role.UserPropertyAndRoleDao;
 import net.whydah.identity.user.search.LuceneIndexer;
+import net.whydah.sso.application.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,16 +33,18 @@ public class UserAggregateService {
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
     private final UserIdentityService userIdentityService;
-    private final UserPropertyAndRoleRepository userPropertyAndRoleRepository;
+    private final UserPropertyAndRoleDao userPropertyAndRoleDao;
+    private final ApplicationService applicationDao;
     private final LuceneIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
 
     @Autowired
-    public UserAggregateService(UserIdentityService userIdentityService, UserPropertyAndRoleRepository userPropertyAndRoleRepository,
-                                LuceneIndexer luceneIndexer, AuditLogDao auditLogDao) {
+    public UserAggregateService(UserIdentityService userIdentityService, UserPropertyAndRoleDao userPropertyAndRoleDao,
+                                ApplicationService applicationDao, LuceneIndexer luceneIndexer, AuditLogDao auditLogDao) {
         this.luceneIndexer = luceneIndexer;
         this.auditLogDao = auditLogDao;
-        this.userPropertyAndRoleRepository = userPropertyAndRoleRepository;
+        this.userPropertyAndRoleDao = userPropertyAndRoleDao;
+        this.applicationDao = applicationDao;
         this.userIdentityService = userIdentityService;
     }
 
@@ -56,7 +60,7 @@ public class UserAggregateService {
             log.trace("getUserAggregateByUsernameOrUid could not find user with usernameOrUid={}", usernameOrUid);
             return null;
         }
-        List<UserPropertyAndRole> userPropertyAndRoles = userPropertyAndRoleRepository.getUserPropertyAndRoles(userIdentity.getUid());
+        List<UserPropertyAndRole> userPropertyAndRoles = userPropertyAndRoleDao.getUserPropertyAndRoles(userIdentity.getUid());
         return new UserAggregate(userIdentity, userPropertyAndRoles);
     }
 
@@ -90,7 +94,7 @@ public class UserAggregateService {
     // FIXME This does not seem to make any sense...  DELETE user or DELETE role?
     private void deleteRolesForUser(UserIdentity userIdentity) {
         String uid = userIdentity.getUid();
-        userPropertyAndRoleRepository.deleteUser(uid);
+        userPropertyAndRoleDao.deleteAllRolesForUser(uid);
         //indexer.removeFromIndex(uid);
         audit(ActionPerformed.DELETED, "user", "uid=" + uid + ", username=" + userIdentity.getUsername());
     }
@@ -128,27 +132,48 @@ public class UserAggregateService {
         role.setApplicationRoleName(request.getApplicationRoleName());
         role.setApplicationRoleValue(request.getApplicationRoleValue());
 
-        if (userPropertyAndRoleRepository.hasRole(uid, role)) {
+        if (userPropertyAndRoleDao.hasRole(uid, role)) {
             String msg = "User with uid=" + uid + " already has this role. " + role.toString();
             throw new WebApplicationException(msg, Response.Status.CONFLICT);
         }
 
-        userPropertyAndRoleRepository.addUserPropertyAndRole(role);
+        userPropertyAndRoleDao.addUserPropertyAndRole(role);
         String value = "uid=" + uid + ", appid=" + role.getApplicationId() + ", role=" + role.getApplicationRoleName();
         audit(ActionPerformed.ADDED, "role", value);
         return role;
     }
 
     public UserPropertyAndRole getRole(String uid, String roleId) {
-        return userPropertyAndRoleRepository.getUserPropertyAndRole(roleId);
+        return getUserPropertyAndRole(roleId);
     }
+
+    public UserPropertyAndRole getUserPropertyAndRole(String roleId) {
+        UserPropertyAndRole role = userPropertyAndRoleDao.getUserPropertyAndRole(roleId);
+        Application application = applicationDao.getApplication(role.getApplicationId());
+        if (application != null) {
+            role.setApplicationName(application.getName());
+        }
+        return role;
+    }
+
 
     public List<UserPropertyAndRole> getRoles(String uid) {
-        return userPropertyAndRoleRepository.getUserPropertyAndRoles(uid);
+        return getUserPropertyAndRoles(uid);
+    }
+    public List<UserPropertyAndRole> getUserPropertyAndRoles(String uid) {
+        List<UserPropertyAndRole> roles = userPropertyAndRoleDao.getUserPropertyAndRoles(uid);
+        for (UserPropertyAndRole role : roles) {
+            Application application = applicationDao.getApplication(role.getApplicationId());
+            if (application != null) {
+                role.setApplicationName(application.getName());
+            }
+        }
+        return roles;
     }
 
+
     public UserPropertyAndRole updateRole(String uid, String roleId, UserPropertyAndRole role) {
-        UserPropertyAndRole existingUserPropertyAndRole = userPropertyAndRoleRepository.getUserPropertyAndRole(roleId);
+        UserPropertyAndRole existingUserPropertyAndRole = getUserPropertyAndRole(roleId);
         if (existingUserPropertyAndRole == null) {
             throw new NonExistentRoleException("RoleID does not exist: " + roleId);
         }
@@ -164,13 +189,13 @@ public class UserAggregateService {
 
         role.setUid(uid);
         role.setRoleId(roleId);
-        userPropertyAndRoleRepository.updateUserRoleValue(role);
+        userPropertyAndRoleDao.updateUserRoleValue(role);
 
         //audit(ActionPerformed.MODIFIED, "role", "uid=" + uid + ", appid=" + role.getApplicationId() + ", role=" + jsonrole);
         return role;
     }
 
     public void deleteRole(String uid, String roleid) {
-        userPropertyAndRoleRepository.deleteRole(roleid);
+        userPropertyAndRoleDao.deleteRole(roleid);
     }
 }

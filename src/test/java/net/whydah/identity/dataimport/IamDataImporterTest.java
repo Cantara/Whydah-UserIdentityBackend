@@ -2,12 +2,14 @@ package net.whydah.identity.dataimport;
 
 import com.jayway.restassured.RestAssured;
 import net.whydah.identity.Main;
+import net.whydah.identity.application.ApplicationDao;
+import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.user.UserAggregate;
+import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.UserIdentity;
 import net.whydah.identity.user.role.UserPropertyAndRole;
-import net.whydah.identity.user.role.UserPropertyAndRoleRepository;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
@@ -23,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class IamDataImporterTest {
-    private final static String basepath = "target/UserAuthenticationEndpointTest/";
+    //private final static String basepath = "target/UserAuthenticationEndpointTest/";
     /*
 	private static final String lucenePath = basepath + "lucene";
     private final static String ldappath = basepath + "hsqldb/ldap/";
@@ -75,7 +77,7 @@ public class IamDataImporterTest {
     public static void startServer() {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
         //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
-        ApplicationMode.setDevMode();
+        ApplicationMode.setCIMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
@@ -102,7 +104,6 @@ public class IamDataImporterTest {
         main.start();
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
-        //mapper = new ObjectMapper();
     }
 
     private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
@@ -119,14 +120,6 @@ public class IamDataImporterTest {
         return dataSource;
     }
 
-    /*
-    @AfterClass
-    public static void tearDown() throws Exception {
-        if (ads != null) {
-            ads.stopServer();
-        }
-    }
-    */
     @AfterClass
     public static void stop() {
         if (main != null) {
@@ -136,12 +129,8 @@ public class IamDataImporterTest {
     
     @Test
     public void testDataIsImported() throws Exception {
-		//IamDataImporter iamDataImporter = new IamDataImporter(applicationImporter, organizationImporter, userImporter, roleMappingImporter);
-        //new IamDataImporter(dataSource, ldapUserIdentityDao, lucenePath).importIamData();
         dataImporter.importIamData();
         LdapUserIdentityDao ldapUserIdentityDao = dataImporter.getLdapUserIdentityDao();
-        UserPropertyAndRoleRepository roleRepository = dataImporter.getUserPropertyAndRoleRepository();
-
         UserIdentity thomaspUserIdentity = ldapUserIdentityDao.getUserIndentity("thomasp");
         assertEquals("Name must be set", "Thomas", thomaspUserIdentity.getFirstName());
         assertEquals("Lastname must be set", "Pringle", thomaspUserIdentity.getLastName());
@@ -151,31 +140,34 @@ public class IamDataImporterTest {
         assertEquals("Name must be set", "Erik", erikdUserIdentity.getFirstName());
         assertEquals("Lastname must be set", "Drolshammer", erikdUserIdentity.getLastName());
         assertEquals("UserId must be set", "erik.drolshammer", erikdUserIdentity.getUid());
-        
-        UserAggregate userAggregate1 = new UserAggregate(thomaspUserIdentity, roleRepository.getUserPropertyAndRoles(thomaspUserIdentity.getUid()));
-        
+
+        ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), null);
+        UserAggregateService userAggregateService = new UserAggregateService(null, dataImporter.getUserPropertyAndRoleDao(),
+                applicationService, null, null);
+        UserAggregate userAggregate1 = new UserAggregate(thomaspUserIdentity, userAggregateService.getUserPropertyAndRoles(thomaspUserIdentity.getUid()));
         List<UserPropertyAndRole> propsAndRoles = userAggregate1.getRoles();
+
+        //List<UserPropertyAndRole> propsAndRoles = userPropertyAndRoleDao.getUserPropertyAndRoles(thomaspUserIdentity.getUid());
+
         assertEquals("All roles must be found", 3, propsAndRoles.size());
         assertTrue("The role must be found", containsRoleMapping(propsAndRoles, "username@emailaddress.com", "12", "UserAdminService", "Altran", "developer", "30"));
         assertTrue("The role must be found", containsRoleMapping(propsAndRoles, "username@emailaddress.com", "15", "SSOLoginWebApplication", "Whydah", "developer", "20"));
 
-        UserAggregate userAggregate2 = new UserAggregate(erikdUserIdentity, roleRepository.getUserPropertyAndRoles(erikdUserIdentity.getUid()));
+        UserAggregate userAggregate2 = new UserAggregate(erikdUserIdentity, userAggregateService.getUserPropertyAndRoles(erikdUserIdentity.getUid()));
         
         List<UserPropertyAndRole> propsAndRoles2 = userAggregate2.getRoles();
         assertEquals("All roles must be found", 1, propsAndRoles2.size());
         assertTrue("The role must be found", containsRoleMapping(propsAndRoles2, "erik.drolshammer", "12", "UserAdminService", "Altran", "admin", "70"));
-
     }
 
     private boolean containsRoleMapping(List<UserPropertyAndRole> propsAndRoles, String uid, String appId, String appName, String orgName, String roleName, String roleValue) {
         for (UserPropertyAndRole role : propsAndRoles) {
-            if(role.getApplicationId().equals(appId) &&
+            if (role.getApplicationId().equals(appId) &&
 			   role.getApplicationName().equals(appName) && 
 			   role.getOrganizationName().equals(orgName) && 
 			   role.getApplicationRoleName().equals(roleName) &&
                     role.getApplicationRoleValue().equals(roleValue) &&
                     role.getUid().equals(uid)) {
-
                 return true;
 			}
 		}
