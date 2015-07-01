@@ -1,0 +1,5 @@
+#userId, applicationId, applicationName, organizationName, roleName, roleValue
+username@emailaddress.com, 2, Mobilefirst, Altran, developer, 30
+username@emailaddress.com, 2, Mobilefirst, Altran, client, 10
+username@emailaddress.com, 3, Whydah, Whydah, developer, 20
+erik.drolshammer, 2, Mobilefirst, Altran, admin, 70

@@ -1,0 +1,3 @@
+#userId, username, password, firstName, lastName, email, cellPhone, personRef
+username@emailaddress.com, thomasp, logMeInPlease, Thomas, Pringle, username@emailaddress.com, +46707771841, 1
+erik.drolshammer, erikd, secretPw, Erik, Drolshammer, erik.drolshammer@altran.com, +47123456, 2
