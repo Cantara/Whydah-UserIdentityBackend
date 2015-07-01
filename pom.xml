@@ -83,6 +83,12 @@
     <!-- mvn org.codehaus.mojo:versions-maven-plugin:2.2:display-dependency-updates -->
     <dependencies>
         <dependency>
+            <groupId>net.whydah.sso</groupId>
+            <artifactId>Whydah-Java-SDK</artifactId>
+            <version>2.0.33-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.glassfish</groupId>
             <artifactId>javax.servlet</artifactId>
             <version>3.0</version>
@@ -409,17 +415,23 @@
         </dependency>
 
 
-
         <dependency>
-            <groupId>org.skyscreamer</groupId>
-            <artifactId>jsonassert</artifactId>
-            <version>1.2.3</version>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.9.4</version>
             <scope>test</scope>
         </dependency>
+        <!-- prefer testng, junit should be phased out -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>1.2.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
