@@ -15,68 +15,23 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 
 public class IamDataImporterTest {
-    //private final static String basepath = "target/UserAuthenticationEndpointTest/";
-    /*
-	private static final String lucenePath = basepath + "lucene";
-    private final static String ldappath = basepath + "hsqldb/ldap/";
-    private final static String dbpath = basepath + "hsqldb/roles";
-    */
+    private BasicDataSource dataSource;
+    private IamDataImporter dataImporter;
+    private Main main;
 
-    //private static EmbeddedADS ads;
-
-    //must be static to use JUnit BeforeClass, switch to TestNG?
-    private static BasicDataSource dataSource;
-    private static IamDataImporter dataImporter;
-    private static Main main;
-
-
-    /*
     @BeforeClass
-    public static void init() throws Exception {
-        System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-    	FileUtils.deleteDirectory(new File(basepath + "/hsqldb"));
-        FileUtils.deleteDirectory(new File(lucenePath));
-
-        int LDAP_PORT = new Integer(AppConfig.appConfig.getProperty("ldap.embedded.port"));
-        String LDAP_URL = "ldap://localhost:" + LDAP_PORT + "/dc=external,dc=WHYDAH,dc=no";
-        
-        File ldapdir = new File(ldappath);
-        ldapdir.mkdirs();
-        ads = new EmbeddedADS(ldappath);
-        ads.startServer(LDAP_PORT);
-        String readOnly = AppConfig.appConfig.getProperty("ldap.primary.readonly");
-        ldapUserIdentityDao = new LdapUserIdentityDao(LDAP_URL, "uid=admin,ou=system", "secret", "uid", "initials", readOnly);
-
-
-        dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
-        dataSource.setUsername("sa");
-        dataSource.setPassword("");
-        dataSource.setUrl("jdbc:hsqldb:file:" + dbpath);
-        //QueryRunner queryRunner = new QueryRunner(dataSource);
-
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
-
-        ApplicationDao configDataRepository = new ApplicationDao(dataSource);
-        roleRepository = new UserPropertyAndRoleRepository(new UserPropertyAndRoleDao(dataSource), configDataRepository);
-
-        //index = new NIOFSDirectory(new File(lucenePath));
-    }
-    */
-    @BeforeClass
-    public static void startServer() {
-        //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
-        //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
+    public void startServer() {
         ApplicationMode.setCIMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -85,19 +40,20 @@ public class IamDataImporterTest {
                 .done()
                 .getConfiguration();
 
-        //String roleDBDirectory = AppConfig.appConfig.getProperty("roledb.directory");
-        String ldapEmbeddedpath = configuration.evaluateToString("ldap.embedded.directory");
-        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
-        FileUtils.deleteDirectories(roleDBDirectory, ldapEmbeddedpath);
 
+        String roleDBDirectory = configuration.evaluateToString("roledb.directory");
+        FileUtils.deleteDirectory(roleDBDirectory);
+        dataSource = initBasicDataSource(configuration);
+        DatabaseMigrationHelper dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.cleanDatabase();
+        dbHelper.upgradeDatabase();
+
+
+        String ldapEmbeddedpath = configuration.evaluateToString("ldap.embedded.directory");
         Integer ldapPort = configuration.evaluateToInt("ldap.embedded.port");
 
         main = new Main(6655);
         main.startEmbeddedDS(ldapEmbeddedpath, ldapPort);
-
-
-        dataSource = initBasicDataSource(configuration);
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
 
         dataImporter = new IamDataImporter(dataSource, configuration);
 
@@ -106,7 +62,7 @@ public class IamDataImporterTest {
         RestAssured.basePath = Main.CONTEXT_PATH;
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
@@ -121,7 +77,7 @@ public class IamDataImporterTest {
     }
 
     @AfterClass
-    public static void stop() {
+    public void stop() {
         if (main != null) {
             main.stop();
         }
@@ -132,14 +88,14 @@ public class IamDataImporterTest {
         dataImporter.importIamData();
         LdapUserIdentityDao ldapUserIdentityDao = dataImporter.getLdapUserIdentityDao();
         UserIdentity thomaspUserIdentity = ldapUserIdentityDao.getUserIndentity("thomasp");
-        assertEquals("Name must be set", "Thomas", thomaspUserIdentity.getFirstName());
-        assertEquals("Lastname must be set", "Pringle", thomaspUserIdentity.getLastName());
-        assertEquals("UserId must be set", "username@emailaddress.com", thomaspUserIdentity.getUid());
+        assertEquals("Thomas", thomaspUserIdentity.getFirstName());
+        assertEquals("Pringle", thomaspUserIdentity.getLastName());
+        assertEquals("username@emailaddress.com", thomaspUserIdentity.getUid());
 
         UserIdentity erikdUserIdentity = ldapUserIdentityDao.getUserIndentity("erikd");
-        assertEquals("Name must be set", "Erik", erikdUserIdentity.getFirstName());
-        assertEquals("Lastname must be set", "Drolshammer", erikdUserIdentity.getLastName());
-        assertEquals("UserId must be set", "erik.drolshammer", erikdUserIdentity.getUid());
+        assertEquals("Erik", erikdUserIdentity.getFirstName());
+        assertEquals("Drolshammer", erikdUserIdentity.getLastName());
+        assertEquals("erik.drolshammer", erikdUserIdentity.getUid());
 
         ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), null);
         UserAggregateService userAggregateService = new UserAggregateService(null, dataImporter.getUserPropertyAndRoleDao(),
@@ -149,15 +105,15 @@ public class IamDataImporterTest {
 
         //List<UserPropertyAndRole> propsAndRoles = userPropertyAndRoleDao.getUserPropertyAndRoles(thomaspUserIdentity.getUid());
 
-        assertEquals("All roles must be found", 3, propsAndRoles.size());
-        assertTrue("The role must be found", containsRoleMapping(propsAndRoles, "username@emailaddress.com", "12", "UserAdminService", "Altran", "developer", "30"));
-        assertTrue("The role must be found", containsRoleMapping(propsAndRoles, "username@emailaddress.com", "15", "SSOLoginWebApplication", "Whydah", "developer", "20"));
+        assertEquals(3, propsAndRoles.size());
+        assertTrue(containsRoleMapping(propsAndRoles, "username@emailaddress.com", "12", "UserAdminService", "Altran", "developer", "30"));
+        assertTrue(containsRoleMapping(propsAndRoles, "username@emailaddress.com", "15", "SSOLoginWebApplication", "Whydah", "developer", "20"));
 
         UserAggregate userAggregate2 = new UserAggregate(erikdUserIdentity, userAggregateService.getUserPropertyAndRoles(erikdUserIdentity.getUid()));
         
         List<UserPropertyAndRole> propsAndRoles2 = userAggregate2.getRoles();
-        assertEquals("All roles must be found", 1, propsAndRoles2.size());
-        assertTrue("The role must be found", containsRoleMapping(propsAndRoles2, "erik.drolshammer", "12", "UserAdminService", "Altran", "admin", "70"));
+        assertEquals(1, propsAndRoles2.size());
+        assertTrue(containsRoleMapping(propsAndRoles2, "erik.drolshammer", "12", "UserAdminService", "Altran", "admin", "70"));
     }
 
     private boolean containsRoleMapping(List<UserPropertyAndRole> propsAndRoles, String uid, String appId, String appName, String orgName, String roleName, String roleValue) {
