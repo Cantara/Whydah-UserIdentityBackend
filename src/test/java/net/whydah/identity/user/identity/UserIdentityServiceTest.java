@@ -17,11 +17,10 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mockito;
 
+import javax.naming.NamingException;
 import javax.ws.rs.core.Response;
 import java.io.File;
 
@@ -37,21 +36,23 @@ public class UserIdentityServiceTest {
     private static PasswordGenerator passwordGenerator;
     private static LuceneIndexer luceneIndexer;
     private static UserAdminHelper userAdminHelper;
+    private static UserIdentityService userIdentityService;
+    private static String username;
+    private static UserIdentity userIdentity;
 
     private static Main main = null;
 
-
     @BeforeClass
-    public static void setUp() throws Exception {
+    public static void setUpBeforeClass() throws Exception {
         //System.setProperty(AppConfig.IAM_MODE_KEY, AppConfig.IAM_MODE_DEV);
         //System.setProperty(ConfigTags.CONSTRETTO_TAGS, ConfigTags.DEV_MODE);
         ApplicationMode.setCIMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-                .done()
-                .getConfiguration();
+            .createPropertiesStore()
+            .addResource(Resource.create("classpath:useridentitybackend.properties"))
+            .addResource(Resource.create("file:./useridentitybackend_override.properties"))
+            .done()
+            .getConfiguration();
 
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
@@ -141,38 +142,43 @@ public class UserIdentityServiceTest {
         }
     }
 
-    @Test
-    public void testAddUserToLdap() throws Exception {
-        UserIdentityService userIdentityService =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
-
-        String username = "username123";
-        UserIdentity userIdentity = new UserIdentity("uid", username, "firstName", "lastName", "test@test.no", "password", "12345678", "personRef"
+    @Before
+    public void setUp() {
+        userIdentityService = new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+        username = "username123";
+        userIdentity = new UserIdentity("uid", username, "firstName", "lastName", "test@test.no", "password", "12345678", "personRef"
         );
+    }
+
+    @After
+    public void tearDown() throws NamingException {
+        userIdentityService.deleteUserIdentity(username);
+    }
+
+    @Test
+    public void whenAddingUserToLDAPThenUserShouldBeAccepted() throws Exception {
         userAdminHelper.addUser(userIdentity);
 
         UserIdentityRepresentation fromLdap = userIdentityService.getUserIdentity(username);
-
         assertEquals(userIdentity, fromLdap);
-        Response response = userAdminHelper.addUser(userIdentity);
-        assertTrue("Expected ConflictException because user should already exist.", response.getStatus() == Response.Status.NOT_ACCEPTABLE.getStatusCode());
     }
 
-
     @Test
-    public void testAddUserStrangeCellPhone() throws Exception {
-        UserIdentityService userIdentityService =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+    public void whenAddingUserWithAlternativelyFormattedCellPhoneThenUserShouldBeAccepted() throws Exception {
+        userIdentity.setCellPhone("+47 123 45 678");
 
-        String username = "username1234";
-        UserIdentity userIdentity = new UserIdentity("uid2", username, "firstName2", "lastName2", "test2@test.no", "password2", "+47 123 45 678", "personRef2"
-        );
         userAdminHelper.addUser(userIdentity);
 
         UserIdentityRepresentation fromLdap = userIdentityService.getUserIdentity(username);
-
         assertEquals(userIdentity, fromLdap);
+    }
+
+    @Test
+    public void whenAddingExistingUserToLdapThenUserShouldNotBeAccepted() {
+        userAdminHelper.addUser(userIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
+
         assertTrue("Expected ConflictException because user should already exist.", response.getStatus() == Response.Status.NOT_ACCEPTABLE.getStatusCode());
     }
+
 }
