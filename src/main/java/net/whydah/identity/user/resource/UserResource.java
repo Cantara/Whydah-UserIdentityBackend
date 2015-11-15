@@ -91,7 +91,7 @@ public class UserResource {
         try {
             String newUserAsJson;
             newUserAsJson = mapper.writeValueAsString(userIdentity);
-            //TODO Ensure password is not returned. Expect UserAdminService to trigger resetPassword.
+            //TODO Ensure password is not returned. Expect UserAdminService to trigger setTempPassword.
             return Response.status(Response.Status.CREATED).entity(newUserAsJson).build();
         } catch (IOException e) {
             log.error("Error converting to json. {}", userIdentity.toString(), e);

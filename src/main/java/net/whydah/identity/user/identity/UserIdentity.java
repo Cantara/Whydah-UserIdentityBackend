@@ -18,6 +18,9 @@ import java.io.Serializable;
  */
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class UserIdentity extends UserIdentityRepresentation implements Serializable {
+    public static final String UID = "uid";
+    public static final String USERNAME = "username";
+
     private static final Logger logger = LoggerFactory.getLogger(UserIdentity.class);
     private static final long serialVersionUID = 1;
     private static final TelephoneNumberSyntaxChecker telephoneNumberSyntaxChecker = new TelephoneNumberSyntaxChecker();
@@ -40,8 +43,8 @@ public class UserIdentity extends UserIdentityRepresentation implements Serializ
     }
 
     public void validate() throws InvalidUserIdentityFieldException {
-        validateSetAndMinimumLength("uid", uid, 2);
-        validateSetAndMinimumLength("username", username, 3);
+        validateSetAndMinimumLength(UID, uid, 2);
+        validateSetAndMinimumLength(USERNAME, username, 3);
 
         validateEmail();
 
@@ -79,8 +82,8 @@ public class UserIdentity extends UserIdentityRepresentation implements Serializ
     @Override
     public String toString() {
         return "UserIdentity{" +
-                "uid='" + uid + '\'' +
-                ", username='" + username + '\'' +
+                UID + "='" + uid + '\'' +
+                ", " + USERNAME + "='" + username + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", personRef='" + personRef + '\'' +

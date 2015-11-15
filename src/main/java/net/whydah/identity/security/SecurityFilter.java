@@ -46,9 +46,14 @@ public class SecurityFilter implements Filter {
     }
 
 
+    /**
+     *
+     * @param pathInfo  the path to apply the filter to
+     * @return HttpServletResponse.SC_UNAUTHORIZED if authentication fails, otherwise null
+     */
     Integer authenticateAndAuthorizeRequest(String pathInfo) {
         //Open paths without authentication
-        log.trace("filter path {}", pathInfo);
+        log.debug("filter path {}", pathInfo);
         if (pathInfo.startsWith("/health")) {
             return null;
         }
@@ -63,8 +68,9 @@ public class SecurityFilter implements Filter {
 
         //Require authenticated and authorized applicationtokenid
         String pathElement1 = findPathElement(pathInfo, 1);
+        /*
         //match /password/{applicationtokenid}
-        if (pathElement1.startsWith("/password")) {  //TODO change path
+        if (pathElement1.startsWith("/password")) {
             String applicationTokenId = findPathElement(pathInfo, 2);
             //boolean applicationVerified = applicationTokenService.verifyApplication(applicationTokenId);
             boolean applicationVerified = true;
@@ -76,26 +82,33 @@ public class SecurityFilter implements Filter {
                 return HttpServletResponse.SC_UNAUTHORIZED;
             }
         }
+        */
+        // match /applicationTokenId
         String applicationTokenId = pathElement1.substring(1); //strip leading /
         //boolean applicationVerified = applicationTokenService.verifyApplication(applicationTokenId);
         boolean applicationVerified = true;
         if (!applicationVerified) {
-            log.trace("Application not Authorized=" + pathElement1);
+            log.debug("Application unauthorized={}", applicationTokenId);
             return HttpServletResponse.SC_UNAUTHORIZED;
         }
 
 
         //match /{applicationTokenId}/authenticate/user
         String pathElement2 = findPathElement(pathInfo, 2);
-        if (pathElement2.equals("/authenticate")) {
-            log.debug("{} was matched to /{applicationTokenId}/authenticate/user", pathInfo);
+        if (pathElement2.equals("/authenticate")) {     //UserAuthenticationEndpoint
+            log.debug("{} was matched to /{applicationTokenId}/authenticate", pathInfo);
+            return null;
+        }
+        if (pathElement2.equals("/signup")) {           //UserSignupEndpoint
+            log.debug("{} was matched to /{applicationTokenId}/signup", pathInfo);
+            return null;
+        }
+        if (pathElement2.equals("/password")) {         //PasswordResource2
+            log.debug("{} was matched to /{applicationTokenId}/password", pathInfo);
             return null;
         }
 
-        if (pathElement2.equals("/signup")) {
-            log.debug("{} was matched to /{applicationTokenId}/signup/user", pathInfo);
-            return null;
-        }
+
 
         //Authenticate and authorize userTokenId
         /* Paths:

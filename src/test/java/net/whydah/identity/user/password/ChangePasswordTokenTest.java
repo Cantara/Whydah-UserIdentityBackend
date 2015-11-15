@@ -1,4 +1,4 @@
-package net.whydah.identity.user;
+package net.whydah.identity.user.password;
 
 import org.junit.Test;
 

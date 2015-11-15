@@ -1,7 +1,6 @@
-package net.whydah.identity.user;
+package net.whydah.identity.user.password;
 
 //import com.sun.jersey.core.util.Base64;
-
 import org.glassfish.jersey.internal.util.Base64;
 
 import java.io.UnsupportedEncodingException;

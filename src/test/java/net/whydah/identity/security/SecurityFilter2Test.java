@@ -34,7 +34,7 @@ public class SecurityFilter2Test {
     }
 
     @Test
-    public void testHealthEndpoint() {
+    public void testOpenEndpoints() {
         assertNull(securityFilter.authenticateAndAuthorizeRequest("/health"));
     }
 
@@ -46,13 +46,12 @@ public class SecurityFilter2Test {
     }
 
     @Test
-    public void testPasswordEndpoint() {
-        assertNull(securityFilter.authenticateAndAuthorizeRequest("/password/appTokenIdPassword"));
-    }
-    @Test
-    public void testAuthenticateUserEndpoint() {
+    public void testOnlyApplicationTokenIdEndpoints() {
         assertNull(securityFilter.authenticateAndAuthorizeRequest("/appTokenIdUser/authenticate/user"));
+        assertNull(securityFilter.authenticateAndAuthorizeRequest("/appTokenIdUser/signup/user"));
+        assertNull(securityFilter.authenticateAndAuthorizeRequest("/appTokenIdUser/password"));
     }
+
 
     @Test
     public void testUsertokenIdAuthenticationOK() {

@@ -460,9 +460,9 @@ public class LdapUserIdentityDao {
         }
     }
 
-    public String getSalt(String user) {
+    public String getSalt(String usernameOrUid) {
         try {
-            Attributes attributes = getUserAttributesForUsernameOrUid(user);
+            Attributes attributes = getUserAttributesForUsernameOrUid(usernameOrUid);
             return getAttribValue(attributes, ATTRIBUTE_NAME_TEMPPWD_SALT);
         } catch (NamingException ne) {
             log.error("", ne);

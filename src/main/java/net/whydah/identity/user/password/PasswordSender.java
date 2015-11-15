@@ -1,4 +1,4 @@
-package net.whydah.identity.user.email;
+package net.whydah.identity.user.password;
 
 import org.constretto.annotation.Configuration;
 import org.constretto.annotation.Configure;

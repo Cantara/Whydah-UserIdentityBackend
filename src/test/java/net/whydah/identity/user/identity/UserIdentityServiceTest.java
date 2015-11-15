@@ -19,7 +19,6 @@ import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -149,7 +148,7 @@ public class UserIdentityServiceTest {
     @Test
     public void testAddUserToLdap() throws Exception {
         UserIdentityService userIdentityService =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneSearch.class));
 
         String username = "username123";
         UserIdentity userIdentity = new UserIdentity("uid", username, "firstName", "lastName", "test@test.no", "password", "12345678", "personRef"
@@ -166,7 +165,7 @@ public class UserIdentityServiceTest {
     @Test
     public void testAddTestUserToLdap() throws Exception {
         UserIdentityService userIdentityService =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneSearch.class));
 
         Random rand = new Random();
         rand.setSeed(new java.util.Date().getTime());
@@ -190,7 +189,7 @@ public class UserIdentityServiceTest {
     @Test
     public void testAddUserStrangeCellPhone() throws Exception {
         UserIdentityService userIdentityService =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneSearch.class));
 
         String username = "username1234";
         UserIdentity userIdentity = new UserIdentity("uid2", username, "firstName2", "lastName2", "test2@test.no", "password2", "+47 123 45 678", "personRef2"
@@ -207,7 +206,7 @@ public class UserIdentityServiceTest {
     @Test
     public void testPersistenceAddTestUserToLdap() throws Exception {
         UserIdentityService userIdentityService =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneSearch.class));
 
         Random rand = new Random();
         rand.setSeed(new java.util.Date().getTime());
@@ -228,7 +227,7 @@ public class UserIdentityServiceTest {
         stop();
         setUp();
         UserIdentityService userIdentityService2 =
-                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, null, luceneIndexer, Mockito.mock(LuceneSearch.class));
+                new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneSearch.class));
         UserIdentityRepresentation fromLdap2 = userIdentityService2.getUserIdentity(userIdentity.getUsername());
 
         // TODO: Still not working

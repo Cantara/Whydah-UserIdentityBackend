@@ -1,4 +1,4 @@
-package net.whydah.identity.user.resource;
+package net.whydah.identity.user.password;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.config.PasswordBlacklist;
@@ -41,6 +41,7 @@ public class PasswordResource {
         log.trace("Started: PasswordResource");
     }
 
+
     @GET
     @Path("/reset/username/{username}")
     public Response resetPassword(@PathParam("username") String username) {
@@ -51,7 +52,7 @@ public class PasswordResource {
                 return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
             }
 
-            String resetPasswordToken = userIdentityService.resetPassword(username, user.getUid());
+            String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid());
             Map<String,String> retVal = new HashMap<>();
             retVal.put("username", username);
             retVal.put("email", user.getEmail());
@@ -60,7 +61,7 @@ public class PasswordResource {
             String retValJson = objectMapper.writeValueAsString(retVal);
             return Response.ok().entity(retValJson).build();
         } catch (Exception e) {
-            log.error("resetPassword failed", e);
+            log.error("setTempPassword failed", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -75,10 +76,10 @@ public class PasswordResource {
                 return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
             }
 
-            String resetPasswordToken = userIdentityService.resetPassword(username, user.getUid());
+            String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid());
             return Response.ok().entity(resetPasswordToken).build();
         } catch (Exception e) {
-            log.error("resetPassword failed", e);
+            log.error("setTempPassword failed", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }

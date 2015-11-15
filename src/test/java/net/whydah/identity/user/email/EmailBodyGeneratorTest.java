@@ -1,5 +1,6 @@
 package net.whydah.identity.user.email;
 
+import net.whydah.identity.user.password.EmailBodyGenerator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

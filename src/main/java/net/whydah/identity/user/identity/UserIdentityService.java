@@ -2,8 +2,8 @@ package net.whydah.identity.user.identity;
 
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
-import net.whydah.identity.user.ChangePasswordToken;
-import net.whydah.identity.user.email.PasswordSender;
+import net.whydah.identity.user.password.ChangePasswordToken;
+import net.whydah.identity.user.password.PasswordSender;
 import net.whydah.identity.user.search.LuceneIndexer;
 import net.whydah.identity.user.search.LuceneSearch;
 import net.whydah.identity.util.PasswordGenerator;
@@ -36,7 +36,6 @@ public class UserIdentityService {
     private final AuditLogDao auditLogDao;
 
     private final PasswordGenerator passwordGenerator;
-    private final PasswordSender passwordSender;
 
     private final LuceneIndexer luceneIndexer;
     private final LuceneSearch searcher;
@@ -46,12 +45,11 @@ public class UserIdentityService {
     @Autowired
     public UserIdentityService(LdapAuthenticator primaryLdapAuthenticator, LdapUserIdentityDao ldapUserIdentityDao,
                                AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
-                               PasswordSender passwordSender, LuceneIndexer luceneIndexer, LuceneSearch searcher) {
+                               LuceneIndexer luceneIndexer, LuceneSearch searcher) {
         this.primaryLdapAuthenticator = primaryLdapAuthenticator;
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.auditLogDao = auditLogDao;
         this.passwordGenerator = passwordGenerator;
-        this.passwordSender = passwordSender;
         this.luceneIndexer = luceneIndexer;
         this.searcher = searcher;
     }
@@ -60,13 +58,13 @@ public class UserIdentityService {
         return primaryLdapAuthenticator.authenticate(username, password);
     }
 
-
-    public String resetPassword(String username, String uid) {
-        String resetPasswordToken = setTempPassword(username, uid);
-//        passwordSender.sendResetPasswordEmail(username, token, userEmail);
-        return resetPasswordToken;
-    }
-    private String setTempPassword(String username, String uid) {
+    /**
+     * Set new generated password in LDAP.
+     * @param username  of the user to set new generated password for
+     * @param uid   uid used only by audit
+     * @return  ChangePasswordToken which can be used to authenticate later.
+     */
+    public String setTempPassword(String username, String uid) {
         String newPassword = passwordGenerator.generate();
         String salt = passwordGenerator.generate();
         ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
@@ -86,21 +84,20 @@ public class UserIdentityService {
      * Authenticate using token generated when resetting the password
      * @param username  username to authenticate
      * @param changePasswordTokenAsString with temporary access
-     * @return  true if authentication OK
+     * @return  true if authentication successful
      */
     public boolean authenticateWithChangePasswordToken(String username, String changePasswordTokenAsString) {
         String salt = ldapUserIdentityDao.getSalt(username);
-
         byte[] saltAsBytes;
         try {
             saltAsBytes = salt.getBytes(SALT_ENCODING);
         } catch (UnsupportedEncodingException e1) {
             throw new RuntimeException("Error with salt for username=" + username, e1);
         }
-        ChangePasswordToken changePasswordToken = ChangePasswordToken.fromTokenString(changePasswordTokenAsString, saltAsBytes);
-        boolean ok = primaryLdapAuthenticator.authenticateWithTemporaryPassword(username, changePasswordToken.getPassword());
-        log.info("authenticateWithChangePasswordToken was ok={} for username={}", ok, username);
-        return ok;
+        String tempPassword = ChangePasswordToken.fromTokenString(changePasswordTokenAsString, saltAsBytes).getPassword();
+        boolean authenticated = primaryLdapAuthenticator.authenticateWithTemporaryPassword(username, tempPassword);
+        log.debug("authenticateWithChangePasswordToken for username={}, authenticated={} ", username, authenticated);
+        return authenticated;
     }
 
 

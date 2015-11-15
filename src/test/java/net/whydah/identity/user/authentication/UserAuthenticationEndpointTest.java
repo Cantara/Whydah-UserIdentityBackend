@@ -11,7 +11,6 @@ import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregate;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.email.PasswordSender;
 import net.whydah.identity.user.identity.LdapAuthenticator;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.UserIdentity;
@@ -112,8 +111,7 @@ public class UserAuthenticationEndpointTest {
 
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
         PasswordGenerator pwg = new PasswordGenerator();
-        PasswordSender passwordSender = new PasswordSender(null, null, null);
-        userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, passwordSender, null, null);
+        userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, null, null);
 
 
         Directory index = new NIOFSDirectory(new File(luceneDir));
