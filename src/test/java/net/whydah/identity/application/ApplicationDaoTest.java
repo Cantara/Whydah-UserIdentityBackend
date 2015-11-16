@@ -2,7 +2,8 @@ package net.whydah.identity.application;
 
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.sso.application.types.Application;
-import net.whydah.sso.application.types.ApplicationRole;
+import net.whydah.sso.application.types.ApplicationAvailableOrganizationNames;
+import net.whydah.sso.application.types.ApplicationAvailableRoleNames;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,9 +51,11 @@ public class ApplicationDaoTest {
         application.setDefaultRoleName("defaultRoleName1");
         application.setDefaultOrganizationName("defaultOrgName1");
         application.setDescription("description1");
-        application.addRole(new ApplicationRole("roleId1", "roleName1"));
-        application.addRole(new ApplicationRole("roleId2", "roleName2"));
-        application.setOrganizationNames(Arrays.asList("orgName1", "orgName2", "orgName3"));
+        application.addRole(new ApplicationAvailableRoleNames("roleId1", "roleName1"));
+        application.addRole(new ApplicationAvailableRoleNames("roleId2", "roleName2"));
+        application.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid1", "orgname1"));
+        application.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid2", "orgname2"));
+        application.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid3", "orgname3"));
 
         applicationDao.create(application);
         Application fromDb = applicationDao.getApplication(application.getId());

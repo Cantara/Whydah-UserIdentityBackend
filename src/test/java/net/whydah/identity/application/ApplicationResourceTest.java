@@ -7,9 +7,10 @@ import net.whydah.identity.Main;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;
+import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.types.Application;
-import net.whydah.sso.application.ApplicationMapper;
-import net.whydah.sso.application.types.ApplicationRole;
+import net.whydah.sso.application.types.ApplicationAvailableOrganizationNames;
+import net.whydah.sso.application.types.ApplicationAvailableRoleNames;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
@@ -87,9 +88,11 @@ public class ApplicationResourceTest {
         app.getSecurity().setSecret("secret1");
         app.setDefaultRoleName("originalDefaultRoleName");
         app.setApplicationUrl("https://myapp.net/");
-        app.addRole(new ApplicationRole("roleId1", "roleName1"));
-        app.addRole(new ApplicationRole("roleId2", "roleName2"));
-        app.setOrganizationNames(Arrays.asList("orgName1", "orgName2", "orgName3"));
+        app.addRole(new ApplicationAvailableRoleNames("roleId1", "roleName1"));
+        app.addRole(new ApplicationAvailableRoleNames("roleId2", "roleName2"));
+        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid1", "orgname1"));
+        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid2","orgname2"));
+        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid3","orgname3"));
 
         String json = ApplicationMapper.toJson(app);
 

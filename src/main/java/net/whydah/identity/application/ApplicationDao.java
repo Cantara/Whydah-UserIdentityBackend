@@ -1,7 +1,7 @@
 package net.whydah.identity.application;
 
+import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.types.Application;
-import net.whydah.sso.application.ApplicationMapper;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
