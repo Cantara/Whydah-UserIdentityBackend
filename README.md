@@ -7,9 +7,6 @@ UserIdentityBackend
 Stores UserIdentities and their relation to Roles, Applications and Organizations.
 Requires SecurityTokenService if authorization is turned on. 
 
-![Whydha Bird](./whydah-bird.jpg)
-Celebrating the Upcoming 2.0 release.
-Photo curtesy of Mike's Birds (https://flic.kr/p/o9p1vw) Creative Commons 3 license.
 
 ![Architectural Overview](https://wiki.cantara.no/download/attachments/37388694/Whydah+infrastructure.png)
 
