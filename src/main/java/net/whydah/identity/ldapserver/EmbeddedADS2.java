@@ -1,11 +1,5 @@
-package net.whydah.identity.user.identity;
+package net.whydah.identity.ldapserver;
 
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 
 import net.whydah.identity.util.FindFile;
 import net.whydah.identity.util.StreamUtil;
@@ -25,6 +19,12 @@ import org.apache.directory.server.ldap.LdapServer;
 import org.apache.directory.server.protocol.shared.transport.TcpTransport;
 import org.apache.directory.server.protocol.shared.transport.Transport;
 import org.jboss.logging.Logger;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>

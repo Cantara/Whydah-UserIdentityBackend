@@ -3,7 +3,7 @@ package net.whydah.identity;
 import net.whydah.identity.config.SSLTool;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
-import net.whydah.identity.user.identity.EmbeddedADS;
+import net.whydah.identity.ldapserver.EmbeddedADS;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;

@@ -1,12 +1,6 @@
-package net.whydah.identity.user.identity;
+package net.whydah.identity.ldapserver;
 
 
-import java.net.URL;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.regex.Pattern;
-import javax.naming.InvalidNameException;
 import org.apache.directory.api.ldap.model.constants.SchemaConstants;
 import org.apache.directory.api.ldap.model.entry.DefaultEntry;
 import org.apache.directory.api.ldap.model.entry.Entry;
@@ -18,6 +12,13 @@ import org.apache.directory.api.ldap.schemaextractor.impl.ResourceMap;
 import org.apache.directory.server.core.api.interceptor.context.AddOperationContext;
 import org.apache.directory.server.core.partition.ldif.AbstractLdifPartition;
 import org.jboss.logging.Logger;
+
+import javax.naming.InvalidNameException;
+import java.net.URL;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * In-memory schema-only partition which loads the data in the similar way as the
