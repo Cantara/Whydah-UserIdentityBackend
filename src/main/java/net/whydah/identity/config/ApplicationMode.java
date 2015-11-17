@@ -7,9 +7,9 @@ package net.whydah.identity.config;
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2015-05-28
  */
 public class ApplicationMode {
-    public static final String DEV_MODE = "dev";
-    public static final String CI_MODE = "ci";
-    public static final String NO_SECURITY_FILTER = "noSecurityFilter";
+    public static final String DEV_MODE = "DEV";
+    public static final String CI_MODE = "CI";
+    public static final String NO_SECURITY_FILTER = "NO_SECURITY_FILTER";
     private static final String CONSTRETTO_TAGS = "CONSTRETTO_TAGS";
 
     public static boolean skipSecurityFilter() {
