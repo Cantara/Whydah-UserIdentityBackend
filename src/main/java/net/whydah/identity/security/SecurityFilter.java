@@ -68,6 +68,11 @@ public class SecurityFilter implements Filter {
 
         //Require authenticated and authorized applicationtokenid
         String pathElement1 = findPathElement(pathInfo, 1);
+        //match /
+        if (pathElement1 == null) {
+            return HttpServletResponse.SC_NOT_FOUND;
+        }
+
         /*
         //match /password/{applicationtokenid}
         if (pathElement1.startsWith("/password")) {
