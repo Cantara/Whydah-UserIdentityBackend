@@ -11,9 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,8 +46,12 @@ public class PasswordResource2 {
     /**
      * Any user can reset password using username or uid without logging in. Possible extension: reset using email.
      */
-    @POST
-    @Path("/password/{username}/reset")
+    //@POST
+    //@Path("/password/{username}/reset")
+    //@Path("/user/{uid}/password_reset")
+
+    @DELETE
+    @Path("/user/{uid}/password")
     public Response resetPassword(@PathParam("username") String username) {
         log.info("Reset password for usernameOrUid={}", username);
         try {
@@ -56,19 +62,20 @@ public class PasswordResource2 {
 
             String changePasswordToken = userIdentityService.setTempPassword(username, user.getUid());
             //TODO: How should the response look like?
-            // Uri to reset password makes sense.
             Map<String, String> map = new HashMap<>();
             map.put(UserIdentity.UID, user.getUid());
-            map.put(UserIdentity.USERNAME, user.getUsername());
+            //map.put(UserIdentity.USERNAME, user.getUsername());
             map.put(CHANGE_PASSWORD_TOKEN, changePasswordToken);
             String json = objectMapper.writeValueAsString(map);
+            // Uri to reset password makes sense.
+            // link: rel=changePW, url= /user/uid123/password?token=124abcdhg
+
             return Response.ok().entity(json).build();
         } catch (Exception e) {
             log.error("resetPassword failed for username={}", username, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 
     /**
      * Change password using changePasswordToken.
@@ -77,9 +84,10 @@ public class PasswordResource2 {
      * @return  201 No Content if successful
      */
     @POST
-    @Path("/password/{username}/change/{changePasswordToken}")
+    //@Path("/password/{username}/change/{changePasswordToken}")
+    @Path("/user/{uid}/password")
     public Response authenticateAndChangePasswordUsingToken(@PathParam("username") String username,
-                                                            @PathParam("changePasswordToken") String changePasswordToken, String json) {
+                                                            @QueryParam("changePasswordToken") String changePasswordToken, String json) {
         log.info("authenticateAndChangePasswordUsingToken for username={}", username);
         try {
             UserIdentity user = userIdentityService.getUserIdentity(username);
