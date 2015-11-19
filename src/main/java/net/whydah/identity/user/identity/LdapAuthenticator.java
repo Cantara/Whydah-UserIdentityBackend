@@ -12,9 +12,7 @@ import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.*;
-import javax.naming.ldap.InitialLdapContext;
 import java.util.Hashtable;
-import java.util.Properties;
 
 /**
  * LDAP authentication.
@@ -118,39 +116,10 @@ public class LdapAuthenticator {
 
     private String findUserDN(String username) {
         InitialDirContext adminContext;
-        /*
         try {
             adminContext = new InitialDirContext(admenv);
         } catch (Exception e) {
             log.error("Error authenticating as superuser, check configuration", e);
-            return null;
-        }
-        */
-        try {
-//            adminContext = new InitialDirContext();
-            Properties prop = new Properties();
-            prop.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory");
-            prop.put("java.naming.provider.url", "ldap://localhost:389");
-            prop.put("java.naming.security.principal", "cn=admin,dc=external,dc=WHYDAH,dc=no");
-            prop.put("java.naming.security.credentials", "secret");
-//            LdapContext ctx = new InitialLdapContext(prop, null);
-            adminContext = new InitialLdapContext(admenv, null);
-// Perform the search by using the URL
-//            NamingEnumeration answer = adminContext.search(
-//                    "ldap://localhost:389/", "(cn=uibadmin)", null);
-            /*
-            SearchResult searchResult = findAccountByAccountName(adminContext,"dc=external,dc=WHYDAH,dc=no",username);
-            if (searchResult != null) {
-                String userDN = searchResult.getNameInNamespace();
-                log.trace("Found user {} for username {}", searchResult.toString(), username);
-                if (userDN != null) {
-                    return userDN;
-                }
-            }
-            */
-//            log.trace("Looking up {} result: {}","uibadmin", answer);
-        } catch (NamingException ne) {
-            log.error("username {}", username,ne);
             return null;
         }
 
@@ -211,29 +180,6 @@ public class LdapAuthenticator {
             return null;
         }
         return (String) attribute.get();
-    }
-
-    public SearchResult findAccountByAccountName(DirContext ctx, String ldapSearchBase, String accountName) throws NamingException {
-
-        String searchFilter = "(&(objectClass=person)(cn=" + accountName + "))";
-
-        SearchControls searchControls = new SearchControls();
-        searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-
-        NamingEnumeration<SearchResult> results = ctx.search(ldapSearchBase, searchFilter, searchControls);
-
-        SearchResult searchResult = null;
-        if(results.hasMoreElements()) {
-            searchResult = (SearchResult) results.nextElement();
-
-            //make sure there is not another item available, there should be only 1 match
-            if(results.hasMoreElements()) {
-                System.err.println("Matched multiple users for the accountName: " + accountName);
-                return null;
-            }
-        }
-
-        return searchResult;
     }
 }
 
