@@ -130,7 +130,7 @@ public class LdapAuthenticator {
             String baseDN = "";
             String filter = "(" + usernameAttribute + "=" + username + ")";
             NamingEnumeration results = adminContext.search(baseDN, filter, constraints);
-            if (aBoolean) {
+            if (results.hasMore()) {
                 SearchResult searchResult = (SearchResult) results.next();
                 String userDN = searchResult.getNameInNamespace();
                 if (userDN == null) {
