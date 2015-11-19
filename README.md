@@ -126,7 +126,7 @@ else
 fi
 
 
-nohup /usr/bin/java $env_vars -jar  $Version &
+nohup /usr/bin/java $env_vars  -DCONSTRETTO_TAGS=DEV -jar  $Version &
 ```
 
 

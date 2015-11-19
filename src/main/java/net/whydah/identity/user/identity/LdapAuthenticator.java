@@ -24,6 +24,7 @@ public class LdapAuthenticator {
     private final Hashtable<String,String> admenv;
     private final String uidAttribute;
     private final String usernameAttribute;
+    private boolean aBoolean;
     //private static final String uidAttributeForActiveDirectory = "userprincipalname";
 
     @Autowired
@@ -129,7 +130,7 @@ public class LdapAuthenticator {
             String baseDN = "";
             String filter = "(" + usernameAttribute + "=" + username + ")";
             NamingEnumeration results = adminContext.search(baseDN, filter, constraints);
-            if (results.hasMore()) {
+            if (aBoolean) {
                 SearchResult searchResult = (SearchResult) results.next();
                 String userDN = searchResult.getNameInNamespace();
                 if (userDN == null) {
