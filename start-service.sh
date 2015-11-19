@@ -6,8 +6,9 @@ if [ "$Version" = "FROM_SOURCE" ]; then
     # Find the bult artifact
     Version=$(find target/* -name '*.jar' | grep SNAPSHOT | grep -v original | grep -v lib)
 else
-    Version=UserAdminService.jar
+    Version=UserIdentityBackend.jar
 fi
 
-
-nohup /usr/bin/java $env_vars  -DCONSTRETTO_TAGS=DEV -jar  $Version &
+nohup /usr/bin/java $env_vars  -jar  $Version &
+# DEV mode
+# nohup /usr/bin/java $env_vars  -DCONSTRETTO_TAGS=DEV -jar  $Version &
