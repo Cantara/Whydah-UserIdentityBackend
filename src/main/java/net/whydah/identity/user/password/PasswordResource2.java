@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -41,56 +40,52 @@ public class PasswordResource2 {
         this.objectMapper = objectMapper;
     }
 
-    // passwordSender.sendResetPasswordEmail(username, token, userEmail);
 
     /**
-     * Any user can reset password using username or uid without logging in. Possible extension: reset using email.
+     * Any user can reset password without logging in. UAS will support finduser for uid, username or email.
+     * @param uid   unique user id
+     * @return  json with uid and change password token
      */
-    //@POST
-    //@Path("/password/{username}/reset")
-    //@Path("/user/{uid}/password_reset")
-
-    @DELETE
-    @Path("/user/{uid}/password")
-    public Response resetPassword(@PathParam("username") String username) {
-        log.info("Reset password for usernameOrUid={}", username);
+    @POST
+    @Path("/user/{uid}/reset_password")
+    public Response resetPassword(@PathParam("uid") String uid) {
+        log.info("Reset password for uid={}", uid);
         try {
-            UserIdentity user = userIdentityService.getUserIdentity(username);
+            UserIdentity user = userIdentityService.getUserIdentityForUid(uid);
             if (user == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
             }
 
-            String changePasswordToken = userIdentityService.setTempPassword(username, user.getUid());
-            //TODO: How should the response look like?
+            String changePasswordToken = userIdentityService.setTempPassword(uid, user.getUid());
             Map<String, String> map = new HashMap<>();
             map.put(UserIdentity.UID, user.getUid());
-            //map.put(UserIdentity.USERNAME, user.getUsername());
             map.put(CHANGE_PASSWORD_TOKEN, changePasswordToken);
             String json = objectMapper.writeValueAsString(map);
-            // Uri to reset password makes sense.
+            // ED: I think this information should be communicated with uri, but BLI does not agree, so keep it his way for now.
             // link: rel=changePW, url= /user/uid123/password?token=124abcdhg
 
             return Response.ok().entity(json).build();
         } catch (Exception e) {
-            log.error("resetPassword failed for username={}", username, e);
+            log.error("resetPassword failed for uid={}", uid, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+
     /**
      * Change password using changePasswordToken.
-     * @param username  to change password for
-     * @param json  expected to contain changePasswordToken and newpassword
+     * @param uid  to change password for
+     * @param changePasswordToken   expected as queryParam
+     * @param json  expected to contain newpassword
      * @return  201 No Content if successful
      */
     @POST
-    //@Path("/password/{username}/change/{changePasswordToken}")
-    @Path("/user/{uid}/password")
-    public Response authenticateAndChangePasswordUsingToken(@PathParam("username") String username,
+    @Path("/user/{uid}/change_password")
+    public Response authenticateAndChangePasswordUsingToken(@PathParam("uid") String uid,
                                                             @QueryParam("changePasswordToken") String changePasswordToken, String json) {
-        log.info("authenticateAndChangePasswordUsingToken for username={}", username);
+        log.info("authenticateAndChangePasswordUsingToken for uid={}", uid);
         try {
-            UserIdentity user = userIdentityService.getUserIdentity(username);
+            UserIdentity user = userIdentityService.getUserIdentityForUid(uid);
             if (user == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
             }
@@ -104,11 +99,12 @@ public class PasswordResource2 {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
             if (PasswordBlacklist.pwList.contains(newpassword)) {
-                log.info("authenticateAndChangePasswordUsingToken failed, weak password for username={}", username);
+                log.info("authenticateAndChangePasswordUsingToken failed, weak password for username={}", uid);
                 return Response.status(Response.Status.NOT_ACCEPTABLE).build();
             }
 
             boolean authenticated;
+            String username = user.getUsername();
             try {
                 authenticated = userIdentityService.authenticateWithChangePasswordToken(username, changePasswordToken);
             } catch (RuntimeException re) {

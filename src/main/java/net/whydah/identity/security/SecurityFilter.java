@@ -9,12 +9,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.*;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Sjekker om request path krever autentisering, og i såfall sjekkes authentication.
@@ -108,11 +115,21 @@ public class SecurityFilter implements Filter {
             log.debug("{} was matched to /{applicationTokenId}/signup", pathInfo);
             return null;
         }
-        if (pathElement2.equals("/password")) {         //PasswordResource2
-            log.debug("{} was matched to /{applicationTokenId}/password", pathInfo);
-            return null;
-        }
 
+
+        // /{applicationTokenId}/user/{uid}/reset_password
+        // /{applicationTokenId}/user/{uid}/change_password
+        //PasswordResource2
+        if (pathElement2.equals("/user")) {
+            String pathElement4 = findPathElement(pathInfo, 4);
+            String pwPattern = "/(reset|change)_password";
+            Pattern pattern = Pattern.compile("/(reset|change)_password");
+            Matcher matcher = pattern.matcher(pathElement4);
+            if (matcher.matches()) {
+                log.debug("{} was matched to /{applicationTokenId}/{}", pathInfo, pwPattern);
+                return null;
+            }
+        }
 
 
         //Authenticate and authorize userTokenId
