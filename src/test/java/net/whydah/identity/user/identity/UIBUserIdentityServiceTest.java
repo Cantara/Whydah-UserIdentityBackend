@@ -27,6 +27,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 import java.io.File;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Random;
@@ -91,7 +92,7 @@ public class UIBUserIdentityServiceTest {
 
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
 
-        index = new NIOFSDirectory(new File(luceneUsersDir));
+        index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
         luceneIndexer = new LuceneUserIndexer(index);
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
         userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneIndexer, auditLogDao, userApplicationRoleEntryDao, config);

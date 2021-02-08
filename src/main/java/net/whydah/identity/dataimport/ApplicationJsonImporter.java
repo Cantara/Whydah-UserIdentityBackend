@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.List;
 
 
@@ -88,7 +89,7 @@ public class ApplicationJsonImporter {
                     log.debug("{} was not successfully created.", luceneDirectory.getAbsolutePath());
                 }
             }
-            return new NIOFSDirectory(luceneDirectory);
+            return new NIOFSDirectory(Paths.get(luceneDirectory.getPath()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

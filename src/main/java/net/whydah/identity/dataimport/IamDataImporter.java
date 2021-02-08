@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.Map;
 
 public class IamDataImporter {
@@ -74,7 +75,7 @@ public class IamDataImporter {
         InputStream rmis = null;
         try {
             ais = openInputStream("Applications", applicationsImportSource);
-            Directory applicationsindex = new NIOFSDirectory(new File(luceneApplicationsDir));
+            Directory applicationsindex = new NIOFSDirectory(Paths.get(new File(luceneApplicationsDir).getPath()));
             LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(applicationsindex);
 
             ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), new AuditLogDao(dataSource), luceneApplicationIndexer, null);
@@ -142,7 +143,7 @@ public class IamDataImporter {
                     log.debug("{} was not successfully created.", luceneDirectory.getAbsolutePath());
                 }
             }
-            return new NIOFSDirectory(luceneDirectory);
+            return new NIOFSDirectory(Paths.get(luceneDirectory.getPath()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

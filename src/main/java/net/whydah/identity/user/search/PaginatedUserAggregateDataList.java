@@ -9,14 +9,14 @@ public class PaginatedUserAggregateDataList {
 
     public int pageNumber=0;
 	public int pageSize=Paginator.pageSize;
-	public int totalCount=0;
+	public long totalCount=0;
     public List<UserAggregate> data = new ArrayList<UserAggregate>();
 
     public PaginatedUserAggregateDataList() {
 
     }
 
-    public PaginatedUserAggregateDataList(int pageNumber, int totalCount, List<UserAggregate> data) {
+    public PaginatedUserAggregateDataList(int pageNumber, long totalCount, List<UserAggregate> data) {
         this.pageNumber = pageNumber;
         this.totalCount = totalCount;
         this.data = data;

@@ -6,6 +6,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 
@@ -28,13 +29,13 @@ public class LuceneApplicationIndexerImpl extends BaseLuceneIndexer<Application>
 	protected Document createLuceneDocument(Application application) {
 		FieldType ftNotTokenized = new FieldType(StringField.TYPE_STORED);
 		ftNotTokenized.setTokenized(false);
-		ftNotTokenized.setIndexed(true);
+		ftNotTokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
 		FieldType ftTokenized = new FieldType(StringField.TYPE_STORED);
 		ftTokenized.setTokenized(true);
 
 		FieldType ftNotIndexed = new FieldType(StringField.TYPE_STORED);
-		ftNotIndexed.setIndexed(false);
+		ftNotIndexed.setIndexOptions(IndexOptions.NONE);
 
 
 		Document doc = new Document();

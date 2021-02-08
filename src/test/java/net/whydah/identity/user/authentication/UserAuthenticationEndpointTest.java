@@ -43,6 +43,7 @@ import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Paths;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.*;
@@ -90,10 +91,10 @@ public class UserAuthenticationEndpointTest {
         ApplicationDao applicationDao = new ApplicationDao(dataSource);
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
-        Directory appIndex = new NIOFSDirectory(new File(luceneAppDir));
+        Directory appIndex = new NIOFSDirectory(Paths.get(new File(luceneAppDir).getPath()));
         LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(appIndex);
 
-        Directory userIndex = new NIOFSDirectory(new File(luceneUserDir));
+        Directory userIndex = new NIOFSDirectory(Paths.get(new File(luceneUserDir).getPath()));
         LuceneUserIndexer luceneUserIndexer = new LuceneUserIndexer(userIndex);
 
         LuceneApplicationSearch luceneAppSearch = new LuceneApplicationSearch(appIndex);

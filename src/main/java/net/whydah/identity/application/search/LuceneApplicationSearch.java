@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
-public class LuceneApplicationSearch extends LuceneApplicationSearchImpl{
+public class LuceneApplicationSearch extends LuceneApplicationSearchImpl {
    
     protected static final Analyzer ANALYZER = new StandardAnalyzer();  //use LuceneUserIndexer.ANALYZER?
     public static final int MAX_HITS = 500;

@@ -2,6 +2,7 @@ package net.whydah.identity.application.search;
 
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.constretto.ConstrettoConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +36,7 @@ public class LuceneApplicationSearchImpl extends BaseLuceneReader {
     private static final Logger log = LoggerFactory.getLogger(LuceneUserSearch.class);
     protected static final Analyzer ANALYZER = new StandardAnalyzer();  //use LuceneUserIndexer.ANALYZER?
     public static final int MAX_HITS = 500;
-  
+    
     public LuceneApplicationSearchImpl(Directory luceneApplicationDirectory) {
         super(luceneApplicationDirectory);
     }

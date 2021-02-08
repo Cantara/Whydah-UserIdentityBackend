@@ -5,12 +5,14 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
@@ -18,11 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 
 public abstract class BaseLuceneIndexer<T> {
 
-	public static final Version LUCENE_VERSION = Version.LUCENE_4_10_4;
+	public static final Version LUCENE_VERSION = Version.LUCENE_8_8_0;
 	protected static final Analyzer ANALYZER = new StandardAnalyzer();
 
 	protected final Logger log = LoggerFactory.getLogger(BaseLuceneIndexer.class);
@@ -39,7 +42,7 @@ public abstract class BaseLuceneIndexer<T> {
 		this.directory = luceneDirectory;
 		
 		if (directory instanceof FSDirectory) {	
-			indexPath = ((FSDirectory) directory).getDirectory().getPath();
+			indexPath = ((FSDirectory) directory).getDirectory().toString();
 			File path = new File(indexPath);
 			if (!path.exists()) {
 				path.mkdir();
@@ -47,9 +50,9 @@ public abstract class BaseLuceneIndexer<T> {
 		}
 		
 		ftNotTokenized.setTokenized(false);
-		ftNotTokenized.setIndexed(true);
+		ftNotTokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 		ftTokenized.setTokenized(true);
-		ftNotIndexed.setIndexed(false);
+		ftNotIndexed.setIndexOptions(IndexOptions.NONE);
 	}
 
 	public synchronized boolean addToIndex(T obj) {
@@ -225,7 +228,7 @@ public abstract class BaseLuceneIndexer<T> {
 		IndexWriter w = null;
 		try {
 			w = getIndexWriter();
-			return w.numDocs();
+			return w.getDocStats().numDocs;
 		} catch (IOException e) {
 
 			log.error("", e);
@@ -261,17 +264,20 @@ public abstract class BaseLuceneIndexer<T> {
 	 * @throws IOException
 	 */
 	public synchronized IndexWriter getIndexWriter() throws IOException {
-		IndexWriterConfig indexWriterConfig = new IndexWriterConfig(LUCENE_VERSION, ANALYZER);
+		IndexWriterConfig indexWriterConfig = new IndexWriterConfig(ANALYZER);
 		indexWriterConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 		indexWriterConfig.setMaxBufferedDocs(500);
 		indexWriterConfig.setRAMBufferSizeMB(300);		
 		if(!isDirectoryOpen()) {
-			directory = FSDirectory.open(new File(indexPath));
+			directory = FSDirectory.open(Paths.get(indexPath));
 		}
-		if (IndexWriter.isLocked(directory)) {
-			IndexWriter.unlock(directory);
-			log.info("Removed Lucene lock file in " + directory);
-		}
+
+//		Locking/unlocking is not a problem after lucene 5.x
+		
+//		if (IndexWriter.isLocked(directory)) {
+//			IndexWriter.unlock(directory);
+//			log.info("Removed Lucene lock file in " + directory);
+//		}
 		IndexWriter writer = new IndexWriter(directory, indexWriterConfig);
 		return writer;
 	}

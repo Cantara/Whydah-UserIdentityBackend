@@ -2,12 +2,14 @@ package net.whydah.identity.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.IOUtils;
 
 public class BaseLuceneReader {
@@ -17,9 +19,9 @@ public class BaseLuceneReader {
 
 	public BaseLuceneReader(Directory dir) {
 		this.directory = dir;
-		
-		if (directory instanceof FSDirectory) {	
-			indexPath = ((FSDirectory) directory).getDirectory().getPath();
+
+		if (directory instanceof FSDirectory) {
+			indexPath = ((FSDirectory) directory).getDirectory().toString();
 			File path = new File(indexPath);
 			if (!path.exists()) {
 				path.mkdir();
@@ -43,7 +45,7 @@ public class BaseLuceneReader {
 		IndexReader r = null;
 		//ensure open
 		if(!isDirectoryOpen()) {
-			directory = FSDirectory.open(new File(indexPath));
+			directory = FSDirectory.open(Paths.get(indexPath));
 		}
 		r = DirectoryReader.open(directory);
 		return r;

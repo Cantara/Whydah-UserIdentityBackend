@@ -11,10 +11,12 @@ import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,9 +26,9 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
     protected static final Analyzer ANALYZER = new StandardAnalyzer();  //use LuceneUserIndexer.ANALYZER?
     public static final int MAX_HITS = 250;
 
-    
+
     public LuceneUserSearchImpl(Directory luceneUserDirectory) {
-        super(luceneUserDirectory);		
+        super(luceneUserDirectory);
     }
     
     public synchronized boolean usernameExists(String username) {
@@ -50,7 +52,7 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
         	directoryReader = getIndexReader();
             IndexSearcher searcher = new IndexSearcher(directoryReader);
             TopDocs topDocs = searcher.search(q, 1);
-            if (topDocs.totalHits>0){
+            if (topDocs.totalHits.value>0){
                 return true;
             }
         } catch (IOException e) {
@@ -94,7 +96,7 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
         	directoryReader = getIndexReader();
             IndexSearcher searcher = new IndexSearcher(directoryReader);
             TopDocs topDocs = searcher.search(q, 1);
-            if (topDocs.totalHits>0){
+            if (topDocs.totalHits.value>0){
             	
             	 for (ScoreDoc hit : topDocs.scoreDocs) {
                      int docId = hit.doc;
@@ -226,14 +228,14 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
         }
 
         List<UserIdentity> result = new ArrayList<>();
-        int hits = 0;
+        long hits = 0;
         IndexReader directoryReader = null;
         try {
         	directoryReader = getIndexReader();
             IndexSearcher searcher = new IndexSearcher(directoryReader);
             TotalHitCountCollector collector = new TotalHitCountCollector();
             TopDocs topDocs = searcher.search(q, Integer.MAX_VALUE);
-            hits = topDocs.totalHits;
+            hits = topDocs.totalHits.value;
             ArrayLocation arrayLocation = Paginator.calculateArrayLocation(hits, pageNumber);
             if(hits>0 && arrayLocation.getStart() !=0){
             	for (int i = arrayLocation.getStart() - 1; i < arrayLocation.getEnd(); i++) {

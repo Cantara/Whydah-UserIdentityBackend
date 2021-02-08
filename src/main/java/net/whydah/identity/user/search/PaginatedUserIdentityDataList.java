@@ -9,14 +9,14 @@ public class PaginatedUserIdentityDataList {
 
     public int pageNumber=0;
 	public int pageSize=Paginator.pageSize;
-	public int totalCount=0;
+	public long totalCount=0;
     public List<UserIdentity> data = new ArrayList<UserIdentity>();
 
     public PaginatedUserIdentityDataList() {
 
     }
 
-    public PaginatedUserIdentityDataList(int pageNumber, int totalCount, List<UserIdentity> data) {
+    public PaginatedUserIdentityDataList(int pageNumber, long totalCount, List<UserIdentity> data) {
         this.pageNumber = pageNumber;
         this.totalCount = totalCount;
         this.data = data;

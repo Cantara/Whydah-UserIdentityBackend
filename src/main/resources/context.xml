@@ -32,21 +32,22 @@
 
 
     <bean id="luceneUserDirectory" class="org.apache.lucene.store.NIOFSDirectory">
-        <constructor-arg>
-            <bean class="java.io.File">
-                <constructor-arg value="${lucene.usersdirectory}"/>
-            </bean>
-        </constructor-arg>
+        <constructor-arg ref="luceneUserDirectoryPath"/>
     </bean>
 
     <bean id="luceneApplicationDirectory" class="org.apache.lucene.store.NIOFSDirectory">
-        <constructor-arg>
-            <bean class="java.io.File">
-                <constructor-arg value="${lucene.applicationsdirectory}"/>
-            </bean>
-        </constructor-arg>
+        <constructor-arg ref="luceneApplicationDirectoryPath"/>
     </bean>
 
+    <bean id="luceneUserDirectoryPath" class="java.nio.file.Paths" factory-method="get">
+        <constructor-arg value="${lucene.usersdirectory}" />
+        <constructor-arg><array /></constructor-arg>
+    </bean>
+
+    <bean id="luceneApplicationDirectoryPath" class="java.nio.file.Paths" factory-method="get">
+        <constructor-arg value="${lucene.applicationsdirectory}" />
+        <constructor-arg><array /></constructor-arg>
+    </bean>
 
     <bean id="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper"/>
     <!-- <bean id="objectMapper" class="com.company.CustomObjectMapper"/>-->

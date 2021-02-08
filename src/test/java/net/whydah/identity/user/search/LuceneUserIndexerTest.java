@@ -14,6 +14,7 @@ import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -51,7 +52,7 @@ public class LuceneUserIndexerTest {
 				FileSystemUtils.deleteRecursively(path);
 				path.mkdir();
 			}
-			dir = new NIOFSDirectory(path);
+			dir = new NIOFSDirectory(Paths.get(path.getPath()));
 		} else if(type ==  DirectoryType.RAM){
 			dir = new RAMDirectory();
 		}
@@ -146,7 +147,7 @@ public class LuceneUserIndexerTest {
 		//we have to reopen the directory (the directory is closed after every operation in order to avoid the "too many open files" exception in Linux)
 		if(type == DirectoryType.NIOF) {
 			File path = new File("lunceneUserIndexDirectoryTest");
-			dir = new NIOFSDirectory(path);
+			dir = new NIOFSDirectory(Paths.get(path.getPath()));
 		}
 		
 		LuceneUserSearchImpl luceneSearch = new LuceneUserSearchImpl(dir);
@@ -250,7 +251,7 @@ public class LuceneUserIndexerTest {
 		//we have to reopen the directory (the directory is closed after every operation in order to avoid the "too many open files" exception in Linux)
 		if(type == DirectoryType.NIOF) {
 			File path = new File("lunceneUserIndexDirectoryTest");
-			dir = new NIOFSDirectory(path);
+			dir = new NIOFSDirectory(Paths.get(path.getPath()));
 		}
 
 		LuceneUserSearchImpl luceneSearch = new LuceneUserSearchImpl(dir);
