@@ -69,15 +69,56 @@ public class IamDataImporter {
 
     //Database migrations should already have been performed before import.
 	public void importIamData() {
-        InputStream ais = null;
-        InputStream ois = null;
-        InputStream uis = null;
+        importApplications(applicationsImportSource);
+        importOrganizations(organizationsImportSource);
+        importUsers(userImportSource);
+        importRoleMappings(roleMappingImportSource);
+    }
+
+    private void importRoleMappings(String roleMappingImportSource) {
         InputStream rmis = null;
         try {
+            rmis = openInputStream("RoleMappings", roleMappingImportSource);
+            new RoleMappingImporter(userApplicationRoleEntryDao).importRoleMapping(rmis);
+        } catch (Exception e) {
+            log.error("Error in importing roles", e);
+        } finally {
+            FileUtils.close(rmis);
+        }
+    }
+
+    private void importUsers(String userImportSource) {
+        InputStream uis = null;
+        try {
+            uis = openInputStream("Users", userImportSource);
+            NIOFSDirectory usersIndex = createDirectory(luceneUsersDir);
+            new WhydahUserIdentityImporter(ldapUserIdentityDao, usersIndex).importUsers(uis);
+        } catch (Exception e) {
+            log.error("Error in importing users", e);
+        } finally {
+            FileUtils.close(uis);
+        }
+    }
+
+    private void importOrganizations(String organizationsImportSource) {
+        InputStream ois = null;
+        try {
+            ois = openInputStream("Organizations", organizationsImportSource);
+            new OrganizationImporter(queryRunner).importOrganizations(ois);
+        } catch (Exception e) {
+            log.error("Error in importing organizations", e);
+        } finally {
+            FileUtils.close(ois);
+        }
+    }
+
+    private void importApplications(String applicationsImportSource) {
+        InputStream ais = null;
+        try {
+            log.info("ais is: {}", applicationsImportSource);
             ais = openInputStream("Applications", applicationsImportSource);
             Directory applicationsindex = new NIOFSDirectory(Paths.get(new File(luceneApplicationsDir).getPath()));
             LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(applicationsindex);
-
             ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), new AuditLogDao(dataSource), luceneApplicationIndexer, null);
 
             if (applicationsImportSource.endsWith(".csv")) {
@@ -85,31 +126,13 @@ public class IamDataImporter {
             } else {
                 new ApplicationJsonImporter(applicationService, config).importApplications(ais);
             }
-
-
-            ois = openInputStream("Organizations", organizationsImportSource);
-            new OrganizationImporter(queryRunner).importOrganizations(ois);
-
-            uis = openInputStream("Users", userImportSource);
-            NIOFSDirectory usersIndex = createDirectory(luceneUsersDir);
-            //Directory index = new RAMDirectory();
-            //LuceneUserIndexer luceneUserIndexer = new LuceneUserIndexer(index);
-            new WhydahUserIdentityImporter(ldapUserIdentityDao, usersIndex).importUsers(uis);
-            //luceneUserIndexer.closeIndexer();
-
-            rmis = openInputStream("RoleMappings", roleMappingImportSource);
-            new RoleMappingImporter(userApplicationRoleEntryDao).importRoleMapping(rmis);
         } catch (Exception e) {
-            log.error("Error in Importing applications", e);
+            log.error("Error in importing applications", e);
         } finally {
             FileUtils.close(ais);
-            FileUtils.close(ois);
-            FileUtils.close(uis);
-            FileUtils.close(rmis);
-
-            //TODO are ldap, lucene and database resources closed?
         }
     }
+
 
     InputStream openInputStream(String tableName, String importSource) {
         InputStream is;
