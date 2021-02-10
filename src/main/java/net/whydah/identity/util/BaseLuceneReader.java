@@ -9,7 +9,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.IOUtils;
 
 public class BaseLuceneReader {

@@ -146,6 +146,10 @@ public class Main {
 
         FileUtils.createDirectory(luceneUsersDirectory);
         FileUtils.createDirectory(luceneApplicationDirectory);
+
+        log.info("Import enabled: {}", importEnabled);
+        log.info("luceneUserdirectory: {}", luceneUsersDirectory);
+        log.info("luceneApplicationDirectory: {}", luceneApplicationDirectory);
     }
 
 

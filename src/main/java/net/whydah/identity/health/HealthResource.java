@@ -2,6 +2,7 @@ package net.whydah.identity.health;
 
 import net.whydah.identity.user.authentication.SecurityTokenServiceClient;
 import net.whydah.sso.util.WhydahUtil;
+import org.apache.lucene.util.Version;
 import org.constretto.annotation.Configuration;
 import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
@@ -90,6 +91,7 @@ public class HealthResource {
                     "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
                     "  \"intrusionAttemptsDetected\": " + healthCheckService.countIntrusionAttempts() + ",\n" +
                     "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + "\n" +
+                    "  \"lucene version\": " + getLuceneVersion() + "\n" +
                     "}\n";
 
         }  // Else, return uninitialized was result
@@ -106,6 +108,7 @@ public class HealthResource {
                 "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
                 "  \"intrusionAttemptsDetected\": " + healthCheckService.countIntrusionAttempts() + ",\n" +
                 "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + "\n" +
+                "  \"lucene version\": " + getLuceneVersion() + "\n" +
                 "}\n";
     }
 
@@ -149,6 +152,9 @@ public class HealthResource {
         HealthResource.numberOfApplications = numberOfApplications;
     }
 
+    private static final String getLuceneVersion() {
+        return Version.LATEST.toString();
+    }
 
 }
 
