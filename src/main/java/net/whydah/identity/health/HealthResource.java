@@ -91,7 +91,7 @@ public class HealthResource {
                     "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
                     "  \"intrusionAttemptsDetected\": " + healthCheckService.countIntrusionAttempts() + ",\n" +
                     "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + "\n" +
-                    "  \"lucene version\": " + getLuceneVersion() + "\n" +
+                    "  \"lucene version\": \"" + getLuceneVersion() + "\"\n" +
                     "}\n";
 
         }  // Else, return uninitialized was result
