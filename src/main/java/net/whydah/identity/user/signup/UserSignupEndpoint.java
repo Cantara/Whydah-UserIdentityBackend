@@ -52,11 +52,13 @@ public class UserSignupEndpoint {
     public Response signupUser(String userJson) {
         log.trace("signupUser: {}", userJson);
         UserAggregate createFromRepresentation = null;
-        try {
-            createFromRepresentation = objectMapper.readValue(userJson, UserAggregate.class);
-        } catch (IOException ioe) {
-            log.trace("Failed to parse UIBUserAggregateRepresentation from json {}", userJson);
-        }
+//        try {
+//            createFromRepresentation = objectMapper.readValue(userJson, UserAggregate.class);
+//        } catch (IOException ioe) {
+//            log.trace("Failed to parse UIBUserAggregateRepresentation from json {}", userJson);
+//        }
+        
+        createFromRepresentation = UserAggregateMapper.fromJson(userJson);
 
         if (createFromRepresentation == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Could not parse " + userJson + ".").build();

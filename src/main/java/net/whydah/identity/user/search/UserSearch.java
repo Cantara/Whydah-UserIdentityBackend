@@ -89,7 +89,7 @@ public class UserSearch {
 		}
 		return user;
 	}
-
+	
 	public boolean isUserIdentityIfExists(String username) throws NamingException {
 		boolean existing = luceneUserSearch.usernameExists(username);
 		if (!existing && alwayslookupinexternaldirectory) {

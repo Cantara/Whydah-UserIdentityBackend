@@ -36,7 +36,7 @@ public class UserSignupService {
     public UserAggregate createUserWithRoles(UserAggregate userAggregate) {
         UserAggregate returnUserAggregate = null;
         if (userAggregate != null) {
-            UserIdentity createFromItentity = UserIdentityMapper.fromUserAggregateJson(UserAggregateMapper.toJson(userAggregate));
+            UserIdentity createFromItentity = UserIdentityMapper.fromJson(UserAggregateMapper.toJson(userAggregate));
             UserIdentity userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(createFromItentity);
             //Add roles
             if (userIdentity != null && userIdentity.getUid() != null) {
