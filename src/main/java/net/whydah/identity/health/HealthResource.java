@@ -90,7 +90,7 @@ public class HealthResource {
                     "  \"now\": \"" + Instant.now() + "\",\n" +
                     "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
                     "  \"intrusionAttemptsDetected\": " + healthCheckService.countIntrusionAttempts() + ",\n" +
-                    "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + "\n" +
+                    "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + ",\n" +
                     "  \"lucene version\": \"" + getLuceneVersion() + "\"\n" +
                     "}\n";
 
@@ -107,7 +107,7 @@ public class HealthResource {
                 "  \"now\": \"" + Instant.now() + "\",\n" +
                 "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
                 "  \"intrusionAttemptsDetected\": " + healthCheckService.countIntrusionAttempts() + ",\n" +
-                "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + "\n" +
+                "  \"anonymousIntrusionAttemptsDetected\": " + healthCheckService.countAnonymousIntrusionAttempts() + ",\n" +
                 "  \"lucene version\": \"" + getLuceneVersion() + "\"\n" +
                 "}\n";
     }
