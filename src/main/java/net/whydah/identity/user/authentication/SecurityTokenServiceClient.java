@@ -3,11 +3,10 @@ package net.whydah.identity.user.authentication;
 import net.whydah.identity.application.ApplicationService;
 import net.whydah.sso.application.types.Application;
 import net.whydah.sso.application.types.ApplicationCredential;
-import net.whydah.sso.commands.userauth.CommandGetUsertokenByUsertokenId;
+import net.whydah.sso.commands.userauth.CommandGetUserTokenByUserTokenId;
 import net.whydah.sso.session.WhydahApplicationSession;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
-
 import org.constretto.annotation.Configuration;
 import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
@@ -67,7 +66,7 @@ public class SecurityTokenServiceClient {
             getWAS();
         }
         if (was != null) {
-            String userTokenXML = new CommandGetUsertokenByUsertokenId(URI.create(was.getSTS()), was.getActiveApplicationTokenId(), was.getActiveApplicationTokenXML(), usertokenid).execute();
+            String userTokenXML = new CommandGetUserTokenByUserTokenId(URI.create(was.getSTS()), was.getActiveApplicationTokenId(), was.getActiveApplicationTokenXML(), usertokenid).execute();
             if (userTokenXML != null && userTokenXML.length() > 10) {
                 return UserTokenMapper.fromUserTokenXml(userTokenXML);
 
