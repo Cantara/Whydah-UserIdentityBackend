@@ -660,7 +660,7 @@
     "security": {
       "minSecurityLevel": "0",
       "minimumDEFCONLevel": "DEFCON5",
-      "maxSessionTimeoutSeconds": "15552000000",
+      "maxSessionTimeoutSeconds": "15552000",
       "allowedIpAddresses": null,
       "userTokenFilter": true,
       "whydahUASAccess": true,
@@ -706,7 +706,7 @@
     "security": {
       "minSecurityLevel": "0",
       "minimumDEFCONLevel": "DEFCON5",
-      "maxSessionTimeoutSeconds": "15552000000",
+      "maxSessionTimeoutSeconds": "15552000",
       "allowedIpAddresses": null,
       "userTokenFilter": true,
       "whydahUASAccess": false,
