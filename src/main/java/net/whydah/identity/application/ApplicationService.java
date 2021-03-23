@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 
 @Service
@@ -78,8 +75,13 @@ public class ApplicationService {
     
     //TODO: this should only be called by internal applications
     public List<Application> getApplications() {
-    	//data is queried directly from DB instead of LUCENE index
+        //data is queried directly from DB instead of LUCENE index
         List<Application> applicationDBList = applicationDao.getApplications();
+        Map<String, Application> uniqueueApplications = new HashMap<>();
+        for (Application a : applicationDBList) {
+            uniqueueApplications.put(a.getId(), a);
+        }
+        applicationDBList = new ArrayList<Application>(uniqueueApplications.values());
         importApplicationsIfEmpty(applicationDBList);
         return applicationDBList;
     }
