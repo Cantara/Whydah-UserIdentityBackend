@@ -81,9 +81,9 @@ public class ApplicationService {
         for (Application a : applicationDBList) {
             uniqueueApplications.put(a.getId(), a);
         }
-        applicationDBList = new ArrayList<Application>(uniqueueApplications.values());
-        importApplicationsIfEmpty(applicationDBList);
-        return applicationDBList;
+        List<Application> uniqueApplicationDBList = new ArrayList<Application>(uniqueueApplications.values());
+        importApplicationsIfEmpty(uniqueApplicationDBList);
+        return uniqueApplicationDBList;
     }
 
     public int update(Application application) {
