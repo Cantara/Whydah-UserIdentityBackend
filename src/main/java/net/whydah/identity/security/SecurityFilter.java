@@ -199,7 +199,7 @@ public class SecurityFilter implements Filter {
             String headerName = (String) headerNames.nextElement();
             strb.append(headerName).append(" : ").append(servletRequest.getHeader(headerName)).append("\n");
         }
-        log.debug(strb.toString());
+        log.trace(strb.toString());
     }
 
     @Override

@@ -11,14 +11,13 @@ import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 public class LuceneUserSearchImpl extends BaseLuceneReader {
@@ -236,24 +235,28 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
             TotalHitCountCollector collector = new TotalHitCountCollector();
             TopDocs topDocs = searcher.search(q, Integer.MAX_VALUE);
             hits = topDocs.totalHits.value;
+            List<String> foundUserIds = new LinkedList<>();
             ArrayLocation arrayLocation = Paginator.calculateArrayLocation(hits, pageNumber);
             if(hits>0 && arrayLocation.getStart() !=0){
             	for (int i = arrayLocation.getStart() - 1; i < arrayLocation.getEnd(); i++) {
 
-            		int docId = topDocs.scoreDocs[i].doc;
+                    int docId = topDocs.scoreDocs[i].doc;
 
-            		Document d = searcher.doc(docId);
-                    LDAPUserIdentity user = new LDAPUserIdentity();
-                    user.setFirstName(d.get(LuceneUserIndexer.FIELD_FIRSTNAME));
-            		user.setLastName(d.get(LuceneUserIndexer.FIELD_LASTNAME));
-            		user.setUid(d.get(LuceneUserIndexer.FIELD_UID));
-            		user.setUsername(d.get(LuceneUserIndexer.FIELD_USERNAME));
-            		user.setPersonRef(d.get(LuceneUserIndexer.FIELD_PERSONREF));
-            		user.setCellPhone(d.get(LuceneUserIndexer.FIELD_MOBILE));
-            		user.setEmail(d.get(LuceneUserIndexer.FIELD_EMAIL));
-            		//log.debug(user.getUsername() + " : " + hit.score);
-            		result.add(user);               
-            	}
+                    Document d = searcher.doc(docId);
+                    if (!foundUserIds.contains(d.get(LuceneUserIndexer.FIELD_UID))) {
+                        LDAPUserIdentity user = new LDAPUserIdentity();
+                        user.setFirstName(d.get(LuceneUserIndexer.FIELD_FIRSTNAME));
+                        user.setLastName(d.get(LuceneUserIndexer.FIELD_LASTNAME));
+                        user.setUid(d.get(LuceneUserIndexer.FIELD_UID));
+                        user.setUsername(d.get(LuceneUserIndexer.FIELD_USERNAME));
+                        user.setPersonRef(d.get(LuceneUserIndexer.FIELD_PERSONREF));
+                        user.setCellPhone(d.get(LuceneUserIndexer.FIELD_MOBILE));
+                        user.setEmail(d.get(LuceneUserIndexer.FIELD_EMAIL));
+                        //log.debug(user.getUsername() + " : " + hit.score);
+                        result.add(user);
+                        foundUserIds.add(user.getUid());
+                    }
+                }
             }
             
           
