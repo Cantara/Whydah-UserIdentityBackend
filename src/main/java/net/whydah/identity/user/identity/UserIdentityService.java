@@ -125,7 +125,10 @@ public class UserIdentityService {
                 //in LDAP
                 //String msg = "User already exists, could not create user with username=" + dto.getUsername();
                 //throw new IllegalStateException(msg);
-            }
+            } else if (ldapUserIdentityDao.usernameExist(username)) {
+            	String msg = "User already exists, could not create user with username=" + dto.getUsername();
+                throw new IllegalStateException(msg);
+            } 
         } catch (NamingException e) {
             throw new RuntimeException("usernameExist failed for username=" + dto.getUsername(), e);
         }
