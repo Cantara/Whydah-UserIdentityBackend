@@ -121,11 +121,11 @@ public class ApplicationDao {
                 application = ApplicationMapper.fromJson(json);
                 log.trace("Application after mapper {}", first50(application));
             } catch (Exception e) {
-                log.warn("Unable to parse json for application", json);
-                log.trace("Application2 Json before mapper {}", first50(json));
+                log.warn("Unable to parse json for application, will attempt fallback. Json:", json);
+                log.info("Application2 Json before mapper {}", first50(json));
                 json = json.replace("0000", "0");
                 application = ApplicationMapper.fromJson(json);
-                log.trace("Application2 after mapper {}", first50(application));
+                log.warn("Application2 after mapper {}", first50(application));
             }
             return application;
         }
