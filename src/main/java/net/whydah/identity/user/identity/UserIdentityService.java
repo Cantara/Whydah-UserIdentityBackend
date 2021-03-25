@@ -120,14 +120,16 @@ public class UserIdentityService {
             throw new IllegalStateException(msg);
         }
         try {
-            if (ldapUserIdentityDao.usernameExist(username)) {
+            if (!searcher.usernameExists(username) && ldapUserIdentityDao.usernameExist(username)) {
+            	ldapUserIdentityDao.deleteUserIdentity(username);
                 //in LDAP
-                String msg = "User already exists, could not create user with username=" + dto.getUsername();
-                throw new IllegalStateException(msg);
+                //String msg = "User already exists, could not create user with username=" + dto.getUsername();
+                //throw new IllegalStateException(msg);
             }
         } catch (NamingException e) {
             throw new RuntimeException("usernameExist failed for username=" + dto.getUsername(), e);
         }
+
 
         String email;
         if (dto.getEmail() != null && dto.getEmail().contains("+")) {
