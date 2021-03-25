@@ -126,8 +126,8 @@ public class ApplicationDao {
                 json = json.replace("0000", "0");
                 application = ApplicationMapper.fromJson(json);
                 log.warn("Application2 after mapper {}", first50(application));
-                log.warn("Application2 after application.getSecurity().getMaxSessionTimeoutSeconds() {}", application.getSecurity().getMaxSessionTimeoutSeconds()))
-                ;
+                log.warn("Application2 after application.getSecurity().getMaxSessionTimeoutSeconds() {}", application.getSecurity().getMaxSessionTimeoutSeconds());
+
             }
             return application;
         }
