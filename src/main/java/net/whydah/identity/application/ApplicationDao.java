@@ -113,15 +113,15 @@ public class ApplicationDao {
             Application application;
             try {
                 if (rs == null) {
-                    log.info("No resultset found.");
+                    log.info("Application - No resultset found.");
                 } else if (json == null || json.isEmpty()) {
-                    log.warn("No data found for application id {}", rs.getString(0));
+                    log.warn("Application - No data found for application id {}", rs.getString(0));
                 }
                 log.trace("Application Json before mapper {}", first50(json));
                 application = ApplicationMapper.fromJson(json);
                 log.trace("Application after mapper {}", first50(application));
             } catch (Exception e) {
-                log.warn("Unable to parse json for application, will attempt fallback. Json:", json);
+                log.warn("Application2 - Unable to parse json for application, will attempt fallback. Json:", json);
                 log.info("Application2 Json before mapper {}", first50(json));
                 json = json.replace("0000", "0");
                 application = ApplicationMapper.fromJson(json);
