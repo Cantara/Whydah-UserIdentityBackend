@@ -108,15 +108,25 @@ public class ApplicationDao {
 
     private static final class ApplicationMapper2 implements RowMapper<Application> {
         public Application mapRow(ResultSet rs, int rowNum) throws SQLException {
+
             String json = rs.getString("json");
-            if (rs == null) {
-                log.info("No resultset found.");
-            } else if (json == null || json.isEmpty()) {
-                log.warn("No data found for application id {}", rs.getString(0));
+            Application application;
+            try {
+                if (rs == null) {
+                    log.info("No resultset found.");
+                } else if (json == null || json.isEmpty()) {
+                    log.warn("No data found for application id {}", rs.getString(0));
+                }
+                log.trace("Application Json before mapper {}", first50(json));
+                application = ApplicationMapper.fromJson(json);
+                log.trace("Application after mapper {}", first50(application));
+            } catch (Exception e) {
+                log.warn("Unable to parse json for application", json);
+                log.trace("Application2 Json before mapper {}", first50(json));
+                json = json.replace("0000", "0");
+                application = ApplicationMapper.fromJson(json);
+                log.trace("Application2 after mapper {}", first50(application));
             }
-            log.trace("Application Json before mapper {}", first50(json));
-            Application application = ApplicationMapper.fromJson(json);
-            log.trace("Application after mapper {}", first50(application));
             return application;
         }
     }
