@@ -1,5 +1,5 @@
 CREATE TABLE UserIdentity (
-    id        varchar(100) UNIQUE NOT NULL,
+    id        varchar(100) NOT NULL,
     username  varchar(255) UNIQUE NOT NULL,
     firstname varchar(255) NOT NULL,
     lastname  varchar(255) NOT NULL,
