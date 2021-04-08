@@ -31,43 +31,67 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    int create(LDAPUserIdentity ldapUserIdentity) {
+    void create(RDBMSUserIdentity userIdentity) {
         String sql = "INSERT INTO UserIdentity (id, username, firstname, lastname, personref, email, cellphone, password) VALUES (?,?,?,?,?,?,?,?)";
         int numRowsAffected = jdbcTemplate.update(sql,
-                ldapUserIdentity.getUid(),
-                ldapUserIdentity.getUsername(),
-                ldapUserIdentity.getFirstName(),
-                ldapUserIdentity.getLastName(),
-                ldapUserIdentity.getPersonRef(),
-                ldapUserIdentity.getEmail(),
-                ldapUserIdentity.getCellPhone(),
-                ldapUserIdentity.getPassword()
+                userIdentity.getUid(),
+                userIdentity.getUsername(),
+                userIdentity.getFirstName(),
+                userIdentity.getLastName(),
+                userIdentity.getPersonRef(),
+                userIdentity.getEmail(),
+                userIdentity.getCellPhone(),
+                userIdentity.getPassword()
         );
-        return numRowsAffected;
+        if (numRowsAffected != 1) {
+            throw new RuntimeException(String.format("Failed to insert new useridentity {%s}", userIdentity));
+        }
     }
 
-    int delete(String uuid) {
+    void delete(String uuid) throws RuntimeException {
         String sql = "DELETE FROM UserIdentity WHERE id=?";
         int numRowsAffected = jdbcTemplate.update(sql, uuid);
-        return numRowsAffected;
+        if (numRowsAffected != 1) {
+            throw new RuntimeException(String.format("Failed to delete useridentity with uid %s", uuid));
+        }
     }
 
-    LDAPUserIdentity get(String uuid) {
-        List<LDAPUserIdentity> query = jdbcTemplate.query(USER_IDENTITY_SQL, new RDBMSLdapUserIdentityMapper(), uuid);
-        if (query != null && !query.isEmpty()) {
-            return query.stream().findAny().get();
+    RDBMSUserIdentity get(String uuid) {
+        List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(USER_IDENTITY_SQL, new RDBMSUserIdentityRowMapper(), uuid);
+        if (userIdentities != null) {
+            RDBMSUserIdentity userIdentity = userIdentities.stream().findAny().get();
+            return userIdentity;
         } else {
             return null;
         }
     }
 
-    LDAPUserIdentity getWithUsername(String username) {
-        List<LDAPUserIdentity> query = jdbcTemplate.query(USERNAME_SQL, new RDBMSLdapUserIdentityMapper(), username);
-        if (query != null && !query.isEmpty()) {
-            return query.stream().findAny().get();
+    RDBMSUserIdentity getWithUsername(String username) {
+        List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(USERNAME_SQL, new RDBMSUserIdentityRowMapper(), username);
+        if (userIdentities != null) {
+            RDBMSUserIdentity userIdentity = userIdentities.stream().findAny().get();
+            return userIdentity;
         } else {
             return null;
         }
     }
 
+    public void updatePassword(String username, String password) throws RuntimeException {
+        String sql = "UPDATE UserIdentity SET password=? WHERE username=?";
+        int numRowsAffected = jdbcTemplate.update(sql, password, username);
+        if (numRowsAffected != 1) throw new RuntimeException(String.format("Failed to update password for user %s"));
+    }
+
+    public void update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
+        String sql = "UPDATE UserIdentity SET firstname=?, lastname=?, personref=?, email=?, cellphone=? WHERE id=?";
+        int numRowsAffected = jdbcTemplate.update(sql,
+                newUserIdentity.getFirstName(),
+                newUserIdentity.getLastName(),
+                newUserIdentity.getPersonRef(),
+                newUserIdentity.getEmail(),
+                newUserIdentity.getCellPhone(),
+                uid);
+
+        if (numRowsAffected != 1) throw new RuntimeException(String.format("Failed to update useridentity for user %s with input {%s}", uid, newUserIdentity));
+    }
 }

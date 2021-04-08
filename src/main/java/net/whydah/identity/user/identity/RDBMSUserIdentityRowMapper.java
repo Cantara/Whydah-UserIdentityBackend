@@ -7,11 +7,11 @@ import org.springframework.jdbc.core.RowMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-class RDBMSLdapUserIdentityMapper implements RowMapper<LDAPUserIdentity> {
-    private static final Logger log = LoggerFactory.getLogger(RDBMSLdapUserIdentityMapper.class);
+class RDBMSUserIdentityRowMapper implements RowMapper<RDBMSUserIdentity> {
+    private static final Logger log = LoggerFactory.getLogger(RDBMSUserIdentityRowMapper.class);
 
-    public LDAPUserIdentity mapRow(ResultSet rs, int rowNum) throws SQLException {
-        LDAPUserIdentity ldapUserIdentity = null;
+    public RDBMSUserIdentity mapRow(ResultSet rs, int rowNum) throws SQLException {
+        RDBMSUserIdentity userIdentity = null;
         try {
             if (rs == null) {
                 log.info("RDBMS LDAP User Identity - No resultset found.");
@@ -25,11 +25,11 @@ class RDBMSLdapUserIdentityMapper implements RowMapper<LDAPUserIdentity> {
                 String password = rs.getString("password");
                 String personRef = rs.getString("personref");
 
-                ldapUserIdentity = new LDAPUserIdentity(uid, username, firstname, lastname, email, password, cellphone, personRef);
+                userIdentity = new RDBMSUserIdentity(uid, username, firstname, lastname, email, password, cellphone, personRef);
             }
         } catch (Exception e) {
             throw new SQLException("Failed to map result from db", e);
         }
-        return ldapUserIdentity;
+        return userIdentity;
     }
 }
