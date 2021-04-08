@@ -20,8 +20,12 @@ public class RDBMSLdapUserIdentityRepository {
         log.info("RDBMS for ldap user identities is in use: " + enableRDBMSResource);
     }
 
+    public boolean isRDBMSEnabled() {
+        return enableRDBMSResource;
+    }
+
     public void addUserIdentity(RDBMSUserIdentity userIdentity) throws RuntimeException {
-        if (enableRDBMSResource) {
+        if (isRDBMSEnabled()) {
             rdbmsUserIdentityDao.create(userIdentity);
         }
     }
@@ -52,10 +56,6 @@ public class RDBMSLdapUserIdentityRepository {
             }
         }
         return null;
-    }
-
-    public boolean isRDBMSEnabled() {
-        return enableRDBMSResource;
     }
 
     public void setTempPassword(String username, String saltedPassword) {
