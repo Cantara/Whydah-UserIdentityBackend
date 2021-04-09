@@ -14,7 +14,7 @@ import java.util.List;
 public class RDBMSLdapUserIdentityDao {
     private static final Logger log = LoggerFactory.getLogger(ApplicationDao.class);
 
-    private static String USER_IDENTITY_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE id=?";
+    private static String UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE id=?";
     private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=?";
 
     private JdbcTemplate jdbcTemplate;
@@ -26,7 +26,7 @@ public class RDBMSLdapUserIdentityDao {
         String jdbcDriverString = dataSource.getDriverClassName();
         if (jdbcDriverString.contains("mysql")) {
             log.warn("TODO update sql migration script");
-            USER_IDENTITY_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE Id=? GROUP BY Id";
+            UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE Id=? GROUP BY Id";
             USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=? GROUP BY username";
         }
     }
@@ -57,8 +57,8 @@ public class RDBMSLdapUserIdentityDao {
     }
 
     RDBMSUserIdentity get(String uuid) {
-        List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(USER_IDENTITY_SQL, new RDBMSUserIdentityRowMapper(), uuid);
-        if (userIdentities != null) {
+        List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(UID_SQL, new RDBMSUserIdentityRowMapper(), uuid);
+        if (userIdentities != null && !userIdentities.isEmpty()) {
             RDBMSUserIdentity userIdentity = userIdentities.stream().findAny().get();
             return userIdentity;
         } else {
@@ -68,7 +68,7 @@ public class RDBMSLdapUserIdentityDao {
 
     RDBMSUserIdentity getWithUsername(String username) {
         List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(USERNAME_SQL, new RDBMSUserIdentityRowMapper(), username);
-        if (userIdentities != null) {
+        if (userIdentities != null && !userIdentities.isEmpty()) {
             RDBMSUserIdentity userIdentity = userIdentities.stream().findAny().get();
             return userIdentity;
         } else {
@@ -92,6 +92,8 @@ public class RDBMSLdapUserIdentityDao {
                 newUserIdentity.getCellPhone(),
                 uid);
 
-        if (numRowsAffected != 1) throw new RuntimeException(String.format("Failed to update useridentity for user %s with input {%s}", uid, newUserIdentity));
+        if (numRowsAffected != 1) {
+            throw new RuntimeException(String.format("Failed to update useridentity for user %s with input {%s}", uid, newUserIdentity));
+        }
     }
 }

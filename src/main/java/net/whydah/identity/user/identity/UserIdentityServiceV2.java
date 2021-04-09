@@ -160,7 +160,7 @@ public class UserIdentityServiceV2 {
         } catch (RuntimeException e) {
             throw new RuntimeException("addUserIdentity failed for " + userIdentity.toString(), e);
         }
-        log.info("Added new user to LDAP: username={}, uid={}", username, uid);
+        log.info("Added new useridentity to DB: username={}, uid={}", username, uid);
         return userIdentity;
     }
 
@@ -195,17 +195,17 @@ public class UserIdentityServiceV2 {
         audit(uid,ActionPerformed.MODIFIED, "user", newUserIdentity.toString());
     }
 
-    // TODO: 08/04/2021 - Replace with either username or uid
+    // TODO: 08/04/2021 kiversen - Replace with either username or uid
     public RDBMSUserIdentity getUserIdentity(String usernameOrUid) {
         return userIdentityRepository.getUserIdentityWithUsernameOrUid(usernameOrUid);
     }
 
-    public void updateUserIdentity(String username, LDAPUserIdentity newuser) {
-        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-        RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLDAPUserIdentity(newuser);
+    public void updateUserIdentity(String username, RDBMSUserIdentity update) {
+        //UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+        //RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLDAPUserIdentity(newuser);
 
-        userIdentityRepository.updateUserIdentityForUsername(username, userIdentity);
-        luceneIndexer.updateIndex(newuser);
+        userIdentityRepository.updateUserIdentityForUsername(username, update);
+        luceneIndexer.updateIndex(update);
     }
 
     public void deleteUserIdentity(String username) throws NamingException {
