@@ -5,6 +5,7 @@ import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.application.types.Application;
@@ -36,19 +37,21 @@ public class UserAggregateService {
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private final ApplicationService applicationDao;
     private final LuceneUserIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
 
     @Autowired
-    public UserAggregateService(UserIdentityService userIdentityService, UserApplicationRoleEntryDao userApplicationRoleEntryDao,
+    public UserAggregateService(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserApplicationRoleEntryDao userApplicationRoleEntryDao,
                                 ApplicationService applicationDao, LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao) {
         this.luceneIndexer = luceneIndexer;
         this.auditLogDao = auditLogDao;
         this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
         this.applicationDao = applicationDao;
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
     }
 
 

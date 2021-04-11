@@ -7,6 +7,7 @@ import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,12 +42,14 @@ public class PasswordResource2 {
     public static final String PW_ROLE_VALUE = "true";
     public static final int MIN_PW_LENGTH = 8;
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserAggregateService userAggregateService;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public PasswordResource2(UserIdentityService userIdentityService, UserAggregateService userAggregateService, ObjectMapper objectMapper) {
+    public PasswordResource2(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserAggregateService userAggregateService, ObjectMapper objectMapper) {
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
         this.userAggregateService = userAggregateService;
 
         this.objectMapper = objectMapper;

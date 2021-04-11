@@ -37,6 +37,9 @@ import static org.testng.Assert.assertEquals;
 
 
 /**
+ * @// TODO: 11/04/2021 kiversen - candidate for deletion when ldap is retired
+ * @see UserIdentityServiceV2
+ *
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 02/04/14
  */
 public class UIBUserIdentityServiceTest {

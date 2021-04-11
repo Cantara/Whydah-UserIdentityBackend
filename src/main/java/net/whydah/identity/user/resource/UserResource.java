@@ -8,6 +8,7 @@ import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.InvalidUserIdentityFieldException;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.user.mappers.UserRoleMapper;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserIdentity;
@@ -34,6 +35,7 @@ public class UserResource {
     private static final Logger log = LoggerFactory.getLogger(UserResource.class);
 
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserAggregateService userAggregateService;
     private final ObjectMapper mapper;
 
@@ -41,8 +43,9 @@ public class UserResource {
     private UriInfo uriInfo;
 
     @Autowired
-    public UserResource(UserIdentityService userIdentityService, UserAggregateService userAggregateService, ObjectMapper mapper) {
+    public UserResource(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserAggregateService userAggregateService, ObjectMapper mapper) {
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
         this.userAggregateService = userAggregateService;
         this.mapper = mapper;
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

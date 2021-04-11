@@ -2,6 +2,7 @@ package net.whydah.identity.health;
 
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +19,15 @@ public class HealthCheckService {
     static String USERADMIN_UID = "useradmin";    //uid of user which should always exist
     private static final Logger log = LoggerFactory.getLogger(HealthCheckService.class);
     private final UserIdentityService identityService;
+    private final UserIdentityServiceV2 identityServiceV2;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private long intrusionsDetected = 0;
     private long anonymousIntrsionsDetected = 0;
 
     @Autowired
-    public HealthCheckService(UserIdentityService identityService, UserApplicationRoleEntryDao userApplicationRoleEntryDao) {
+    public HealthCheckService(UserIdentityServiceV2 userIdentityServiceV2, UserIdentityService identityService, UserApplicationRoleEntryDao userApplicationRoleEntryDao) {
         this.identityService = identityService;
+        this.identityServiceV2 = userIdentityServiceV2;
         this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
     }
 

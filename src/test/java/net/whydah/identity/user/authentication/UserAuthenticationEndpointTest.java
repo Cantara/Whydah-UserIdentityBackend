@@ -12,10 +12,7 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
-import net.whydah.identity.user.identity.LdapAuthenticator;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
-import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.*;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.identity.util.FileUtils;
@@ -57,6 +54,7 @@ public class UserAuthenticationEndpointTest {
     private static UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private static UserAdminHelper userAdminHelper;
     private static UserIdentityService userIdentityService;
+    private static UserIdentityServiceV2 userIdentityServiceV2;
     private static ApplicationService applicationService;
     private static Main main = null;
 
@@ -118,6 +116,10 @@ public class UserAuthenticationEndpointTest {
 
         PasswordGenerator pwg = new PasswordGenerator();
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, luceneUserIndexer, null);
+
+        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+        RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, configuration);
+        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, null);
 
         userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, configuration);
 
@@ -204,9 +206,9 @@ public class UserAuthenticationEndpointTest {
         String email = "e@mail.com";
         newIdentity.setEmail(email);
 
-        UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userApplicationRoleEntryDao,
+        UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userIdentityServiceV2, userApplicationRoleEntryDao,
                 applicationService, null, null);
-        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService);
+        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService, userIdentityServiceV2);
 
         String roleValue = "roleValue";
         Response response = resource.createAndAuthenticateUser(newIdentity, roleValue, false);

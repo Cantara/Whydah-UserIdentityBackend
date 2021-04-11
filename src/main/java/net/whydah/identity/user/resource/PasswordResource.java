@@ -5,6 +5,7 @@ import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +35,7 @@ public class PasswordResource {
     static final String CELLPHONE_KEY = "cellPhone";
 
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserAggregateService userAggregateService;
 
     private final ObjectMapper objectMapper;
@@ -43,8 +45,9 @@ public class PasswordResource {
 
 
     @Autowired
-    public PasswordResource(UserIdentityService userIdentityService, UserAggregateService userAggregateService, ObjectMapper objectMapper) {
+    public PasswordResource(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserAggregateService userAggregateService, ObjectMapper objectMapper) {
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
         this.userAggregateService = userAggregateService;
 
         this.objectMapper = objectMapper;

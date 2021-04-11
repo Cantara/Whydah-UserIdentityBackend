@@ -4,6 +4,7 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.ddd.model.userrole.RoleValue;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
@@ -51,6 +52,8 @@ public class UserAuthenticationEndpoint {
     private final UserAggregateService userAggregateService;
     private final UserAdminHelper userAdminHelper;
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
+
     //private final LuceneUserIndexer luceneUserIndexer;
     //private final String hostname;
 
@@ -59,10 +62,11 @@ public class UserAuthenticationEndpoint {
 
     @Autowired
     public UserAuthenticationEndpoint(UserAggregateService userAggregateService, UserAdminHelper userAdminHelper,
-                                      UserIdentityService userIdentityService) {
+                                      UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2) {
         this.userAggregateService = userAggregateService;
         this.userAdminHelper = userAdminHelper;
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
         //this.luceneUserIndexer=luceneUserIndexer;
         //this.hostname = getLocalhostName();
     }

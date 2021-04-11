@@ -100,7 +100,7 @@ public class IamDataImporterTest {
         assertEquals("erik.drolshammer", erikdUserIdentity.getUid());
 
         ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), null, null, null);
-        UserAggregateService userAggregateService = new UserAggregateService(null, dataImporter.getUserApplicationRoleEntryDao(),
+        UserAggregateService userAggregateService = new UserAggregateService(null, null, dataImporter.getUserApplicationRoleEntryDao(),
                 applicationService, null, null);
 
 

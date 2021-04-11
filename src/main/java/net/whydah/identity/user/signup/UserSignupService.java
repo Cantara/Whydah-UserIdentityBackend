@@ -2,6 +2,7 @@ package net.whydah.identity.user.signup;
 
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
 import net.whydah.sso.user.types.UserAggregate;
@@ -24,12 +25,14 @@ public class UserSignupService {
 
     private final UserAggregateService userAggregateService;
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
 
 
     @Autowired
-    public UserSignupService(UserAggregateService userAggregateService, UserIdentityService userIdentityService) {
+    public UserSignupService(UserAggregateService userAggregateService, UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2) {
         this.userAggregateService = userAggregateService;
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
     }
 
 
