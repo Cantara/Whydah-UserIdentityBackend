@@ -24,8 +24,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 
@@ -41,6 +40,8 @@ public class UserIdentityServiceV2Test {
     private static DatabaseMigrationHelper dbHelper;
     private static RDBMSLdapUserIdentityRepository rdbmsLdapUserIdentityRepository;
     private static ConstrettoConfiguration constrettoConfiguration;
+
+    private static UserIdentityServiceV2 userIdentityService;
 
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
@@ -60,6 +61,8 @@ public class UserIdentityServiceV2Test {
 
         RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(basicDataSource);
         rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, constrettoConfiguration);
+
+        userIdentityService = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
     }
 
     @Before
@@ -104,18 +107,18 @@ public class UserIdentityServiceV2Test {
     }
 
     @Test
-    public void test_add_new_useridentity() {
+    public void test_add() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityServiceV2 userIdentityService = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
+
         RDBMSUserIdentity stored = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+
         assertNotNull("UserIdentity stored", stored);
     }
 
     @Test
-    public void test_add_and_get_new_useridentity() {
+    public void test_get() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
 
-        UserIdentityServiceV2 userIdentityService = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
         userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
 
         RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
@@ -134,42 +137,106 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_reject_useridentity_if_exists() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityServiceV2 userIdentityService = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
-
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
         userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
         RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
         assertNotNull("UserIdentity found", fromDB);
 
         exceptionRule.expect(RuntimeException.class);
-        exceptionRule.expectMessage("usernameExist failedd for username=test.testesen@test.no");
+        exceptionRule.expectMessage("usernameExist failed for username=test.testesen@test.no");
         userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
     }
 
     @Test
-    public void test_change_cellphone() {
+    public void test_change_all_but_uid_username_and_password() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityServiceV2 userIdentityService = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
-
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
         userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+
         RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
 
         String newCellPhoneNumber = "+4790090000";
         fromDB.setCellPhone(newCellPhoneNumber);
+        fromDB.setFirstName("Firstname");
+        fromDB.setLastName("Lastname");
+        fromDB.setPersonRef("1234567890");
+        fromDB.setEmail("new.email@email.no");
+
+        RDBMSUserIdentity beforeUpdate = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
         userIdentityService.updateUserIdentity(fromDB.getUsername(), fromDB);
 
         RDBMSUserIdentity updated = userIdentityService.getUserIdentity(fromDB.getUsername());
-        assertEquals(fromDB.getUid(), updated.getUid());
-        assertEquals(fromDB.getUsername(), updated.getUsername());
 
-        assertEquals(newCellPhoneNumber, updated.getCellPhone());
-
-
+        assertEquals(beforeUpdate.getUid(), updated.getUid());
+        assertEquals(beforeUpdate.getUsername(), updated.getUsername());
+        assertNotEquals(updated.getFirstName(), beforeUpdate.getFirstName());
+        assertNotEquals(updated.getLastName(), beforeUpdate.getLastName());
+        assertNotEquals(updated.getCellPhone(), beforeUpdate.getCellPhone());
+        assertNotEquals(updated.getPersonRef(), beforeUpdate.getPersonRef());
+        assertNotEquals(updated.getEmail(), beforeUpdate.getEmail());
     }
 
+    @Test
+    public void test_password_change() {
+        UserIdentity userIdentity = giveMeTestUserIdentity();
 
+        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
 
+        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
+        String newPassword = passwordGenerator.generate();
+        userIdentityService.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
+
+        RDBMSUserIdentity fromDBWithChangedPassword = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        assertNotEquals(fromDB.getPassword(), fromDBWithChangedPassword.getPassword());
+    }
+
+    @Test
+    public void test_authenticate() {
+        UserIdentity userIdentity = giveMeTestUserIdentity();
+        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
+        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
+        String username = fromDB.getUsername();
+        String password = fromDB.getPassword();
+
+        RDBMSUserIdentity authenticated = userIdentityService.authenticate(username, password);
+
+        assertEquals(fromDB, authenticated);
+    }
+
+    @Test
+    public void test_fail_on_authenticate() {
+        UserIdentity userIdentity = giveMeTestUserIdentity();
+        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
+        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
+        String username = fromDB.getUsername();
+        String password = passwordGenerator.generate();
+
+        RDBMSUserIdentity authenticated = userIdentityService.authenticate(username, password);
+
+        assertNull("Authentication failed, return null", authenticated);
+    }
+
+    @Test
+    public void test_delete() {
+        UserIdentity userIdentity = giveMeTestUserIdentity();
+        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
+        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
+        assertNotNull(fromDB);
+
+        userIdentityService.deleteUserIdentity(fromDB.getUsername());
+
+        RDBMSUserIdentity deleted = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        assertNull("UserIdentity deleted", deleted);
+    }
 }

@@ -79,7 +79,7 @@ public class RDBMSLdapUserIdentityDao {
     public void updatePassword(String username, String password) throws RuntimeException {
         String sql = "UPDATE UserIdentity SET password=? WHERE username=?";
         int numRowsAffected = jdbcTemplate.update(sql, password, username);
-        if (numRowsAffected != 1) throw new RuntimeException(String.format("Failed to update password for user %s"));
+        if (numRowsAffected != 1) throw new RuntimeException(String.format("Failed to update password for user %s", username));
     }
 
     public void update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {

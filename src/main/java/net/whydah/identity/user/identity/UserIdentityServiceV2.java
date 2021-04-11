@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import javax.naming.NamingException;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,6 +23,7 @@ import java.util.Date;
  * @// TODO: 08/04/2021 kiversen
  *
  * - remove all ldap operations and replce with db persistence
+ * - avoid intrusion in existing UserIdentityService by using a "shadow" version
  * - service will replace UserIdentityService when ldap is retired.
  * - service will be added to UserResource when ready
  * - service will live and be used in parallell with UserIdentityService for an overlapping period
@@ -201,14 +201,13 @@ public class UserIdentityServiceV2 {
     }
 
     public void updateUserIdentity(String username, RDBMSUserIdentity update) {
-        //UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-        //RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLDAPUserIdentity(newuser);
-
         userIdentityRepository.updateUserIdentityForUsername(username, update);
+        log.info("Updated useridentity in DB: username={}, values={}", username, update);
+
         luceneIndexer.updateIndex(update);
     }
 
-    public void deleteUserIdentity(String username) throws NamingException {
+    public void deleteUserIdentity(String username) throws RuntimeException {
         luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
         userIdentityRepository.deleteUserIdentity(username);
     }
@@ -219,15 +218,5 @@ public class UserIdentityServiceV2 {
         auditLogDao.store(actionPerformed);
     }
 
-    //FIXME baardl: implement verification that admin is allowed to update this password.
-    //Find the admin user token, based on tokenid
-    public boolean allowedToUpdate(String applicationtokenid, String adminUserTokenId) {
-        return true;
-    }
 
-    //FIXME baardl: implement verification that admin is allowed to update this password.
-    //Find the admin user token, based on tokenid
-    public String findUserByTokenId(String adminUserTokenId) {
-        return "not-found-not-implemented";
-    }
 }
