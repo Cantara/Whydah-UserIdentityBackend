@@ -24,10 +24,22 @@ public class RDBMSLdapUserIdentityRepository {
         return enableRDBMSResource;
     }
 
-    public void addUserIdentity(RDBMSUserIdentity userIdentity) throws RuntimeException {
+    public boolean addUserIdentity(final RDBMSUserIdentity userIdentity) throws RuntimeException {
         if (isRDBMSEnabled()) {
-            rdbmsUserIdentityDao.create(userIdentity);
+            if (userIdentity != null) {
+                if (usernameExist(userIdentity.getUsername())) {
+                    log.warn("UserIdentity {} already exists", userIdentity.getUsername());
+                    return false;
+                } else {
+                    boolean success = rdbmsUserIdentityDao.create(userIdentity);
+                    if (success) {
+                        log.info("UserIdentity {} created", userIdentity.getUsername());
+                        return true;
+                    }
+                }
+            }
         }
+        return false;
     }
 
     public RDBMSUserIdentity getUserIdentityWithId(String uid) {
@@ -52,15 +64,23 @@ public class RDBMSLdapUserIdentityRepository {
             if (password.equals(userIdentity.getPassword())) {
                 return userIdentity;
             } else {
+                log.warn("Authentication failed for UserIdentity {} - password mismatch", username);
                 return null;
             }
         }
         return null;
     }
 
-    public void setTempPassword(String username, String saltedPassword) {
+    public void setTempPassword(final String username, final String saltedPassword) {
         if (isRDBMSEnabled()) {
-            rdbmsUserIdentityDao.updatePassword(username, saltedPassword);
+            if (username != null && saltedPassword != null) {
+                boolean success = rdbmsUserIdentityDao.updatePassword(username, saltedPassword);
+                if (success) {
+                    log.info("UserIdentity {} password updated", username);
+                } else {
+                    log.info("UserIdentity {} password not updated", username);
+                }
+            }
         }
     }
 
@@ -76,13 +96,13 @@ public class RDBMSLdapUserIdentityRepository {
         return null;
     }
 
-    public void changePassword(String username, String newPassword) {
+    public void changePassword(final String username, final String newPassword) {
         if (isRDBMSEnabled()) {
             setTempPassword(username, newPassword);
         }
     }
 
-    public boolean usernameExist(String username) {
+    public boolean usernameExist(final String username) {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = getUserIdentityWithUsername(username);
             if (userIdentity != null && userIdentity.getUsername().equalsIgnoreCase(username)) {
@@ -94,16 +114,21 @@ public class RDBMSLdapUserIdentityRepository {
         return false;
     }
 
-    public void deleteUserIdentity(String username) {
+    public void deleteUserIdentity(final String username) {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = rdbmsUserIdentityDao.getWithUsername(username);
             if (userIdentity != null && userIdentity.getUsername().equalsIgnoreCase(username)) {
-                rdbmsUserIdentityDao.delete(userIdentity.getUid());
+                boolean success = rdbmsUserIdentityDao.delete(userIdentity.getUid());
+                if (success) {
+                    log.info("UserIdentity {} deleted", username);
+                } else {
+                    log.warn("UserIdentity {} not deleted", username);
+                }
             }
         }
     }
 
-    public void updateUserIdentityForUsername(String username, RDBMSUserIdentity newuser) throws RuntimeException {
+    public void updateUserIdentityForUsername(final String username, final RDBMSUserIdentity newuser) throws RuntimeException {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = rdbmsUserIdentityDao.getWithUsername(username);
             if (userIdentity != null && userIdentity.getUsername().equalsIgnoreCase(username)) {
@@ -112,7 +137,7 @@ public class RDBMSLdapUserIdentityRepository {
         }
     }
 
-    public void updateUserIdentityForUid(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
+    public void updateUserIdentityForUid(final String uid, final RDBMSUserIdentity newUserIdentity) throws RuntimeException {
         if (isRDBMSEnabled()) {
             rdbmsUserIdentityDao.update(uid, newUserIdentity);
         }

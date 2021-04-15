@@ -31,8 +31,10 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    void create(RDBMSUserIdentity userIdentity) {
+    boolean create(RDBMSUserIdentity userIdentity) {
+        boolean executionOk = false;
         String sql = "INSERT INTO UserIdentity (id, username, firstname, lastname, personref, email, cellphone, password) VALUES (?,?,?,?,?,?,?,?)";
+
         int numRowsAffected = jdbcTemplate.update(sql,
                 userIdentity.getUid(),
                 userIdentity.getUsername(),
@@ -43,17 +45,22 @@ public class RDBMSLdapUserIdentityDao {
                 userIdentity.getCellPhone(),
                 userIdentity.getPassword()
         );
-        if (numRowsAffected != 1) {
-            throw new RuntimeException(String.format("Failed to insert new useridentity {%s}", userIdentity));
+        if (numRowsAffected > 0) {
+            executionOk = true;
         }
+        return executionOk;
     }
 
-    void delete(String uuid) throws RuntimeException {
+    boolean delete(String uuid) {
+        boolean executionOk = false;
         String sql = "DELETE FROM UserIdentity WHERE id=?";
+
         int numRowsAffected = jdbcTemplate.update(sql, uuid);
-        if (numRowsAffected != 1) {
-            throw new RuntimeException(String.format("Failed to delete useridentity with uid %s", uuid));
+
+        if (numRowsAffected > 0) {
+            executionOk = true;
         }
+        return executionOk;
     }
 
     RDBMSUserIdentity get(String uuid) {
@@ -76,13 +83,20 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public void updatePassword(String username, String password) throws RuntimeException {
+    boolean updatePassword(String username, String password) throws RuntimeException {
+        boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET password=? WHERE username=?";
+
         int numRowsAffected = jdbcTemplate.update(sql, password, username);
-        if (numRowsAffected != 1) throw new RuntimeException(String.format("Failed to update password for user %s", username));
+
+        if (numRowsAffected > 0) {
+            executionOk = true;
+        }
+        return executionOk;
     }
 
-    public void update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
+    boolean update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
+        boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET firstname=?, lastname=?, personref=?, email=?, cellphone=? WHERE id=?";
         int numRowsAffected = jdbcTemplate.update(sql,
                 newUserIdentity.getFirstName(),
@@ -92,8 +106,9 @@ public class RDBMSLdapUserIdentityDao {
                 newUserIdentity.getCellPhone(),
                 uid);
 
-        if (numRowsAffected != 1) {
-            throw new RuntimeException(String.format("Failed to update useridentity for user %s with input {%s}", uid, newUserIdentity));
+        if (numRowsAffected > 0) {
+            executionOk = true;
         }
+        return executionOk;
     }
 }
