@@ -1,8 +1,8 @@
 package net.whydah.identity.user.signup;
 
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.UserIdentityService;
-import net.whydah.identity.user.identity.UserIdentityServiceV2;
+import net.whydah.identity.user.identity.*;
+import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
 import net.whydah.sso.user.types.UserAggregate;
@@ -39,8 +39,41 @@ public class UserSignupService {
     public UserAggregate createUserWithRoles(UserAggregate userAggregate) {
         UserAggregate returnUserAggregate = null;
         if (userAggregate != null) {
-            UserIdentity createFromItentity = UserIdentityMapper.fromJson(UserAggregateMapper.toJson(userAggregate));
-            UserIdentity userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(createFromItentity);
+            UserIdentity createFromIdentity = UserIdentityMapper.fromJson(UserAggregateMapper.toJson(userAggregate));
+
+            UserIdentity userIdentity = null;
+            UserIdentityExtension userIdentityExtension = new UserIdentityExtension(createFromIdentity);
+            try {
+                userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+                try {
+                    RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+                    if (userIdentity == null) {
+                        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                        userIdentity = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
+                    }
+                } catch (Exception e) {
+                    String json = UserAggregateMapper.toJson(userAggregate);
+                    log.error(String.format("createUserWithRoles DB failed! \njson=%s", json), e);
+                }
+
+            } catch (Exception e) {
+                String json = UserAggregateMapper.toJson(userAggregate);
+                log.error(String.format("createUserWithRoles LDAP failed! \njson=%s", json), e);
+                try {
+                    RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+                    if (userIdentity == null) {
+                        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                        userIdentity = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
+                    }
+                } catch (Exception ex) {
+                    log.error("createUserWithRoles DB failed!", ex);
+                }
+            }
+
+
+
+
+
             //Add roles
             if (userIdentity != null && userIdentity.getUid() != null) {
                 List<UserApplicationRoleEntry> roles = userAggregate.getRoleList();

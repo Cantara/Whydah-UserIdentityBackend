@@ -1,6 +1,9 @@
 package net.whydah.identity.user.identity;
 
-
+/**
+ * Helperclass during transition from LDAP to DB
+ * Class should be removed when transition is completed.
+ */
 public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUserIdentity> {
 
     public UserIdentityConverter(){
@@ -8,6 +11,9 @@ public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUser
     }
 
     private static RDBMSUserIdentity convertToRDBMSUserIdentity(LDAPUserIdentity ldap) {
+        if (ldap == null) {
+            return null;
+        }
         final RDBMSUserIdentity userIdentity = new RDBMSUserIdentity(
                 ldap.getUid(),
                 ldap.getUsername(),
@@ -22,6 +28,9 @@ public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUser
     }
 
     private static LDAPUserIdentity convertToLDAPUserIdentity(RDBMSUserIdentity userIdentity) {
+        if (userIdentity == null) {
+            return null;
+        }
         final LDAPUserIdentity ldapUserIdentity = new LDAPUserIdentity(
                 userIdentity.getUid(),
                 userIdentity.getUsername(),

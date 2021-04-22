@@ -61,6 +61,37 @@ public class UserIdentityService {
         return primaryLdapAuthenticator.authenticate(username, password);
     }
 
+    /**
+     * Temporarily helper method to provide same password to both versions of UserIdentityService.
+     * When the transition from ldap to db is completed:
+     * 1. change {@link UserIdentityService#setTempPassword(String, String)} to public
+     * 2. use {@link UserIdentityService#setTempPassword(String, String)}
+     * 3. remove this method
+     *
+     */
+    public String setTempPassword(String username, String uid, String preGeneratedPassword, String preGeneratedSaltPassword) {
+        temporary_pwd = preGeneratedPassword;
+        return setTempPasswordV2(username, uid, preGeneratedSaltPassword);
+    }
+
+    public String setTempPasswordV2(String username, String uid, String preGeneratedSaltPassword) {
+        String newPassword = temporary_pwd;
+        String salt = preGeneratedSaltPassword;
+        //HUY: disable saving a new password
+        ldapUserIdentityDao.setTempPassword(username, null, salt);
+        //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
+        audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
+
+        byte[] saltAsBytes;
+        try {
+            saltAsBytes = salt.getBytes(SALT_ENCODING);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        ChangePasswordToken changePasswordToken = new ChangePasswordToken(username, newPassword);
+        return changePasswordToken.generateTokenString(saltAsBytes);
+    }
+
 
     public String setTempPassword(String username, String uid) {
     	if(temporary_pwd==null){
@@ -113,7 +144,7 @@ public class UserIdentityService {
     }
 
 
-    public UserIdentity addUserIdentityWithGeneratedPassword(UserIdentity dto) {
+    public UserIdentity addUserIdentityWithGeneratedPassword(UserIdentityExtension dto) {
         String username = dto.getUsername();
         if (username == null) {
             String msg = "Can not create a user without username!";
@@ -160,9 +191,14 @@ public class UserIdentityService {
             */
         }
 
-        String uid = UUID.randomUUID().toString();
+        String uid = dto.getUid();
         LDAPUserIdentity userIdentity = new LDAPUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
-                email, passwordGenerator.generate(), dto.getCellPhone(), dto.getPersonRef());
+                email, dto.getPassword(), dto.getCellPhone(), dto.getPersonRef());
+
+        // TODO: 15/04/2021 kiversen:  Use this constructor when transition from ldap to db is complete
+        //        LDAPUserIdentity userIdentity = new LDAPUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
+        //                email, passwordGenerator.generate(), dto.getCellPhone(), dto.getPersonRef());
+
         try {
             ldapUserIdentityDao.addUserIdentity(userIdentity);
             if(luceneIndexer.addToIndex(userIdentity)) {

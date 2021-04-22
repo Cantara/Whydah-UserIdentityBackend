@@ -4,6 +4,7 @@ import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
@@ -89,20 +90,44 @@ public class UserAggregateService {
 
 
     public void deleteUserAggregateByUid(String uid) {
-        UserIdentity userIdentity;
+        UserIdentity userIdentity = null;
         try {
             userIdentity = userIdentityService.getUserIdentityForUid(uid);
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(uid);
+                if (userIdentity == null) {
+                    userIdentity = rdbmsUserIdentity;
+                }
+            } catch (Exception e) {
+                log.error(String.format("deleteUserAggregateByUid for uid=%s failed.", uid), e);
+            }
             luceneIndexer.removeFromIndex(uid);
         } catch (NamingException e) {
-            throw new RuntimeException("userIdentityService.getUserIdentity with uid=" + uid, e);
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(uid);
+                userIdentity = rdbmsUserIdentity;
+            } catch (Exception ex) {
+                log.error(String.format("deleteUserAggregateByUid for uid=%s failed.", uid), ex);
+            }
         }
+
         if (userIdentity == null) {
-            throw new IllegalArgumentException("LDAPUserIdentity not found. uid=" + uid);
+            throw new IllegalArgumentException("UserIdentity not found in LDAP or DB. uid=" + uid);
         }
         try {
             userIdentityService.deleteUserIdentity(uid);
+            try {
+                userIdentityServiceV2.deleteUserIdentity(uid);
+            } catch (Exception e) {
+                log.warn("Trouble trying to delete user in DB with uid:" + uid, e);
+            }
         } catch (NamingException ne) {
-            log.warn("Trouble trying to delete user with uid:" + uid);
+            try {
+                userIdentityServiceV2.deleteUserIdentity(uid);
+            } catch (Exception e) {
+                log.warn("Trouble trying to delete user in DB with uid:" + uid, e);
+            }
+            log.warn("Trouble trying to delete user with uid:" + uid, ne);
         }
 
         userApplicationRoleEntryDao.deleteAllRolesForUser(uid);

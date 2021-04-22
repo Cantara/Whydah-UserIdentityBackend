@@ -17,7 +17,7 @@ public class RDBMSLdapUserIdentityRepository {
     public RDBMSLdapUserIdentityRepository(RDBMSLdapUserIdentityDao rdbmsUserIdentityDao, ConstrettoConfiguration config) {
         this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
         this.enableRDBMSResource = config.evaluateToBoolean("ldap.rdbms.enabled");
-        log.info("RDBMS for ldap user identities is in use: " + enableRDBMSResource);
+        log.info("RDBMS for user identities enabled: " + enableRDBMSResource);
     }
 
     public boolean isRDBMSEnabled() {
@@ -33,7 +33,7 @@ public class RDBMSLdapUserIdentityRepository {
                 } else {
                     boolean success = rdbmsUserIdentityDao.create(userIdentity);
                     if (success) {
-                        log.info("UserIdentity {} created", userIdentity.getUsername());
+                        log.debug("UserIdentity {} created", userIdentity.getUsername());
                         return true;
                     }
                 }
@@ -42,7 +42,7 @@ public class RDBMSLdapUserIdentityRepository {
         return false;
     }
 
-    public RDBMSUserIdentity getUserIdentityWithId(String uid) {
+    public RDBMSUserIdentity getUserIdentityWithId(String uid) throws RuntimeException {
         if (isRDBMSEnabled()) {
             return rdbmsUserIdentityDao.get(uid);
         } else {
@@ -50,7 +50,7 @@ public class RDBMSLdapUserIdentityRepository {
         }
     }
 
-    public RDBMSUserIdentity getUserIdentityWithUsername(String username) {
+    public RDBMSUserIdentity getUserIdentityWithUsername(String username) throws RuntimeException {
         if (isRDBMSEnabled()) {
             return rdbmsUserIdentityDao.getWithUsername(username);
         } else {
@@ -71,7 +71,7 @@ public class RDBMSLdapUserIdentityRepository {
         return null;
     }
 
-    public void setTempPassword(final String username, final String saltedPassword) {
+    public void setTempPassword(final String username, final String saltedPassword) throws RuntimeException {
         if (isRDBMSEnabled()) {
             if (username != null && saltedPassword != null) {
                 boolean success = rdbmsUserIdentityDao.updatePassword(username, saltedPassword);
@@ -102,7 +102,7 @@ public class RDBMSLdapUserIdentityRepository {
         }
     }
 
-    public boolean usernameExist(final String username) {
+    public boolean usernameExist(final String username) throws RuntimeException {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = getUserIdentityWithUsername(username);
             if (userIdentity != null && userIdentity.getUsername().equalsIgnoreCase(username)) {
@@ -114,7 +114,7 @@ public class RDBMSLdapUserIdentityRepository {
         return false;
     }
 
-    public void deleteUserIdentity(final String username) {
+    public void deleteUserIdentity(final String username) throws RuntimeException {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = rdbmsUserIdentityDao.getWithUsername(username);
             if (userIdentity != null && userIdentity.getUsername().equalsIgnoreCase(username)) {
@@ -143,7 +143,7 @@ public class RDBMSLdapUserIdentityRepository {
         }
     }
 
-    public RDBMSUserIdentity getUserIdentityWithUsernameOrUid(String usernameOrUid) {
+    public RDBMSUserIdentity getUserIdentityWithUsernameOrUid(String usernameOrUid) throws RuntimeException {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = rdbmsUserIdentityDao.getWithUsername(usernameOrUid);
             if (userIdentity == null) {

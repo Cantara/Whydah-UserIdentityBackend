@@ -1,8 +1,7 @@
 package net.whydah.identity.user.identity;
 
-
-import net.whydah.identity.Main;
-import net.whydah.identity.application.ApplicationDao;
+import net.whydah.identity.application.search.LuceneApplicationIndexer;
+import net.whydah.identity.application.search.LuceneApplicationSearch;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -22,6 +21,8 @@ import org.mockito.Mockito;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -29,51 +30,92 @@ import static org.mockito.Mockito.when;
 
 
 public class UserIdentityServiceV2Test {
-    private final static String basepath = "target/data/UserIdentityServiceV2Test/";
-    private final static String dbpath = basepath + "hsqldb/roles";
-
     private static BasicDataSource basicDataSource;
     private static AuditLogDao auditLogDao;
     private static PasswordGenerator passwordGenerator;
     private static LuceneUserIndexer luceneUserIndexer;
-    private static LuceneUserSearch luceneUserSearch = Mockito.mock(LuceneUserSearch.class);
+    //private static LuceneUserSearch luceneUserSearch = Mockito.mock(LuceneUserSearch.class);
     private static DatabaseMigrationHelper dbHelper;
     private static RDBMSLdapUserIdentityRepository rdbmsLdapUserIdentityRepository;
-    private static ConstrettoConfiguration constrettoConfiguration;
+    private static ConstrettoConfiguration configuration;
 
-    private static UserIdentityServiceV2 userIdentityService;
+    private static LuceneUserSearch luceneUserSearch;
+    private static String luceneApplicationDirectory;
+    private static String luceneUsersDirectory;
+
+    private static UserIdentityServiceV2 userIdentityServiceV2;
+
+    private String password = new PasswordGenerator().generate();
 
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
     @BeforeClass
     public static void init() throws Exception {
-        constrettoConfiguration = initConstrettoConfiguration();
-        basicDataSource = initBasicDataSource();
-        dbHelper = new DatabaseMigrationHelper(basicDataSource);
-        auditLogDao = new AuditLogDao(basicDataSource);
-        passwordGenerator = new PasswordGenerator();
+        configuration = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
+                .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
+                .done()
+                .getConfiguration();
 
-        String luceneUsersDir = constrettoConfiguration.evaluateToString("lucene.usersdirectory");
-        Directory index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
-        FileUtils.deleteDirectories(luceneUsersDir);
-        luceneUserIndexer = new LuceneUserIndexer(index);
+        BasicDataSource dataSource = initBasicDataSource(configuration);
+        dbHelper = new DatabaseMigrationHelper(dataSource);
 
+        /** lucene setup **/
+        luceneUsersDirectory = "target/" + configuration.evaluateToString("lucene.usersdirectory");
+        luceneApplicationDirectory = "target/" + configuration.evaluateToString("lucene.applicationsdirectory");
+
+        Directory usersDirectory = new NIOFSDirectory(Paths.get(new File(luceneUsersDirectory).getPath()));
+        LuceneUserIndexer luceneIndexer = new LuceneUserIndexer(usersDirectory);
+        luceneUserSearch = Mockito.mock(LuceneUserSearch.class);
+
+        Directory applicationsDirectory = new NIOFSDirectory(Paths.get(new File(luceneApplicationDirectory).getPath()));
+        LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(applicationsDirectory);
+        LuceneApplicationSearch luceneApplicationSearcher = new LuceneApplicationSearch(applicationsDirectory);
+
+        PasswordGenerator pwdGenerator = new PasswordGenerator();
+        AuditLogDao auditLogDao = new AuditLogDao(dataSource);
+
+
+
+//        constrettoConfiguration = initConstrettoConfiguration();
+//        basicDataSource = initBasicDataSource();
+//        dbHelper = new DatabaseMigrationHelper(basicDataSource);
+//        auditLogDao = new AuditLogDao(basicDataSource);
+//        passwordGenerator = new PasswordGenerator();
+//
+//        String luceneUsersDir = constrettoConfiguration.evaluateToString("lucene.usersdirectory");
+//        Directory index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
+//        FileUtils.deleteDirectories(luceneUsersDir);
+//        luceneUserIndexer = new LuceneUserIndexer(index);
+//
         RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(basicDataSource);
-        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, constrettoConfiguration);
-
-        userIdentityService = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
+        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, configuration);
+//
+        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
     }
-
     @Before
     public void setUp() throws Exception {
-        dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void cleanUp() throws Exception {
+        dbHelper.cleanDatabase();
+        deleteTestDataDirectories();
+    }
 
+    @AfterClass
+    public static void deleteTestDataDirectories() {
+        List<String> testDataDirectories = new ArrayList<String>()
+        {{
+            add(luceneUsersDirectory);
+            add(luceneApplicationDirectory);
+        }};
+
+        testDataDirectories.stream().forEach(dir -> FileUtils.deleteDirectory(dir));
     }
 
     private static ConstrettoConfiguration initConstrettoConfiguration() {
@@ -85,13 +127,18 @@ public class UserIdentityServiceV2Test {
                 .getConfiguration();
     }
 
-    private static BasicDataSource initBasicDataSource() {
-        basicDataSource = new BasicDataSource();
-        basicDataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
-        basicDataSource.setUsername("sa");
-        basicDataSource.setPassword("");
-        basicDataSource.setUrl("jdbc:hsqldb:file:" + dbpath);
-        return basicDataSource;
+    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+        String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
+        String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
+        String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
+        String roledbpasswd = configuration.evaluateToString("roledb.jdbc.password");
+
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName(jdbcdriver);
+        dataSource.setUrl(jdbcurl);
+        dataSource.setUsername(roledbuser);
+        dataSource.setPassword(roledbpasswd);
+        return dataSource;
     }
 
     private UserIdentity giveMeTestUserIdentity() {
@@ -109,8 +156,9 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_add() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
 
-        RDBMSUserIdentity stored = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        RDBMSUserIdentity stored = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
         assertNotNull("UserIdentity stored", stored);
     }
@@ -118,10 +166,11 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_get() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
 
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         assertNotNull("UserIdentity found", fromDB);
         assertEquals(userIdentity.getUid(), fromDB.getUid());
@@ -137,26 +186,28 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_reject_useridentity_if_exists() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         assertNotNull("UserIdentity found", fromDB);
 
         exceptionRule.expect(RuntimeException.class);
         exceptionRule.expectMessage("usernameExist failed for username=test.testesen@test.no");
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
     }
 
     @Test
     public void test_change_all_but_uid_username_and_password() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(false);
 
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         String newCellPhoneNumber = "+4790090000";
         fromDB.setCellPhone(newCellPhoneNumber);
@@ -165,11 +216,11 @@ public class UserIdentityServiceV2Test {
         fromDB.setPersonRef("1234567890");
         fromDB.setEmail("new.email@email.no");
 
-        RDBMSUserIdentity beforeUpdate = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity beforeUpdate = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
-        userIdentityService.updateUserIdentity(fromDB.getUsername(), fromDB);
+        userIdentityServiceV2.updateUserIdentity(fromDB.getUsername(), fromDB);
 
-        RDBMSUserIdentity updated = userIdentityService.getUserIdentity(fromDB.getUsername());
+        RDBMSUserIdentity updated = userIdentityServiceV2.getUserIdentity(fromDB.getUsername());
 
         assertEquals(beforeUpdate.getUid(), updated.getUid());
         assertEquals(beforeUpdate.getUsername(), updated.getUsername());
@@ -183,29 +234,33 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_password_change() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
 
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         String newPassword = passwordGenerator.generate();
-        userIdentityService.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
+        userIdentityServiceV2.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
 
-        RDBMSUserIdentity fromDBWithChangedPassword = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDBWithChangedPassword = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
         assertNotEquals(fromDB.getPassword(), fromDBWithChangedPassword.getPassword());
     }
 
     @Test
     public void test_authenticate() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         String username = fromDB.getUsername();
         String password = fromDB.getPassword();
 
-        RDBMSUserIdentity authenticated = userIdentityService.authenticate(username, password);
+        RDBMSUserIdentity authenticated = userIdentityServiceV2.authenticate(username, password);
 
         assertEquals(fromDB, authenticated);
     }
@@ -213,14 +268,15 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_fail_on_authenticate() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         String username = fromDB.getUsername();
         String password = passwordGenerator.generate();
 
-        RDBMSUserIdentity authenticated = userIdentityService.authenticate(username, password);
+        RDBMSUserIdentity authenticated = userIdentityServiceV2.authenticate(username, password);
 
         assertNull("Authentication failed, return null", authenticated);
     }
@@ -228,15 +284,16 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_delete() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
-        userIdentityService.addUserIdentityWithGeneratedPassword(userIdentity);
-        RDBMSUserIdentity fromDB = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
         assertNotNull(fromDB);
 
-        userIdentityService.deleteUserIdentity(fromDB.getUsername());
+        userIdentityServiceV2.deleteUserIdentity(fromDB.getUsername());
 
-        RDBMSUserIdentity deleted = userIdentityService.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity deleted = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
         assertNull("UserIdentity deleted", deleted);
     }
 }

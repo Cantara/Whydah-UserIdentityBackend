@@ -18,6 +18,7 @@ import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * @// TODO: 08/04/2021 kiversen
@@ -59,6 +60,28 @@ public class UserIdentityServiceV2 {
         return userIdentityRepository.authenticate(username, password);
     }
 
+    public String setTempPassword(String username, String uid, String preGeneratedPassword, String preGeneratedSaltPassword) {
+        temporary_pwd = preGeneratedPassword;
+        return setTempPasswordV2(username, uid, preGeneratedSaltPassword);
+    }
+
+    public String setTempPasswordV2(String username, String uid, String preGeneratedSaltPassword) {
+        String newPassword = temporary_pwd;
+        String salt = preGeneratedSaltPassword;
+        //HUY: disable saving a new password
+        userIdentityRepository.setTempPassword(username, salt);
+        //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
+        audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
+
+        byte[] saltAsBytes;
+        try {
+            saltAsBytes = salt.getBytes(SALT_ENCODING);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        ChangePasswordToken changePasswordToken = new ChangePasswordToken(username, newPassword);
+        return changePasswordToken.generateTokenString(saltAsBytes);
+    }
 
     public String setTempPassword(String username, String uid) {
     	if(temporary_pwd==null){
@@ -107,7 +130,7 @@ public class UserIdentityServiceV2 {
     }
 
 
-    public RDBMSUserIdentity addUserIdentityWithGeneratedPassword(UserIdentity dto) {
+    public RDBMSUserIdentity addUserIdentityWithGeneratedPassword(UserIdentityExtension dto) throws IllegalStateException, RuntimeException {
         String username = dto.getUsername();
         if (username == null) {
             String msg = "Can not create a user without username!";
@@ -144,11 +167,10 @@ public class UserIdentityServiceV2 {
         }
 
         // Must use already created uuid util we part from ldap
-        // String uid = UUID.randomUUID().toString();
-        String uid = dto.getUid();
-
+        String tentativeUid = UUID.randomUUID().toString();
+        String uid = dto.getUid() != null ? dto.getUid() : tentativeUid;
         RDBMSUserIdentity userIdentity = new RDBMSUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
-                email, passwordGenerator.generate(), dto.getCellPhone(), dto.getPersonRef());
+                email, dto.getPassword(), dto.getCellPhone(), dto.getPersonRef());
         try {
             userIdentityRepository.addUserIdentity(userIdentity);
             if(luceneIndexer.addToIndex(userIdentity)) {
@@ -158,9 +180,11 @@ public class UserIdentityServiceV2 {
             }
 
         } catch (RuntimeException e) {
-            throw new RuntimeException("addUserIdentity failed for " + userIdentity.toString(), e);
+            throw new RuntimeException("addUserIdentity to DB failed for " + userIdentity.toString(), e);
         }
-        log.info("Added new useridentity to DB: username={}, uid={}", username, uid);
+        if (userIdentityRepository.isRDBMSEnabled()) {
+            log.info("Added new useridentity to DB: username={}, uid={}", username, uid);
+        }
         return userIdentity;
     }
 
@@ -177,7 +201,7 @@ public class UserIdentityServiceV2 {
     }
 
 
-    public RDBMSUserIdentity getUserIdentityForUid(String uid) {
+    public RDBMSUserIdentity getUserIdentityForUid(String uid) throws RuntimeException {
         RDBMSUserIdentity userIdentity = userIdentityRepository.getUserIdentityWithId(uid);
         if (userIdentity == null) {
             log.warn("Trying to access non-existing UID, removing from index: " + uid);
@@ -196,11 +220,11 @@ public class UserIdentityServiceV2 {
     }
 
     // TODO: 08/04/2021 kiversen - Replace with either username or uid
-    public RDBMSUserIdentity getUserIdentity(String usernameOrUid) {
+    public RDBMSUserIdentity getUserIdentity(String usernameOrUid) throws RuntimeException {
         return userIdentityRepository.getUserIdentityWithUsernameOrUid(usernameOrUid);
     }
 
-    public void updateUserIdentity(String username, RDBMSUserIdentity update) {
+    public void updateUserIdentity(String username, RDBMSUserIdentity update) throws RuntimeException {
         userIdentityRepository.updateUserIdentityForUsername(username, update);
         log.info("Updated useridentity in DB: username={}, values={}", username, update);
 

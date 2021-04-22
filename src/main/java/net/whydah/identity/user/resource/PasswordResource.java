@@ -3,9 +3,8 @@ package net.whydah.identity.user.resource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
-import net.whydah.identity.user.identity.UserIdentityService;
-import net.whydah.identity.user.identity.UserIdentityServiceV2;
+import net.whydah.identity.user.identity.*;
+import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -62,10 +61,25 @@ public class PasswordResource {
         try {
             LDAPUserIdentity user = userIdentityService.getUserIdentity(username);
             if (user == null) {
+                try {
+                    RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+                    UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                    user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                } catch (Exception e) {
+                    log.error("resetPassword for useridentity in DB failed", e);
+                }
+            }
+
+            if (user == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
             }
 
-            String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid());
+            String preGeneratedPassword = new PasswordGenerator().generate();
+            String preGeneratedSaltPassword = new PasswordGenerator().generate();
+
+            String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+            String resetPasswordTokenV2 = userIdentityServiceV2.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+
             Map<String,String> retVal = new HashMap<>();
             retVal.put("username", username);
             retVal.put("email", user.getEmail());
@@ -180,6 +194,16 @@ public class PasswordResource {
         }
         try {
             LDAPUserIdentity user = userIdentityService.getUserIdentity(username);
+            if (user == null) {
+                try {
+                    RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+                    UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                    user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                } catch (Exception e) {
+                    log.error(String.format("changePasswordbyAdmin for user %s failed", username), e);
+                }
+            }
+
 
             if (user == null) {
                 log.trace("No user found for username {}, can not update password.", username);
@@ -188,6 +212,7 @@ public class PasswordResource {
             log.debug("Found user: {}", user.toString());
 
             userIdentityService.changePassword(username, user.getUid(), password);
+            userIdentityServiceV2.changePassword(username, user.getUid(), password);
             return Response.ok().build();
         } catch (Exception e) {
             log.error("changePasswordForUser failed", e);
