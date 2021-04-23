@@ -174,9 +174,9 @@ public class UserIdentityServiceV2 {
         try {
             userIdentityRepository.addUserIdentity(userIdentity);
             if(luceneIndexer.addToIndex(userIdentity)) {
-            	HealthResource.setNumberOfUsers(searcher.getUserIndexSize());
+            	HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
             } else {
-            	 throw new IllegalArgumentException("addUserIdentity failed for " + userIdentity.toString());
+            	 throw new IllegalArgumentException("addUserIdentity to DB failed for " + userIdentity.toString());
             }
 
         } catch (RuntimeException e) {
@@ -234,6 +234,20 @@ public class UserIdentityServiceV2 {
     public void deleteUserIdentity(String username) throws RuntimeException {
         luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
         userIdentityRepository.deleteUserIdentity(username);
+        HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
+    }
+
+    public int countUsers() {
+        try {
+            return userIdentityRepository.countUsers();
+        } catch (Exception e) {
+            log.error("Query fail", e);
+        }
+        return 0;
+    }
+
+    public boolean isRDBMSEnabled() {
+        return userIdentityRepository.isRDBMSEnabled();
     }
 
     private void audit(String uid,String action, String what, String value) {
@@ -241,6 +255,7 @@ public class UserIdentityServiceV2 {
         ActionPerformed actionPerformed = new ActionPerformed(uid, now, action, what, value);
         auditLogDao.store(actionPerformed);
     }
+
 
 
 }

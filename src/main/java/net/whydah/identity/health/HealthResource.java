@@ -31,11 +31,12 @@ public class HealthResource {
     private static SecurityTokenServiceClient securityTokenServiceClient;
     private static String applicationInstanceName;
     private static boolean ok = true;
-
-
+    private static boolean ok_db = true;
     private static long numberOfUsers = 0;
-
+    private static String numberOfUsers_DB = "0";
     private static long numberOfApplications = 0;
+
+    private boolean usersRDBMSEnabled = false;
 
     @Autowired
     @Configure
@@ -48,7 +49,8 @@ public class HealthResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response isHealthy() {
-        ok = healthCheckService.isOK();
+        ok = healthCheckService.isOK_LDAP();
+        ok_db = healthCheckService.isOK_DB();
         try {
             String statusText = WhydahUtil.getPrintableStatus(securityTokenServiceClient.getWAS());
             log.trace("isHealthy={}, {status}", ok, statusText);
@@ -80,12 +82,15 @@ public class HealthResource {
         if (SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS() != null) {
             return "{\n" +
                     "  \"Status\": \"" + ok + "\",\n" +
+                    "  \"Status (DB)\": \"" + ok_db + "\",\n" +
                     "  \"Version\": \"" + getVersion() + "\",\n" +
                     "  \"DEFCON\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getDefcon() + "\",\n" +
                     "  \"STS\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getSTS() + "\",\n" +
                     "  \"hasApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getActiveApplicationTokenId() != null) + "\",\n" +
                     "  \"hasValidApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().checkActiveSession()) + "\",\n" +
                     "  \"users\": \"" + numberOfUsers + "\",\n" +
+                    "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
+                    "  \"rdbms enabled)\": \"" + Boolean.toString(isUsersRDBMSEnabled()) + "\",\n" +
                     "  \"applications\": \"" + numberOfApplications + "\",\n" +
                     "  \"now\": \"" + Instant.now() + "\",\n" +
                     "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
@@ -97,12 +102,15 @@ public class HealthResource {
         }  // Else, return uninitialized was result
         return "{\n" +
                 "  \"Status\": \"" + ok + "\",\n" +
+                "  \"Status (DB)\": \"" + ok_db + "\",\n" +
                 "  \"Version\": \"" + getVersion() + "\",\n" +
                 "  \"DEFCON\": \"" + "N/A" + "\",\n" +
                 "  \"STS\": \"" + "N/A" + "\",\n" +
                 "  \"hasApplicationToken\": \"" + "false" + "\",\n" +
                 "  \"hasValidApplicationToken\": \"" + "false" + "\",\n" +
                 "  \"users\": \"" + numberOfUsers + "\",\n" +
+                "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
+                "  \"rdbms enabled)\": \"" + Boolean.toString(isUsersRDBMSEnabled()) + "\",\n" +
                 "  \"applications\": \"" + numberOfApplications + "\",\n" +
                 "  \"now\": \"" + Instant.now() + "\",\n" +
                 "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
@@ -144,6 +152,10 @@ public class HealthResource {
         HealthResource.numberOfUsers = numberOfUsers;
     }
 
+    public static void setNumberOfUsersDB(String numberOfUsers) {
+        HealthResource.numberOfUsers_DB = numberOfUsers;
+    }
+
     public static long getNumberOfApplications() {
         return numberOfApplications;
     }
@@ -152,8 +164,14 @@ public class HealthResource {
         HealthResource.numberOfApplications = numberOfApplications;
     }
 
+
+
     private static final String getLuceneVersion() {
         return Version.LATEST.toString();
+    }
+
+    private boolean isUsersRDBMSEnabled() {
+        return healthCheckService.isRDBMSEnabled();
     }
 
 }

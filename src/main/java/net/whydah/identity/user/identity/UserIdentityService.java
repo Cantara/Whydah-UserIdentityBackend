@@ -255,6 +255,7 @@ public class UserIdentityService {
     public void deleteUserIdentity(String username) throws NamingException {
         luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
         ldapUserIdentityDao.deleteUserIdentity(username);
+        HealthResource.setNumberOfUsers(searcher.getUserIndexSize());
     }
 
     private void audit(String uid,String action, String what, String value) {

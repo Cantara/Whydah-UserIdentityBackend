@@ -1,6 +1,7 @@
 package net.whydah.identity.health;
 
 import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
@@ -32,14 +33,31 @@ public class HealthCheckService {
     }
 
 
-    boolean isOK() {
+    boolean isOK_LDAP() {
         log.trace("Checking if uid={} can be found in LDAP and role database.", USERADMIN_UID);
         //How to do count in ldap without fetching all users?
         if (!userExistInLdap(USERADMIN_UID)) {
             USERADMIN_UID = "whydahadmin";  // Initiel support for future support of configurable LDAP admin UID
         }
         return userExistInLdap(USERADMIN_UID) && atLeastOneRoleInDatabase();
+    }
 
+    boolean isOK_DB() {
+        log.trace("Checking if uid={} can be found in DB and role database.", USERADMIN_UID);
+        if (!userExistInDB(USERADMIN_UID)) {
+            USERADMIN_UID = "whydahadmin";  // Initiel support for future support of configurable LDAP admin UID
+        }
+        return userExistInDB(USERADMIN_UID) && atLeastOneRoleInDatabase();
+    }
+
+    String countUsersInDB() {
+        log.trace("Checking number of users in DB");
+        try {
+            int noOfUsers = identityServiceV2.countUsers();
+            return Integer.toString(noOfUsers);
+        } catch (Exception e) {
+            return "0";
+        }
     }
 
     //TODO Make this test more robust
@@ -54,6 +72,20 @@ public class HealthCheckService {
         }
         return false;
     }
+
+    private boolean userExistInDB(String uid) {
+        try {
+            RDBMSUserIdentity userIdentity = identityServiceV2.getUserIdentity(uid);
+            if (userIdentity != null && uid.equals(userIdentity.getUid())) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
     public void addIntrusion(){
         if (intrusionsDetected > Long.MAX_VALUE -10) {
@@ -83,5 +115,9 @@ public class HealthCheckService {
             anonymousIntrsionsDetected = 0;
         }
         anonymousIntrsionsDetected += 1;
+    }
+
+    public boolean isRDBMSEnabled() {
+        return identityServiceV2.isRDBMSEnabled();
     }
 }
