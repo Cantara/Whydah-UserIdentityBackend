@@ -289,19 +289,22 @@ public class UserResource {
     public Response addRole(@PathParam("uid") String uid, String roleJson) {
         log.trace("addRole for uid={}, roleJson={}", uid, roleJson);
 
-        LDAPUserIdentity user;
+        LDAPUserIdentity user = null;
         String msg = "addRole failed. No user with uid=" + uid;
 
         UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
         try {
             user = userIdentityService.getUserIdentityForUid(uid);
-            if (user == null) {
-                try {
-                    RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+                if (user == null && rdbmsUserIdentity != null) {
+                    log.warn("addRole useridentity with username={} not found in LDAP but did found it in DB", uid);
                     user = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
-                } catch (RuntimeException e) {
-                    log.error(String.format("addRole failed, No user in DB with uid=%s", uid), e);
+                } else {
+                    log.warn("addRole useridentity with username={} not found in DB either", uid);
                 }
+            } catch (RuntimeException e) {
+                log.error(String.format("addRole failed, No user in DB with uid=%s", uid), e);
             }
         } catch (NamingException e) {
             try {

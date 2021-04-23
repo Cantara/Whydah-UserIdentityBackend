@@ -30,11 +30,7 @@ import static org.mockito.Mockito.when;
 
 
 public class UserIdentityServiceV2Test {
-    private static BasicDataSource basicDataSource;
-    private static AuditLogDao auditLogDao;
     private static PasswordGenerator passwordGenerator;
-    private static LuceneUserIndexer luceneUserIndexer;
-    //private static LuceneUserSearch luceneUserSearch = Mockito.mock(LuceneUserSearch.class);
     private static DatabaseMigrationHelper dbHelper;
     private static RDBMSLdapUserIdentityRepository rdbmsLdapUserIdentityRepository;
     private static ConstrettoConfiguration configuration;
@@ -55,7 +51,6 @@ public class UserIdentityServiceV2Test {
         configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
                 .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
                 .done()
                 .getConfiguration();
@@ -75,27 +70,21 @@ public class UserIdentityServiceV2Test {
         LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(applicationsDirectory);
         LuceneApplicationSearch luceneApplicationSearcher = new LuceneApplicationSearch(applicationsDirectory);
 
-        PasswordGenerator pwdGenerator = new PasswordGenerator();
+        passwordGenerator = new PasswordGenerator();
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
+        String luceneUsersDir = configuration.evaluateToString("lucene.usersdirectory");
+        Directory index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
+        FileUtils.deleteDirectories(luceneUsersDir);
+        LuceneUserIndexer luceneUserIndexer= new LuceneUserIndexer(index);
 
-
-//        constrettoConfiguration = initConstrettoConfiguration();
-//        basicDataSource = initBasicDataSource();
-//        dbHelper = new DatabaseMigrationHelper(basicDataSource);
-//        auditLogDao = new AuditLogDao(basicDataSource);
-//        passwordGenerator = new PasswordGenerator();
-//
-//        String luceneUsersDir = constrettoConfiguration.evaluateToString("lucene.usersdirectory");
-//        Directory index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
-//        FileUtils.deleteDirectories(luceneUsersDir);
-//        luceneUserIndexer = new LuceneUserIndexer(index);
-//
-        RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(basicDataSource);
+        RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
         rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, configuration);
-//
+
+        PasswordGenerator passwordGenerator = new PasswordGenerator();
         userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
     }
+
     @Before
     public void setUp() throws Exception {
         dbHelper.upgradeDatabase();

@@ -3,6 +3,7 @@ package net.whydah.identity.user.authentication;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.ddd.model.userrole.RoleValue;
@@ -105,6 +106,21 @@ public class UserAuthenticationEndpoint {
 
     private Response authenticateUser(String username, String password) {
         UserIdentity userIdentity = userIdentityService.authenticate(username, password);
+        try {
+            RDBMSUserIdentity authenticated = userIdentityServiceV2.authenticate(username, password);
+            if (userIdentity == null) {
+                log.warn("Failed to authenticate (or find) useridentity from LDAP with username={}. Trying from DB", username);
+            }
+            if (userIdentity == null && authenticated != null) {
+                log.warn("Authentication ok for useridentity in DB with username={}", username);
+                userIdentity = authenticated;
+            } else {
+                log.warn("Authentication also failed for useridentity in DB with username={}", username);
+            }
+        } catch (Exception e) {
+            log.error(String.format("Authentication failed for useridentity in DB with username=%s", username), e);
+        }
+
         if (userIdentity == null) {
             log.debug("Authentication failed for user with username={}. Returning {}", username, Response.Status.FORBIDDEN.toString());
             Viewable entity = new Viewable("/logonFailed.xml.ftl");
