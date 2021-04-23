@@ -57,11 +57,28 @@ public class UserAggregateService {
 
 
     public UserAggregate getUserAggregateByUsernameOrUid(String usernameOrUid) {
-        UserIdentity userIdentity;
+        UserIdentity userIdentity = null;
         try {
             userIdentity = userIdentityService.getUserIdentity(usernameOrUid);
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(usernameOrUid);
+                if (userIdentity == null) {
+                    userIdentity = rdbmsUserIdentity;
+                }
+            } catch (Exception e) {
+                log.warn(String.format("getUserAggregateByUsernameOrUid for uid=%s failed", usernameOrUid), e);
+            }
+
         } catch (NamingException e) {
-            throw new RuntimeException("userIdentityService.getUserIdentity with usernameOrUid=" + usernameOrUid, e);
+            log.error("userIdentityService.getUserIdentity with usernameOrUid=" + usernameOrUid, e);
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(usernameOrUid);
+                if (userIdentity == null) {
+                    userIdentity = rdbmsUserIdentity;
+                }
+            } catch (Exception ex) {
+                log.warn(String.format("getUserAggregateByUsernameOrUid for uid=%s failed", usernameOrUid), e);
+            }
         }
         if (userIdentity == null) {
             log.trace("getUserAggregateByUsernameOrUid could not find user with usernameOrUid={}", usernameOrUid);
@@ -73,7 +90,7 @@ public class UserAggregateService {
         return userAggregate;
     }
 
-
+    // TODO: 23/04/2021 kiversen - not in use?
     public UserIdentity getUserIdentityByUsernameOrUid(String usernameOrUid) {
         UserIdentity userIdentity;
         try {
