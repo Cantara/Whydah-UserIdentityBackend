@@ -17,7 +17,6 @@ import org.constretto.model.Resource;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,7 +114,7 @@ public class PasswordResourceEndpointTest {
         String appTokenId = "applicationTestToken";
         String userTokenId = "userTestToken";
         String path = "/{applicationtokenid}/{userTokenId}/user";
-        UserIdentity userIdentity = new UserIdentity("test.me@example.com", "test", "me", null, "test.me@example.com", "+4712312345");
+        UserIdentity userIdentity = new UserIdentity("test.me.uid", "test.me.username", "test", "me", null, "test.me@example.com", "+4712312345");
 
         try {
             String json = new ObjectMapper().writeValueAsString(userIdentity);
@@ -141,7 +140,7 @@ public class PasswordResourceEndpointTest {
         addTestUser();
 
         String appTokenId = "test";
-        String uid = "test.me@example.com";
+        String uid = "test.me.uid";
         String path = "/password/{applicationtokenid}/reset/username/{username}";
 
 
@@ -159,9 +158,10 @@ public class PasswordResourceEndpointTest {
     public void test_resetPassword_post_ok() throws Exception {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
+        postResetPassword("appTokenTestId", "test.me@example.com");
+    }
 
-        String appTokenId = "appTokenTestId";
-        String username = "test.me@example.com";
+    private String postResetPassword(String appTokenId, String username) {
         String path = "/password/{applicationtokenid}/reset/username/{username}";
 
         com.jayway.restassured.response.Response response = given()
@@ -171,17 +171,20 @@ public class PasswordResourceEndpointTest {
                 .log().ifError()
                 .when()
                 .post(path, appTokenId, username);
+        String changePasswordToken = response.jsonPath().getString("changePasswordToken");
+        return changePasswordToken;
     }
 
     @Test
-    @Ignore
     public void test_setPassword_ok() throws Exception {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
         String appTokenId = "appTokenTestId";
-        String username = "test.me@example.com";
-        String path = "/password/{applicationtokenid}/reset/username/{username}/newpassword/{token}";
+        String username = "test.me.username";
 
+        String changePasswordToken = postResetPassword(appTokenId, username);
+
+        String path = "/password/{applicationtokenid}/reset/username/{username}/newpassword/{token}";
 
         JSONObject requestParams = new JSONObject();
         String generatedPwd = new PasswordGenerator().generate();
@@ -195,19 +198,23 @@ public class PasswordResourceEndpointTest {
                 .statusCode(Response.Status.OK.getStatusCode())
                 .log().ifError()
                 .when()
-                .post(path, appTokenId, username, generatedPwd);
+                .post(path, appTokenId, username, changePasswordToken);
     }
 
 
     @Test
-    @Ignore
-    public void test_changePasswordbyAdmin_ok() throws Exception {
+    public void test_changePasswordbyAdmin_ok() {
+
+        /*
+         * When changing password using admin user-token, there should be no need to reset user-password first.
+         */
+
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
 
         String appTokenId = "appTokenTestId";
+        String username = "test.me.username";
         String adminUserTokenId = "adminUserTokenTestId";
-        String username = "test.me@example.com";
         String path = "/password/{applicationtokenid}/change/{adminUserTokenId}/user/username/{username}";
 
         String newPassword = new PasswordGenerator().generate();
