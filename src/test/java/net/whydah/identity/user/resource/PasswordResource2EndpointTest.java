@@ -31,6 +31,7 @@ import java.net.URI;
 import java.sql.SQLException;
 
 import static com.jayway.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
 
 public class PasswordResource2EndpointTest {
     private static final Logger log = LoggerFactory.getLogger(PasswordResource2EndpointTest.class);
@@ -163,6 +164,10 @@ public class PasswordResource2EndpointTest {
 
         String changePasswordToken = resetPassword(appTokenId, uid);
 
+        changePassword(appTokenId, uid, changePasswordToken);
+    }
+
+    private void changePassword(String appTokenId, String uid, String changePasswordToken) {
         String path = "/{applicationtokenid}/user/{uid}/change_password";
 
         JSONObject requestParams = new JSONObject();
@@ -198,6 +203,16 @@ public class PasswordResource2EndpointTest {
         addTestUser();
         String appTokenId = "test";
         String uid = "test.me.uid";
+
+        verifyPasswordLoginEnabled(appTokenId, uid, "false");
+
+        String changePasswordToken = resetPassword(appTokenId, uid);
+        changePassword(appTokenId, uid, changePasswordToken);
+
+        verifyPasswordLoginEnabled(appTokenId, uid, "true");
+    }
+
+    private void verifyPasswordLoginEnabled(String appTokenId, String uid, String expectedResult) {
         String path = "/{applicationtokenid}/user/{uid}/password_login_enabled";
         com.jayway.restassured.response.Response response = given()
                 .log().everything()
@@ -205,5 +220,6 @@ public class PasswordResource2EndpointTest {
                 .log().ifError()
                 .when()
                 .get(path, appTokenId, uid);
+        assertEquals(expectedResult, response.body().print());
     }
 }
