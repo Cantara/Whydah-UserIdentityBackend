@@ -239,15 +239,6 @@ public class UserIdentityServiceV2 {
         HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
     }
 
-    public int countUsers() {
-        try {
-            return userIdentityRepository.countUsers();
-        } catch (Exception e) {
-            log.error("Query fail", e);
-        }
-        return 0;
-    }
-
     public boolean isRDBMSEnabled() {
         return userIdentityRepository.isRDBMSEnabled();
     }

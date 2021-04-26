@@ -50,16 +50,6 @@ public class HealthCheckService {
         return userExistInDB(USERADMIN_UID) && atLeastOneRoleInDatabase();
     }
 
-    String countUsersInDB() {
-        log.trace("Checking number of users in DB");
-        try {
-            int noOfUsers = identityServiceV2.countUsers();
-            return Integer.toString(noOfUsers);
-        } catch (Exception e) {
-            return "0";
-        }
-    }
-
     //TODO Make this test more robust
     private boolean userExistInLdap(String uid) {
         try {

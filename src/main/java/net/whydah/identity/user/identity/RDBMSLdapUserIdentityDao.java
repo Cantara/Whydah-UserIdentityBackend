@@ -132,13 +132,4 @@ public class RDBMSLdapUserIdentityDao {
             throw new RuntimeException("userIdentityUpdate in DB failed!", e);
         }
     }
-
-    int countUsers() {
-        try {
-            int rows = jdbcTemplate.queryForObject("SELECT COUNT(1) from UserIdentity", Integer.class);
-            return rows;
-        } catch (DataAccessException e) {
-            throw new RuntimeException("userIdentity count users in DB failed.", e);
-        }
-    }
 }

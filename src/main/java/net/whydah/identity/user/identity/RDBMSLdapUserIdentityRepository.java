@@ -153,11 +153,4 @@ public class RDBMSLdapUserIdentityRepository {
         }
         return null;
     }
-
-    public int countUsers() throws RuntimeException {
-        if (isRDBMSEnabled()) {
-            return rdbmsUserIdentityDao.countUsers();
-        }
-        return 0;
-    }
 }
