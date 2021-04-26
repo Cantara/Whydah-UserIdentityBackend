@@ -1,6 +1,5 @@
 package net.whydah.identity.user.identity;
 
-import net.whydah.identity.application.ApplicationDao;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +135,7 @@ public class RDBMSLdapUserIdentityDao {
 
     int countUsers() {
         try {
-            int rows = jdbcTemplate.update("SELECT * from UserIdentity");
+            int rows = jdbcTemplate.queryForObject("SELECT COUNT(1) from UserIdentity", Integer.class);
             return rows;
         } catch (DataAccessException e) {
             throw new RuntimeException("userIdentity count users in DB failed.", e);
