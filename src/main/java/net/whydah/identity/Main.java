@@ -23,9 +23,14 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
 
 public class Main {
     public static final String CONTEXT_PATH = "/uib";
@@ -292,12 +297,16 @@ public class Main {
     }
 
     private static void printConfiguration(ConstrettoConfiguration configuration) {
-        Map<String, String> properties = configuration.asMap();
-        StringBuilder strb = new StringBuilder("Configuration properties (property=value):");
-        for (String key : properties.keySet()) {
-            strb.append("\n ").append(key).append("=").append(properties.get(key));
+        if (configuration == null) {
+            log.error("Missing configuration - uib will not work properly!");
+        } else {
+            Map<String, String> properties = new TreeMap<>(configuration.asMap());
+            StringBuilder strb = new StringBuilder("Configuration properties (property=value):");
+            for (String key : properties.keySet()) {
+                strb.append("\n ").append(key).append("=").append(properties.get(key));
+            }
+            log.debug(strb.toString());
         }
-        log.debug(strb.toString());
     }
 
     static void copyConfigExamples() {
