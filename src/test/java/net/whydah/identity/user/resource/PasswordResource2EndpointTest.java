@@ -11,19 +11,18 @@ import net.whydah.identity.util.FileUtils;
 import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
 import org.json.JSONObject;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -32,8 +31,6 @@ import java.net.URI;
 import java.sql.SQLException;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.mockito.ArgumentMatchers.any;
-import static org.testng.Assert.assertEquals;
 
 public class PasswordResource2EndpointTest {
     private static final Logger log = LoggerFactory.getLogger(PasswordResource2EndpointTest.class);
@@ -42,8 +39,6 @@ public class PasswordResource2EndpointTest {
     private static Main main;
     private String luceneUsersDir;
     private BasicDataSource dataSource;
-
-    private final static String basepath = "target/PasswordResource2EndpointTest/";
 
     @Before
     public void init() {
@@ -65,7 +60,7 @@ public class PasswordResource2EndpointTest {
         main.startEmbeddedDS(configuration.asMap());
 
         dataSource = initBasicDataSource(configuration);
-        DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);
+        DatabaseMigrationHelper dbHelper = new DatabaseMigrationHelper(dataSource);
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
@@ -103,7 +98,7 @@ public class PasswordResource2EndpointTest {
         main.stop();
 
         try {
-            if(!dataSource.isClosed()) {
+            if (!dataSource.isClosed()) {
                 dataSource.close();
             }
         } catch (SQLException e) {
@@ -151,39 +146,51 @@ public class PasswordResource2EndpointTest {
 
         com.jayway.restassured.response.Response post =
                 given()
-                .log().everything()
-                .expect()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .log().ifError()
-                .when()
-                .post(path, appTokenId, uid);
+                        .log().everything()
+                        .expect()
+                        .statusCode(Response.Status.OK.getStatusCode())
+                        .log().ifError()
+                        .when()
+                        .post(path, appTokenId, uid);
     }
 
     @Test
-    @Ignore
     public void test_authenticateAndChangePasswordUsingToken_ok() throws Exception {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
         String appTokenId = "test";
         String uid = "test.me@example.com";
-        String path = "/{applicationtokenid}/user/{uid}/change_password";
 
+        String changePasswordToken = resetPassword(appTokenId, uid);
+
+        String path = "/{applicationtokenid}/user/{uid}/change_password";
 
         JSONObject requestParams = new JSONObject();
         String generatedPwd = new PasswordGenerator().generate();
-        requestParams.put(PasswordResource2.NEW_PASSWORD_KEY, generatedPwd);
-
+        requestParams.put("newpassword", generatedPwd);
 
         com.jayway.restassured.response.Response post = given()
-                .request().body(requestParams.toString())
+                .request().queryParam("changePasswordToken", changePasswordToken).body(requestParams.toString())
+                .log().everything()
+                .expect()
+                .statusCode(Response.Status.NO_CONTENT.getStatusCode())
+                .log().ifError()
+                .when()
+                .post(path, appTokenId, uid);
+    }
+
+    private String resetPassword(String appTokenId, String uid) {
+        String path = "/{applicationtokenid}/user/{uid}/reset_password";
+        com.jayway.restassured.response.Response post = given()
                 .log().everything()
                 .expect()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .log().ifError()
                 .when()
                 .post(path, appTokenId, uid);
+        String changePasswordToken = post.body().jsonPath().getString("changePasswordToken");
+        return changePasswordToken;
     }
-
 
     @Test
     public void test_hasUserNameSetPassword_ok() throws Exception {
