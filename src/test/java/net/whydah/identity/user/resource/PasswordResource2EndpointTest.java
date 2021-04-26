@@ -114,7 +114,7 @@ public class PasswordResource2EndpointTest {
         String appTokenId = "applicationTestToken";
         String userTokenId = "userTestToken";
         String path = "/{applicationtokenid}/{userTokenId}/user";
-        UserIdentity userIdentity = new UserIdentity("test.me@example.com", "test", "me", null, "test.me@example.com", "+4712312345");
+        UserIdentity userIdentity = new UserIdentity("test.me.uid", "test.me.username", "test", "me", null, "test.me@example.com", "+4712312345");
 
         try {
             String json = new ObjectMapper().writeValueAsString(userIdentity);
@@ -140,7 +140,7 @@ public class PasswordResource2EndpointTest {
         addTestUser();
 
         String appTokenId = "test";
-        String uid = "test.me@example.com";
+        String uid = "test.me.uid";
         String path = "/{applicationtokenid}/user/{uid}/reset_password";
 
 
@@ -159,7 +159,7 @@ public class PasswordResource2EndpointTest {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
         String appTokenId = "test";
-        String uid = "test.me@example.com";
+        String uid = "test.me.uid";
 
         String changePasswordToken = resetPassword(appTokenId, uid);
 
@@ -197,7 +197,7 @@ public class PasswordResource2EndpointTest {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
         String appTokenId = "test";
-        String uid = "test.me@example.com";
+        String uid = "test.me.uid";
         String path = "/{applicationtokenid}/user/{uid}/password_login_enabled";
         com.jayway.restassured.response.Response response = given()
                 .log().everything()
