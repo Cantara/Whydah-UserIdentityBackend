@@ -1,13 +1,13 @@
 package net.whydah.identity.user.resource;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
-import net.whydah.identity.user.identity.UserIdentityService;
-import net.whydah.identity.user.identity.UserIdentityServiceV2;
+import net.whydah.identity.user.identity.*;
+import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,27 +66,66 @@ public class PasswordResource2 {
     @Path("/user/{uid}/reset_password")
     public Response resetPassword(@PathParam("uid") String uid) {
         log.info("Reset password for uid={}", uid);
+
+        LDAPUserIdentity user = null;
         try {
-            LDAPUserIdentity user = userIdentityService.getUserIdentityForUid(uid);
-            if (user == null) {
-                return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
-            }
-
-            String changePasswordToken = userIdentityService.setTempPassword(uid, user.getUid());
-            Map<String, String> map = new HashMap<>();
-            map.put(LDAPUserIdentity.UID, user.getUid());
-            map.put(EMAIL_KEY, user.getEmail());
-            map.put(CELLPHONE_KEY, user.getCellPhone());
-            map.put(CHANGE_PASSWORD_TOKEN, changePasswordToken);
-            String json = objectMapper.writeValueAsString(map);
-            // ED: I think this information should be communicated with uri, but BLI does not agree, so keep it his way for now.
-            // link: rel=changePW, url= /user/uid123/password?token=124abcdhg
-
-            return Response.ok().entity(json).build();
+            user = userIdentityService.getUserIdentityForUid(uid);
         } catch (Exception e) {
-            log.error("resetPassword failed for uid={}", uid, e);
+            log.warn("resetPassword user={} not found in LDAP", uid);
+        }
+
+        try {
+            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+            if (user == null && userIdentity != null) {
+                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+            }
+        } catch (Exception e) {
+            log.error(String.format("resetPassword for useridentity=%s in DB failed", uid), e);
+        }
+
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
+        }
+
+        String preGeneratedPassword = new PasswordGenerator().generate();
+        String preGeneratedSaltPassword = new PasswordGenerator().generate();
+
+        String changePasswordToken = null;
+        try {
+            changePasswordToken = userIdentityService.setTempPassword(uid, user.getUid(),
+                    preGeneratedPassword, preGeneratedSaltPassword);
+        } catch (Exception e) {
+        }
+
+
+        String changePasswordToken2 = null;
+        try {
+            changePasswordToken2 = userIdentityServiceV2.setTempPassword(uid, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+        } catch (Exception e) {
+            log.error(String.format("resetPassword failed for useridentity=%s in DB", uid), e);
+        }
+
+        if (changePasswordToken == null) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+
+        Map<String, String> map = new HashMap<>();
+        map.put(LDAPUserIdentity.UID, user.getUid());
+        map.put(EMAIL_KEY, user.getEmail());
+        map.put(CELLPHONE_KEY, user.getCellPhone());
+        map.put(CHANGE_PASSWORD_TOKEN, changePasswordToken);
+
+        String json = null;
+        try {
+            json = objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            json = "mapping error";
+            log.error("Mapping error", e);
+        }
+        // ED: I think this information should be communicated with uri, but BLI does not agree, so keep it his way for now.
+        // link: rel=changePW, url= /user/uid123/password?token=124abcdhg
+        return Response.ok().entity(json).build();
     }
 
 
@@ -103,59 +142,90 @@ public class PasswordResource2 {
     public Response authenticateAndChangePasswordUsingToken(@PathParam("uid") String uid,
                                                             @QueryParam("changePasswordToken") String changePasswordToken, String json) {
         log.info("authenticateAndChangePasswordUsingToken for uid={}", uid);
+
+        LDAPUserIdentity user = null;
         try {
-            LDAPUserIdentity user = userIdentityService.getUserIdentityForUid(uid);
-            if (user == null) {
-                return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
-            }
+            user = userIdentityService.getUserIdentityForUid(uid);
 
-            String newpassword;
-            try {
-                Object document = Configuration.defaultConfiguration().jsonProvider().parse(json);
-                newpassword = JsonPath.read(document, NEW_PASSWORD_KEY);
-            } catch (RuntimeException e) {
-                log.info("authenticateAndChangePasswordUsingToken failed, bad json", e);
-                return Response.status(Response.Status.BAD_REQUEST).build();
-            }
-            if (PasswordBlacklist.pwList.contains(newpassword)) {
-                log.info("authenticateAndChangePasswordUsingToken failed, weak password for username={}", uid);
-                return Response.status(Response.Status.NOT_ACCEPTABLE).build();
-            }
-            if (newpassword == null || newpassword.length() < MIN_PW_LENGTH) {
-                log.info("authenticateAndChangePasswordUsingToken failed, weak password for username={}", uid);
-                return Response.status(Response.Status.NOT_ACCEPTABLE).build();
-            }
+        } catch (Exception e) {
+            log.warn("authenticateAndChangePasswordUsingToken user={} not found in LDAP", uid);
+        }
 
-            boolean authenticated;
-            String username = user.getUsername();
-            try {
-                authenticated = userIdentityService.authenticateWithChangePasswordToken(username, changePasswordToken);
-
-                UserApplicationRoleEntry pwRole = new UserApplicationRoleEntry();
-                pwRole.setApplicationId(PW_APPLICATION_ID);  //UAS
-                pwRole.setApplicationName(PW_APPLICATION_NAME);
-                pwRole.setOrgName(PW_ORG_NAME);
-                pwRole.setRoleName(PW_ROLE_NAME);
-                pwRole.setRoleValue(PW_ROLE_VALUE);
-
-                UserApplicationRoleEntry updatedRole = userAggregateService.addUserApplicationRoleEntryIfNotExist(uid, pwRole);
-
-            } catch (RuntimeException re) {
-                log.info("changePasswordForUser-RuntimeException username={}, message={}", username, re.getMessage(), re);
-                return Response.status(Response.Status.BAD_REQUEST).build();
+        try {
+            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+            if (user == null && userIdentity != null) {
+                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
             }
-            if (!authenticated) {
-                log.info("Authentication failed using changePasswordToken for username={}", username);
-                return Response.status(Response.Status.FORBIDDEN).build();
-            }
+        } catch (Exception e) {
+            log.error(String.format("authenticateAndChangePasswordUsingToken user={} not found in DB", uid), e);
+        }
 
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
+        }
+
+        String newpassword;
+        try {
+            Object document = Configuration.defaultConfiguration().jsonProvider().parse(json);
+            newpassword = JsonPath.read(document, NEW_PASSWORD_KEY);
+        } catch (RuntimeException e) {
+            log.info("authenticateAndChangePasswordUsingToken failed, bad json", e);
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        if (PasswordBlacklist.pwList.contains(newpassword)) {
+            log.info("authenticateAndChangePasswordUsingToken failed, weak password for username={}", uid);
+            return Response.status(Response.Status.NOT_ACCEPTABLE).build();
+        }
+        if (newpassword == null || newpassword.length() < MIN_PW_LENGTH) {
+            log.info("authenticateAndChangePasswordUsingToken failed, weak password for username={}", uid);
+            return Response.status(Response.Status.NOT_ACCEPTABLE).build();
+        }
+
+        boolean authenticated = false;
+        boolean authenticated_DB = false;
+        String username = user.getUsername();
+        try {
+            authenticated = userIdentityService.authenticateWithChangePasswordToken(username, changePasswordToken);
+        } catch (Exception e) {
+            log.warn("Authentication failed using changePasswordToken for username={} in LDAP", username);
+        }
+
+        try {
+            authenticated_DB = userIdentityServiceV2.authenticateWithChangePasswordToken(username, changePasswordToken);
+        } catch (Exception e) {
+            log.warn("Authentication failed using changePasswordToken for username={} in DB", username);
+        }
+
+        if (!authenticated && !authenticated_DB) {
+            log.info("Authentication failed using changePasswordToken for username={}", username);
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        try {
+            UserApplicationRoleEntry pwRole = new UserApplicationRoleEntry();
+            pwRole.setApplicationId(PW_APPLICATION_ID);  //UAS
+            pwRole.setApplicationName(PW_APPLICATION_NAME);
+            pwRole.setOrgName(PW_ORG_NAME);
+            pwRole.setRoleName(PW_ROLE_NAME);
+            pwRole.setRoleValue(PW_ROLE_VALUE);
+
+            UserApplicationRoleEntry updatedRole = userAggregateService.addUserApplicationRoleEntryIfNotExist(uid, pwRole);
+        } catch (RuntimeException re) {
+            log.info("changePasswordForUser-RuntimeException username={}, message={}", username, re.getMessage(), re);
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+        try {
             userIdentityService.changePassword(username, user.getUid(), newpassword);
+            userIdentityServiceV2.changePassword(username, user.getUid(), newpassword);
             return Response.noContent().build();
         } catch (Exception e) {
             log.error("authenticateAndChangePasswordUsingToken failed.", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
 
     /**
@@ -168,26 +238,46 @@ public class PasswordResource2 {
     @Path("/user/{username}/password_login_enabled")
     public Response hasUserNameSetPassword(@PathParam("username") String username) {
         log.info("password_login_enabled for uid={}", username);
-        try {
-            LDAPUserIdentity user = userIdentityService.getUserIdentity(username);
 
-            if (user != null) {
-                List<UserApplicationRoleEntry> roles = userAggregateService.getUserApplicationRoleEntries(user.getUid());
-                for (UserApplicationRoleEntry role : roles) {
-                    log.info("Checking role: getApplicationId():{}, getApplicationName(){}, getApplicationRoleName(){}, getApplicationRoleValue(){} against 2212, UserAdminService, PW_SET, true ", role.getApplicationId(), role.getApplicationName(), role.getRoleName(), role.getRoleValue());
-                    if (role.getRoleName().equalsIgnoreCase(PW_ROLE_NAME)) {
-                        if (role.getRoleValue().equalsIgnoreCase(PW_ROLE_VALUE)) {  // Found a true value
-                            log.info("password_login_enabled true for uid={}", username);
-                            return Response.ok().entity(Boolean.toString(true)).build();
-                        }
+        LDAPUserIdentity user = null;
+        try {
+            user = userIdentityService.getUserIdentity(username);
+        } catch (Exception e) {
+            log.warn("password_login_enabled false for uid={} in LDAP", username);
+        }
+
+        // If not found in LDAP try DB if enabled
+        try {
+            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+            if (user == null && userIdentity != null) {
+                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+            }
+        } catch (Exception e) {
+            log.error(String.format("hasUserNameSetPassword for useridentity=%s in DB failed"), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+
+        if (user == null) {
+            log.info("password_login_enabled false for uid={}", username);
+            return Response.ok().entity(Boolean.toString(false)).build();
+        }
+
+        try {
+            List<UserApplicationRoleEntry> roles = userAggregateService.getUserApplicationRoleEntries(user.getUid());
+            for (UserApplicationRoleEntry role : roles) {
+                log.info("Checking role: getApplicationId():{}, getApplicationName(){}, getApplicationRoleName(){}, getApplicationRoleValue(){} against 2212, UserAdminService, PW_SET, true ", role.getApplicationId(), role.getApplicationName(), role.getRoleName(), role.getRoleValue());
+                if (role.getRoleName().equalsIgnoreCase(PW_ROLE_NAME)) {
+                    if (role.getRoleValue().equalsIgnoreCase(PW_ROLE_VALUE)) {  // Found a true value
+                        log.info("password_login_enabled true for uid={}", username);
+                        return Response.ok().entity(Boolean.toString(true)).build();
                     }
                 }
             }
             log.info("password_login_enabled false for uid={}", username);
             return Response.ok().entity(Boolean.toString(false)).build();
-
         } catch (Exception e) {
-            log.error("password_login_enabled failed for username={}", username, e);
+            log.error("hasUserNameSetPassword failed", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }

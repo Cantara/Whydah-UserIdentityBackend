@@ -107,15 +107,6 @@ public class UserIdentityServiceV2Test {
         testDataDirectories.stream().forEach(dir -> FileUtils.deleteDirectory(dir));
     }
 
-    private static ConstrettoConfiguration initConstrettoConfiguration() {
-        return new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
-                .done()
-                .getConfiguration();
-    }
-
     private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
@@ -157,6 +148,7 @@ public class UserIdentityServiceV2Test {
         UserIdentity userIdentity = giveMeTestUserIdentity();
         UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
 
+        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(false);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());

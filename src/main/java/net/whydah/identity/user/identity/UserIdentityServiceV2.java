@@ -60,11 +60,13 @@ public class UserIdentityServiceV2 {
         return userIdentityRepository.authenticate(username, password);
     }
 
+    // TODO: 22/04/2021 kiversen: remove this when transition to db is complete and return to use UsersIdentityService#setTempPassword
     public String setTempPassword(String username, String uid, String preGeneratedPassword, String preGeneratedSaltPassword) {
         temporary_pwd = preGeneratedPassword;
         return setTempPasswordV2(username, uid, preGeneratedSaltPassword);
     }
 
+    // TODO: 22/04/2021 kiversen: remove this when transition to db is complete
     public String setTempPasswordV2(String username, String uid, String preGeneratedSaltPassword) {
         String newPassword = temporary_pwd;
         String salt = preGeneratedSaltPassword;

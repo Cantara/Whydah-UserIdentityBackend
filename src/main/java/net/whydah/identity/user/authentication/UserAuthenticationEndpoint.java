@@ -105,21 +105,22 @@ public class UserAuthenticationEndpoint {
     }
 
     private Response authenticateUser(String username, String password) {
-        UserIdentity userIdentity = userIdentityService.authenticate(username, password);
+        UserIdentity userIdentity = null;
         try {
-            RDBMSUserIdentity authenticated = userIdentityServiceV2.authenticate(username, password);
-            if (userIdentity == null) {
-                log.warn("Failed to authenticate (or find) useridentity from LDAP with username={}. Trying from DB", username);
-            }
-            if (userIdentity == null && authenticated != null) {
-                log.warn("Authentication ok for useridentity in DB with username={}", username);
-                userIdentity = authenticated;
-            } else {
-                log.warn("Authentication also failed for useridentity in DB with username={}", username);
-            }
+            userIdentity = userIdentityService.authenticate(username, password);
         } catch (Exception e) {
-            log.error(String.format("Authentication failed for useridentity in DB with username=%s", username), e);
+          log.warn(String.format("User=%s not found in LDAP.", username), e);
         }
+
+        try {
+            RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.authenticate(username, password);
+            if (userIdentity == null && rdbmsUserIdentity != null) {
+                userIdentity = rdbmsUserIdentity;
+            }
+          } catch (Exception e) {
+            log.warn(String.format("User=%s not found in DB.", username), e);
+          }
+
 
         if (userIdentity == null) {
             log.debug("Authentication failed for user with username={}. Returning {}", username, Response.Status.FORBIDDEN.toString());
@@ -179,7 +180,7 @@ public class UserAuthenticationEndpoint {
             String original = buffer.toString();
 
             // Wrap everything in CDATA. Otherwise, it won't work when parsing user
-            return "<![CDATA[" + original + "]]>"; 
+            return "<![CDATA[" + original + "]]>";
         } catch (Exception e) {
             log.error("Could not convert Document to string.", e);
             return null;
