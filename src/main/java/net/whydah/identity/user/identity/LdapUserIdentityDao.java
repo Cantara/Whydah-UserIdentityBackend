@@ -792,7 +792,7 @@ public class LdapUserIdentityDao {
 			id.setEmail(getAttribValue(attributes, ATTRIBUTE_NAME_MAIL));
 			id.setPersonRef(getAttribValue(attributes, ATTRIBUTE_NAME_PERSONREF));
 			id.setCellPhone(getAttribValue(attributes, ATTRIBUTE_NAME_MOBILE));
-			id.setCellPhone(getBinaryAttribValueAsUtf8String(attributes, ATTRIBUTE_NAME_PASSWORD));
+			id.setPassword(getBinaryAttribValueAsUtf8String(attributes, ATTRIBUTE_NAME_PASSWORD));
 		}
 		return id;
 	}
