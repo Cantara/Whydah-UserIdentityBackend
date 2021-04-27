@@ -16,6 +16,7 @@ public class RDBMSLdapUserIdentityDao {
 
     private static String UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE id=?";
     private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=?";
+    private static String LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password FROM UserIdentity";
 
     private JdbcTemplate jdbcTemplate;
 
@@ -28,10 +29,11 @@ public class RDBMSLdapUserIdentityDao {
             log.warn("TODO update sql migration script");
             UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE Id=? GROUP BY Id";
             USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=? GROUP BY username";
+            LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password FROM UserIdentity GROUP BY Id";
         }
     }
 
-    boolean create(RDBMSUserIdentity userIdentity) throws RuntimeException {
+    public boolean create(RDBMSUserIdentity userIdentity) throws RuntimeException {
         boolean executionOk = false;
         String sql = "INSERT INTO UserIdentity (id, username, firstname, lastname, personref, email, cellphone, password) VALUES (?,?,?,?,?,?,?,?)";
         try {
@@ -54,7 +56,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    boolean delete(String uuid) throws RuntimeException {
+    public boolean delete(String uuid) throws RuntimeException {
         boolean executionOk = false;
         String sql = "DELETE FROM UserIdentity WHERE id=?";
         try {
@@ -69,7 +71,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    RDBMSUserIdentity get(String uuid) throws RuntimeException {
+    public RDBMSUserIdentity get(String uuid) throws RuntimeException {
         try {
             List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(UID_SQL, new RDBMSUserIdentityRowMapper(), uuid);
             if (userIdentities != null && !userIdentities.isEmpty()) {
@@ -83,7 +85,11 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    RDBMSUserIdentity getWithUsername(String username) throws RuntimeException {
+    public List<RDBMSUserIdentity> allUsersList() {
+         return jdbcTemplate.query(LIST_SQL, new RDBMSUserIdentityRowMapper());
+    }
+
+    public RDBMSUserIdentity getWithUsername(String username) throws RuntimeException {
         try {
             List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(USERNAME_SQL, new RDBMSUserIdentityRowMapper(), username);
             if (userIdentities != null && !userIdentities.isEmpty()) {
@@ -97,7 +103,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    boolean updatePassword(String username, String password) throws RuntimeException {
+    public boolean updatePassword(String username, String password) throws RuntimeException {
         boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET password=? WHERE username=?";
         try {
@@ -112,7 +118,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    boolean update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
+    public boolean update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
         boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET firstname=?, lastname=?, personref=?, email=?, cellphone=? WHERE id=?";
         try {
