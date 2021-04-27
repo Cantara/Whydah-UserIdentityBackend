@@ -66,7 +66,7 @@ public class UserAuthenticationEndpointTest {
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
+                .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
                 .done()
                 .getConfiguration();
 
