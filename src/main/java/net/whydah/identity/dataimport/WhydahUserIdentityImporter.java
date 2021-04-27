@@ -1,6 +1,10 @@
 package net.whydah.identity.dataimport;
 
-import net.whydah.identity.user.identity.*;
+import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.LdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.UserIdentityConverter;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.lucene.store.Directory;
@@ -49,7 +53,7 @@ public class WhydahUserIdentityImporter {
         log.info("{} users imported to DB", userAddedDBCount);
     }
 
-    protected static List<LDAPUserIdentity> parseUsers(InputStream userImportStream) {
+    public static List<LDAPUserIdentity> parseUsers(InputStream userImportStream) {
         BufferedReader reader = null;
 		try {
             List<LDAPUserIdentity> users = new ArrayList<>();
