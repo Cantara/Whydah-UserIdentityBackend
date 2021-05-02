@@ -230,8 +230,8 @@ public class UserIdentityService {
     public LDAPUserIdentity getUserIdentityForUid(String uid) throws NamingException {
         LDAPUserIdentity userIdentity = ldapUserIdentityDao.getUserIndentityByUid(uid);
         if (userIdentity == null) {
-            log.warn("Trying to access non-existing UID, removing from index: " + uid);
-            luceneIndexer.removeFromIndex(uid);
+            //log.warn("Trying to access non-existing UID, removing from index: " + uid);
+            //luceneIndexer.removeFromIndex(uid);
         }
         return userIdentity;
     }
@@ -249,7 +249,7 @@ public class UserIdentityService {
 
     public void updateUserIdentity(String username, LDAPUserIdentity newuser) {
         ldapUserIdentityDao.updateUserIdentityForUsername(username, newuser);
-        luceneIndexer.updateIndex(newuser);
+        //luceneIndexer.updateIndex(newuser);
     }
 
     public void deleteUserIdentity(String username) throws NamingException {

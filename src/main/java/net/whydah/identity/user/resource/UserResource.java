@@ -36,6 +36,8 @@ public class UserResource {
     private final UserAggregateService userAggregateService;
     private final ObjectMapper mapper;
 
+    private final boolean rdbmsEnabled;
+
 
 
     @Context
@@ -48,6 +50,7 @@ public class UserResource {
         this.userAggregateService = userAggregateService;
         this.mapper = mapper;
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.rdbmsEnabled = userIdentityServiceV2.isRDBMSEnabled();
         log.trace("Started: UserResource");
     }
 
@@ -75,65 +78,54 @@ public class UserResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
         }
 
-        UserIdentity userIdentity = null;
-
         // TODO: 15/04/2021 kiversen: while temporarily using two instances of userIdentityService,
         // password must be generated outside UserIdentity creation.
+        UserIdentity userIdentity = null;
         UserIdentityExtension userIdentityExtension = new UserIdentityExtension(representation);
 
-        try {
-            userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+        if(isRDBMSEnabled()) {
             try {
                 RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-                if (userIdentity == null) {
+                if (rdbmsUserIdentity == null) {
+                    log.warn("User={} was not added to DB. json \n{} ", representation.getUsername(), userIdentityJson);
+                } else {
                     userIdentity = rdbmsUserIdentity;
                 }
-            } catch (Exception e) {
-                log.error(String.format("addUserIdentity DB for uid=%s failed. \njson=%s ", representation.getUid(), userIdentityJson), e);
+            } catch (IllegalStateException e) {
+                log.error(String.format("User=%s could not be added to DB. json \n%s ", representation.getUsername(), userIdentityJson), e);
+                return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+            } catch (RuntimeException e) {
+                log.error(String.format("User=%s could not be added to DB. json \n%s ", representation.getUsername(), userIdentityJson), e);
+                return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+            }
+        }
+
+        String errorMessage = null;
+        try {
+            UserIdentity ldapUserIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+            if (userIdentity == null && ldapUserIdentity != null) {
+                userIdentity = ldapUserIdentity;
             }
         } catch (IllegalStateException conflictException) {
-            boolean storedInDB = false;
-            try {
-                userIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-                if (userIdentity != null) {
-                    storedInDB = true;
-                }
-            } catch (Exception e) {
-                log.error(String.format("addUserIdentity to DB failed because of %s. \njson %s", e.getMessage(), userIdentityJson), e);
-            }
-
             Response response = Response.status(Response.Status.CONFLICT).entity(conflictException.getMessage()).build();
-            log.info("addUserIdentity to DB={} addUserIdentity to LDAP returned {} {} because {}. \njson {}",
-                    storedInDB, response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), conflictException.getMessage(), userIdentityJson);
+            log.info("addUserIdentity returned {} {} because {}. \njson {}",
+                    response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), conflictException.getMessage(), userIdentityJson);
             return response;
-        } catch (IllegalArgumentException|InvalidUserIdentityFieldException badRequestException) {
-            boolean storedInDB = false;
-            try {
-                userIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-                if (userIdentity != null) {
-                    storedInDB = true;
-                }
-            } catch (Exception e) {
-                log.error(String.format("addUserIdentity to DB failed because of %s. \njson %s", e.getMessage(), userIdentityJson), e);
-            }
-
+        } catch (IllegalArgumentException | InvalidUserIdentityFieldException badRequestException) {
             Response response = Response.status(Response.Status.BAD_REQUEST).entity(badRequestException.getMessage()).build();
-            log.info("addUserIdentity to DB={} addUserIdentity to LDAP returned {} {} because {}. \njson {}",
-                    storedInDB, response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), badRequestException.getMessage(), userIdentityJson);
+            log.info("addUserIdentity returned {} {} because {}. \njson {}",
+                    response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), badRequestException.getMessage(), userIdentityJson);
             return response;
         } catch (RuntimeException e) {
-            boolean storedInDB = false;
-            try {
-                userIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-                if (userIdentity != null) {
-                    storedInDB = true;
-                }
-            } catch (Exception ex) {
-                log.error(String.format("addUserIdentity to DB failed because of %s. \njson %s", e.getMessage(), userIdentityJson), e);
-            }
-
-            log.error(String.format("addUserIdentity to DB=%b addUserIdentity to LDAP caused RuntimeExeption. \njson %s", storedInDB, userIdentityJson), e);
+            log.error("addUserIdentity-RuntimeExeption ", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+
+        if (userIdentity == null) {
+            Response response = Response.status(Response.Status.BAD_REQUEST).entity(errorMessage).build();
+            log.info("addUserIdentity returned {} {} because {}. \njson {}",
+                    response.getStatusInfo().getStatusCode(), response.getStatusInfo().getReasonPhrase(), errorMessage, userIdentityJson);
+            return response;
         }
 
 
@@ -152,38 +144,42 @@ public class UserResource {
     @Path("/{uid}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUserIdentity(@PathParam("uid") String uid) {
+        log.info("getUserIdentity for uid={}", uid);
         log.trace("getUserIdentity for uid={}", uid);
 
-        LDAPUserIdentity userIdentity = null;
-        try {
-            userIdentity = userIdentityService.getUserIdentityForUid(uid);
+        UserIdentity userIdentity = null;
+
+        if(isRDBMSEnabled()) {
             try {
                 RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
-                if (userIdentity == null) {
-                    UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                    userIdentity = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
+                if (rdbmsUserIdentity != null) {
+                    rdbmsUserIdentity.setPassword(null);
+                    userIdentity = rdbmsUserIdentity;
+                } else {
+                    log.warn("User={} not found in DB", uid);
                 }
             } catch (Exception e) {
                 log.error(String.format("getUserIdentity DB for uid=%s failed.", uid), e);
-            }
-            log.trace("getUserIdentity for uid={} found user={}", uid, (userIdentity != null ? userIdentity.toString() : "null"));
-        } catch (NamingException e) {
-            try {
-                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
-                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                userIdentity = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
-            } catch (Exception ex) {
-                log.error(String.format("getUserIdentity DB for uid=%s failed.", uid), ex);
-            }
-            if (userIdentity == null) {
-                throw new RuntimeException("getUserIdentityForUid, uid=" + uid, e);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
             }
         }
+
+
+        try {
+            LDAPUserIdentity ldapUserIdentity = userIdentityService.getUserIdentityForUid(uid);
+            if (userIdentity == null && ldapUserIdentity != null) {
+                userIdentity = ldapUserIdentity;
+            } else {
+                log.warn("User={} not found in LDAP", uid);
+            }
+        } catch (Exception e) {
+            log.warn("User={} not found in LDAP", uid);
+        }
+
         if (userIdentity == null) {
             log.trace("getUserIdentityForUid could not find user with uid={}", uid);
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
 
         String json;
         try {
@@ -200,7 +196,8 @@ public class UserResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateUserIdentity(@PathParam("uid") String uid, String userIdentityJson) {
-        log.trace("updateUserIdentity: uid={}, userIdentityJson={}", uid, userIdentityJson);
+        log.trace("updateUserIdentity: rdbmsenabled={}, uid={}, userIdentityJson={}", userIdentityServiceV2.isRDBMSEnabled(), uid, userIdentityJson);
+        log.info("updateUserIdentity: rdbmsenabled={}, uid={}, userIdentityJson={}", userIdentityServiceV2.isRDBMSEnabled(), uid, userIdentityJson);
 
         LDAPUserIdentity userIdentity;
         try {
@@ -210,18 +207,21 @@ public class UserResource {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
-        RDBMSUserIdentity rdbmsUserIdentity = null;
-        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+
+
+        if(isRDBMSEnabled()) {
+            UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+            RDBMSUserIdentity rdbmsUserIdentity = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
+            try {
+                userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);
+            } catch (Exception e) {
+                log.error(String.format("updateUserIdentity DB for uid=%s failed.", uid), e);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+            }
+        }
 
         try {
             userIdentityService.updateUserIdentity(uid, userIdentity);
-            try {
-                rdbmsUserIdentity = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
-                userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);
-            } catch (Exception e) {
-                log.error(String.format("updateUserIdentity in DB for uid=%s failed. \n%s", uid, userIdentityJson), e);
-            }
-
             try {
                 String json = mapper.writeValueAsString(userIdentity);
                 return Response.ok(json).build();
@@ -230,30 +230,12 @@ public class UserResource {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
             }
         } catch (InvalidUserIdentityFieldException iuife) {
-            try {
-                userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);
-            } catch (Exception e) {
-                log.error(String.format("updateUserIdentity in DB for uid=%s failed. \n%s", uid, userIdentityJson), e);
-            }
-
             log.warn("updateUserIdentity returned {} because {}.", Response.Status.BAD_REQUEST.toString(), iuife.getMessage());
             return Response.status(Response.Status.BAD_REQUEST).entity(iuife.getMessage()).build();
         } catch (IllegalArgumentException iae) {
-            try {
-                userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);
-            } catch (Exception e) {
-                log.error(String.format("updateUserIdentity in DB for uid=%s failed. \n%s", uid, userIdentityJson), e);
-            }
-
             log.info("updateUserIdentity: Invalid json={}", userIdentityJson, iae);
             return Response.status(Response.Status.BAD_REQUEST).entity("Invalid json").build();
         } catch (RuntimeException e) {
-            try {
-                userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);
-            } catch (Exception ex) {
-                log.error(String.format("updateUserIdentity in DB for uid=%s failed. \n%s", uid, userIdentityJson), ex);
-            }
-
             log.error("updateUserIdentity: RuntimeError json={}", userIdentityJson, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
@@ -292,27 +274,22 @@ public class UserResource {
         LDAPUserIdentity user = null;
         String msg = "addRole failed. No user with uid=" + uid;
 
-        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+        if(isRDBMSEnabled()) {
+            try {
+                RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+                if (userIdentity == null) {
+                    log.warn("addRole DB failed. User={} not found", uid);
+                    return Response.status(Response.Status.NOT_FOUND).build();
+                }
+            } catch (Exception e) {
+                log.error(String.format("addRole DB for uid=%s failed. User not found", uid), e);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+            }
+        }
+
         try {
             user = userIdentityService.getUserIdentityForUid(uid);
-            try {
-                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
-                if (user == null && rdbmsUserIdentity != null) {
-                    log.warn("addRole useridentity with username={} not found in LDAP but did found it in DB", uid);
-                    user = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
-                } else {
-                    log.warn("addRole useridentity with username={} not found in DB either", uid);
-                }
-            } catch (RuntimeException e) {
-                log.error(String.format("addRole failed, No user in DB with uid=%s", uid), e);
-            }
         } catch (NamingException e) {
-            try {
-                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
-            } catch (RuntimeException ex) {
-                log.error(String.format("addRole failed, No user in DB with uid=%s", uid), ex);
-            }
             log.info(msg, e);
             return Response.status(Response.Status.NOT_FOUND).entity(msg).build();
         }
@@ -406,5 +383,9 @@ public class UserResource {
             log.error("deleteRoleByRoleID-RuntimeException. roleId {}", roleid, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private boolean isRDBMSEnabled() {
+        return rdbmsEnabled;
     }
 }

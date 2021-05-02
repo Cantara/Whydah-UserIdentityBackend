@@ -151,7 +151,7 @@ public class UserIdentityServiceV2Test {
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(false);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         assertNotNull("UserIdentity found", fromDB);
         assertEquals(userIdentity.getUid(), fromDB.getUid());
@@ -171,37 +171,37 @@ public class UserIdentityServiceV2Test {
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         assertNotNull("UserIdentity found", fromDB);
 
         exceptionRule.expect(RuntimeException.class);
-        exceptionRule.expectMessage("usernameExist failed for username=test.testesen@test.no");
+        exceptionRule.expectMessage("ser already exists, could not create user with username=" + userIdentity.getUsername());
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
     }
 
     @Test
-    public void test_change_all_but_uid_username_and_password() {
+    public void test_update() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
         UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(false);
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
+        RDBMSUserIdentity beforeUpdate = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
-        String newCellPhoneNumber = "+4790090000";
-        fromDB.setCellPhone(newCellPhoneNumber);
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
+        fromDB.setCellPhone("+4790090000");
         fromDB.setFirstName("Firstname");
         fromDB.setLastName("Lastname");
         fromDB.setPersonRef("1234567890");
         fromDB.setEmail("new.email@email.no");
 
-        RDBMSUserIdentity beforeUpdate = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
 
-        userIdentityServiceV2.updateUserIdentity(fromDB.getUsername(), fromDB);
+        userIdentityServiceV2.updateUserIdentity(fromDB.getUid(), fromDB);
 
-        RDBMSUserIdentity updated = userIdentityServiceV2.getUserIdentity(fromDB.getUsername());
+        RDBMSUserIdentity updated = userIdentityServiceV2.getUserIdentity(fromDB.getUid());
 
         assertEquals(beforeUpdate.getUid(), updated.getUid());
         assertEquals(beforeUpdate.getUsername(), updated.getUsername());
@@ -219,12 +219,12 @@ public class UserIdentityServiceV2Test {
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         String newPassword = passwordGenerator.generate();
         userIdentityServiceV2.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
 
-        RDBMSUserIdentity fromDBWithChangedPassword = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDBWithChangedPassword = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
         assertNotEquals(fromDB.getPassword(), fromDBWithChangedPassword.getPassword());
     }
 
@@ -236,7 +236,7 @@ public class UserIdentityServiceV2Test {
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         String username = fromDB.getUsername();
         String password = fromDB.getPassword();
@@ -252,7 +252,7 @@ public class UserIdentityServiceV2Test {
         UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         String username = fromDB.getUsername();
         String password = passwordGenerator.generate();
@@ -268,13 +268,13 @@ public class UserIdentityServiceV2Test {
         UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         assertNotNull(fromDB);
 
         userIdentityServiceV2.deleteUserIdentity(fromDB.getUsername());
 
-        RDBMSUserIdentity deleted = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+        RDBMSUserIdentity deleted = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
         assertNull("UserIdentity deleted", deleted);
     }
 }

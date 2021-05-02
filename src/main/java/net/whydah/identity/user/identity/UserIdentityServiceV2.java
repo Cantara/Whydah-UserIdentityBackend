@@ -1,7 +1,10 @@
 package net.whydah.identity.user.identity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
+import net.whydah.identity.health.HealthCheckService;
 import net.whydah.identity.health.HealthResource;
 import net.whydah.identity.user.ChangePasswordToken;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -21,7 +24,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * @// TODO: 08/04/2021 kiversen
+ * // TODO: 08/04/2021 kiversen
  *
  * - remove all ldap operations and replce with db persistence
  * - avoid intrusion in existing UserIdentityService by using a "shadow" version
@@ -54,6 +57,7 @@ public class UserIdentityServiceV2 {
         this.passwordGenerator = passwordGenerator;
         this.luceneIndexer = luceneIndexer;
         this.searcher = searcher;
+        HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
     }
 
     public RDBMSUserIdentity authenticate(final String username, final String password) {
@@ -138,17 +142,13 @@ public class UserIdentityServiceV2 {
             String msg = "Can not create a user without username!";
             throw new IllegalStateException(msg);
         }
-        try {
-            if (!searcher.usernameExists(username) && userIdentityRepository.usernameExist(username)) {
-            	userIdentityRepository.deleteUserIdentity(username);
-            } else if (userIdentityRepository.usernameExist(username)) {
-            	String msg = "User already exists, could not create user with username=" + dto.getUsername();
-                throw new IllegalStateException(msg);
-            } 
-        } catch (RuntimeException e) {
-            throw new RuntimeException("usernameExist failed for username=" + dto.getUsername(), e);
-        }
 
+        if (!searcher.usernameExists(username) && userIdentityRepository.usernameExist(username)) {
+            userIdentityRepository.deleteUserIdentity(username);
+        } else if (userIdentityRepository.usernameExist(username)) {
+            String msg = "User already exists, could not create user with username=" + dto.getUsername();
+            throw new IllegalStateException(msg);
+        }
 
         String email;
         if (dto.getEmail() != null && dto.getEmail().contains("+")) {
@@ -226,9 +226,16 @@ public class UserIdentityServiceV2 {
         return userIdentityRepository.getUserIdentityWithUsernameOrUid(usernameOrUid);
     }
 
-    public void updateUserIdentity(String username, RDBMSUserIdentity update) throws RuntimeException {
-        userIdentityRepository.updateUserIdentityForUsername(username, update);
-        log.info("Updated useridentity in DB: username={}, values={}", username, update);
+    public void updateUserIdentity(String uid, RDBMSUserIdentity update) throws RuntimeException {
+        String json = null;
+        try {
+            json = new ObjectMapper().writeValueAsString(update);
+        } catch (JsonProcessingException jpe) {
+            //
+        }
+        log.info("update with {} and {}", uid, json);
+        userIdentityRepository.updateUserIdentityForUid(uid, update);
+        log.info("Updated useridentity in DB: uid={}, values={}", uid, update);
 
         luceneIndexer.updateIndex(update);
     }

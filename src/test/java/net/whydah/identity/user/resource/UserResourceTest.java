@@ -177,10 +177,11 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(ldapUserIdentity);
 
         /** create useridentity */
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
         UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
+
+        //when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
 
         /** get useridentity - useridentity exists in both ldap and db  */
         response = userResource.getUserIdentity(uid);
@@ -265,29 +266,22 @@ public class UserResourceTest {
 
     @Test
     public void test_deleteUserIdentityAndRoles_ok() throws Exception {
-        LDAPUserIdentity ldapUserIdentity = giveMeTestLdapUserIdentity();
-        String uid = ldapUserIdentity.getUid();
+        String json = new ObjectMapper().writeValueAsString(giveMeTestLdapUserIdentity());
 
-        String json = new ObjectMapper().writeValueAsString(ldapUserIdentity);
-
-        Response response = createUserIdentity(json);
-
-        assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
-
-        LDAPUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), LDAPUserIdentity.class);
-        assertEquals(ldapUserIdentity, userIdentity);
-
+        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
         UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        Response addResponse = userResource.addUserIdentity(json);
+        assertEquals(addResponse.getStatus(), Response.Status.CREATED.getStatusCode());
+
+        String addedJson = addResponse.getEntity().toString();
+        UserIdentity addedUserIdentity = new ObjectMapper().readValue(addedJson, LDAPUserIdentity.class);
+
+        String uid = addedUserIdentity.getUid();
+        log.info("User={} added with username={}", uid, addedUserIdentity.getUsername());
+
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(true);
-        response = userResource.getUserIdentity(uid);
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-
-        when(ldapUserIdentityDao.getUserIndentity(any())).thenReturn(userIdentity);
-        response = userResource.deleteUserIdentityAndRoles(uid);
-        assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
-
-        response = userResource.getUserIdentity(uid);
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        Response deleteResponse = userResource.deleteUserIdentityAndRoles(uid);
+        assertEquals(deleteResponse.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
     }
 
 
@@ -307,9 +301,13 @@ public class UserResourceTest {
     }
 
 
-    private Response createUserIdentity(String json) throws Exception {
+    private Response addUser(LDAPUserIdentity ldapUserIdentity) throws Exception {
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
         UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+
+        String uid = ldapUserIdentity.getUid();
+
+        String json = new ObjectMapper().writeValueAsString(ldapUserIdentity);
         return userResource.addUserIdentity(json);
     }
 

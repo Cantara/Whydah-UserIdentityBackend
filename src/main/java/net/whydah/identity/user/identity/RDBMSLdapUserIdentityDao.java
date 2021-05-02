@@ -1,5 +1,7 @@
 package net.whydah.identity.user.identity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,11 +20,14 @@ public class RDBMSLdapUserIdentityDao {
     private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=?";
     private static String LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password FROM UserIdentity";
 
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
+
+    private final ObjectMapper mapper;
 
     @Autowired
     public RDBMSLdapUserIdentityDao(BasicDataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.mapper = new ObjectMapper();
 
         String jdbcDriverString = dataSource.getDriverClassName();
         if (jdbcDriverString.contains("mysql")) {
@@ -52,7 +57,14 @@ public class RDBMSLdapUserIdentityDao {
             }
             return executionOk;
         } catch (DataAccessException e) {
-            throw new RuntimeException("userIdentity create in DB failed!", e);
+            String json = null;
+            try {
+                json = mapper.writeValueAsString(userIdentity);
+            } catch (JsonProcessingException jpe) {
+                //
+            }
+            log.error(String.format("SQL insert for user=%s failed. json=\n %s ", userIdentity.getUsername(), json), e);
+            return false;
         }
     }
 
@@ -118,16 +130,16 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public boolean update(String uid, RDBMSUserIdentity newUserIdentity) throws RuntimeException {
+    public boolean update(String uid, RDBMSUserIdentity userIdentity) throws RuntimeException {
         boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET firstname=?, lastname=?, personref=?, email=?, cellphone=? WHERE id=?";
         try {
             int numRowsAffected = jdbcTemplate.update(sql,
-                    newUserIdentity.getFirstName(),
-                    newUserIdentity.getLastName(),
-                    newUserIdentity.getPersonRef(),
-                    newUserIdentity.getEmail(),
-                    newUserIdentity.getCellPhone(),
+                    userIdentity.getFirstName(),
+                    userIdentity.getLastName(),
+                    userIdentity.getPersonRef(),
+                    userIdentity.getEmail(),
+                    userIdentity.getCellPhone(),
                     uid);
 
             if (numRowsAffected > 0) {
@@ -135,7 +147,14 @@ public class RDBMSLdapUserIdentityDao {
             }
             return executionOk;
         } catch (DataAccessException e) {
-            throw new RuntimeException("userIdentityUpdate in DB failed!", e);
+            String json = null;
+            try {
+                json = mapper.writeValueAsString(userIdentity);
+            } catch (JsonProcessingException jpe) {
+                //
+            }
+            log.error(String.format("SQL update for user=%s failed. json=\n %s ", uid, json), e);
+            return false;
         }
     }
 }
