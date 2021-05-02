@@ -195,6 +195,11 @@ public class IamDataImporter {
         return ldapUserIdentityDao;
     }
 
+    // expose for test
+    RDBMSLdapUserIdentityRepository getUserIdentityRepository() {
+        return userIdentityRepository;
+    }
+
     UserApplicationRoleEntryDao getUserApplicationRoleEntryDao() {
         return userApplicationRoleEntryDao;
     }

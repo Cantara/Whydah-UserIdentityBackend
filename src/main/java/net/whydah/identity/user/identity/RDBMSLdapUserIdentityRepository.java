@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+
 @Repository
 public class RDBMSLdapUserIdentityRepository {
     private static final Logger log = LoggerFactory.getLogger(RDBMSLdapUserIdentityRepository.class);
