@@ -18,7 +18,7 @@
    </scm>
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
-        <whydah.admin.sdk.version>2.7.1</whydah.admin.sdk.version>
+        <whydah.admin.sdk.version>2.7.2</whydah.admin.sdk.version>
         <apache.ds.version>2.0.0-M20</apache.ds.version>
         <api-ldap.version>1.0.0-M30</api-ldap.version><!-- Make sure api-ldap.version is compatible with apache.ds.version -->
         <lucene.version>8.8.0</lucene.version>
