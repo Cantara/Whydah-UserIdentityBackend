@@ -15,7 +15,12 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
@@ -25,7 +30,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 
@@ -136,7 +146,7 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_add() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
 
         RDBMSUserIdentity stored = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
@@ -146,7 +156,7 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_get() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
 
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(false);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
@@ -161,13 +171,14 @@ public class UserIdentityServiceV2Test {
         assertEquals(userIdentity.getEmail(), fromDB.getEmail());
         assertEquals(userIdentity.getCellPhone(), fromDB.getCellPhone());
         assertEquals(userIdentity.getPersonRef(), fromDB.getPersonRef());
-        assertNotNull(fromDB.getPassword());
+        assertNull(fromDB.getPassword());
+        assertNotNull(fromDB.getPasswordBCrypt());
     }
 
     @Test
     public void test_reject_useridentity_if_exists() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
@@ -183,7 +194,7 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_update() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(false);
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
@@ -215,23 +226,30 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_password_change() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
 
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
 
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
+        assertTrue(BCryptUtils.verifyPassword(fromDB.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+
         String newPassword = passwordGenerator.generate();
         userIdentityServiceV2.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
 
         RDBMSUserIdentity fromDBWithChangedPassword = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
-        assertNotEquals(fromDB.getPassword(), fromDBWithChangedPassword.getPassword());
+
+        assertFalse(BCryptUtils.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+        assertTrue(BCryptUtils.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), newPassword));
+
+        assertNotEquals(newPassword, userIdentityExtension.getPassword());
+        assertNotEquals(fromDB.getPasswordBCrypt(), fromDBWithChangedPassword.getPasswordBCrypt());
     }
 
     @Test
     public void test_authenticate() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
 
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
 
@@ -239,7 +257,7 @@ public class UserIdentityServiceV2Test {
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         String username = fromDB.getUsername();
-        String password = fromDB.getPassword();
+        String password = userIdentityExtension.getPassword();
 
         RDBMSUserIdentity authenticated = userIdentityServiceV2.authenticate(username, password);
 
@@ -249,7 +267,7 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_fail_on_authenticate() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
@@ -265,7 +283,7 @@ public class UserIdentityServiceV2Test {
     @Test
     public void test_delete() {
         UserIdentity userIdentity = giveMeTestUserIdentity();
-        UserIdentityExtension userIdentityExtension = new UserIdentityExtension(userIdentity);
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
         when(luceneUserSearch.usernameExists(userIdentity.getUsername())).thenReturn(true);
         userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());

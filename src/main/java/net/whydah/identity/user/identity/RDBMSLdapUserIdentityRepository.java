@@ -32,6 +32,9 @@ public class RDBMSLdapUserIdentityRepository {
                     log.warn("UserIdentity {} already exists", userIdentity.getUsername());
                     return false;
                 } else {
+                    if (userIdentity.getPassword() != null) {
+                        userIdentity.setPasswordBCrypt(BCryptUtils.hash(userIdentity.getPassword()));
+                    }
                     boolean success = rdbmsUserIdentityDao.create(userIdentity);
                     if (success) {
                         log.debug("UserIdentity {} created", userIdentity.getUsername());
@@ -62,7 +65,24 @@ public class RDBMSLdapUserIdentityRepository {
     public RDBMSUserIdentity authenticate(final String username, final String password) {
         if (isRDBMSEnabled()) {
             RDBMSUserIdentity userIdentity = rdbmsUserIdentityDao.getWithUsername(username);
-            if (password.equals(userIdentity.getPassword())) {
+            if (userIdentity == null) {
+                return null;
+            }
+            String bcryptHash = userIdentity.getPasswordBCrypt();
+            if (bcryptHash == null) {
+                log.warn("User with username {} has stored the password as plaintext, please hash password using bcrypt");
+                String storedPassword = userIdentity.getPassword();
+                if (storedPassword.equals(password)) {
+                    return userIdentity;
+                }
+                return null;
+            }
+            if (BCryptUtils.verifyPassword(bcryptHash, password)) {
+                String updatedHash = BCryptUtils.updatePasswordHash(bcryptHash, password);
+                if (!updatedHash.equals(bcryptHash)) {
+                    // update with a stronger hash in database
+                    rdbmsUserIdentityDao.updatePassword(username, updatedHash);
+                }
                 return userIdentity;
             } else {
                 log.warn("Authentication failed for UserIdentity {} - password mismatch", username);
@@ -99,7 +119,14 @@ public class RDBMSLdapUserIdentityRepository {
 
     public void changePassword(final String username, final String newPassword) {
         if (isRDBMSEnabled()) {
-            setTempPassword(username, newPassword);
+            if (username != null && newPassword != null) {
+                boolean success = rdbmsUserIdentityDao.updatePassword(username, newPassword);
+                if (success) {
+                    log.info("UserIdentity {} password updated", username);
+                } else {
+                    log.info("UserIdentity {} password not updated", username);
+                }
+            }
         }
     }
 

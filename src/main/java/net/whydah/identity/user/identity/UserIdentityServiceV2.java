@@ -4,13 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
-import net.whydah.identity.health.HealthCheckService;
 import net.whydah.identity.health.HealthResource;
 import net.whydah.identity.user.ChangePasswordToken;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.identity.user.search.LuceneUserSearch;
 import net.whydah.identity.util.PasswordGenerator;
-import net.whydah.sso.user.types.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,12 +129,13 @@ public class UserIdentityServiceV2 {
 
 
     public void changePassword(String username, String userUid, String newPassword) {
-        userIdentityRepository.changePassword(username, newPassword);
+        String bcryptString = BCryptUtils.BCRYPT_HASHER.hashToString(BCryptUtils.PREFERRED_BCRYPT_COST, newPassword.toCharArray());
+        userIdentityRepository.changePassword(username, bcryptString);
         audit(userUid,ActionPerformed.MODIFIED, "password", userUid);
     }
 
 
-    public RDBMSUserIdentity addUserIdentityWithGeneratedPassword(UserIdentityExtension dto) throws IllegalStateException, RuntimeException {
+    public RDBMSUserIdentity addUserIdentityWithGeneratedPassword(UserIdentityWithAutomaticPasswordGeneration dto) {
         String username = dto.getUsername();
         if (username == null) {
             String msg = "Can not create a user without username!";
@@ -171,8 +170,9 @@ public class UserIdentityServiceV2 {
         // Must use already created uuid util we part from ldap
         String tentativeUid = UUID.randomUUID().toString();
         String uid = dto.getUid() != null ? dto.getUid() : tentativeUid;
+        String passwordPlaintext = dto.getPassword();
         RDBMSUserIdentity userIdentity = new RDBMSUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
-                email, dto.getPassword(), dto.getCellPhone(), dto.getPersonRef());
+                email, passwordPlaintext, dto.getCellPhone(), dto.getPersonRef());
         try {
             userIdentityRepository.addUserIdentity(userIdentity);
             if(luceneIndexer.addToIndex(userIdentity)) {
@@ -190,7 +190,7 @@ public class UserIdentityServiceV2 {
         return userIdentity;
     }
 
-    public static String replacePlusWithEmpty(String email){
+    public static String replacePlusWithEmpty(String email) {
         String[] words = email.split("[+]");
         if (words.length == 1) {
             return email;

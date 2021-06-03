@@ -351,6 +351,12 @@ public class LdapUserIdentityDao {
 		return id;
 	}
 
+	public LDAPUserIdentity getUserIndentityWithPassword(String usernameOrUid) throws NamingException {
+		Attributes attributes = getUserAttributesForUsernameOrUid(usernameOrUid);
+		LDAPUserIdentity id = fromLdapAttributesWithPassword(attributes);
+		return id;
+	}
+
 	public LDAPUserIdentity getUserIndentityByUid(String uid) throws NamingException {
 		Attributes attributes = getAttributesFor(uidAttribute, uid);
 		LDAPUserIdentity id = fromLdapAttributes(attributes);

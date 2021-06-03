@@ -3,7 +3,11 @@ package net.whydah.identity.user.identity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import net.whydah.sso.ddd.model.customer.FirstName;
 import net.whydah.sso.ddd.model.customer.LastName;
-import net.whydah.sso.ddd.model.user.*;
+import net.whydah.sso.ddd.model.user.Email;
+import net.whydah.sso.ddd.model.user.Password;
+import net.whydah.sso.ddd.model.user.PersonRef;
+import net.whydah.sso.ddd.model.user.UID;
+import net.whydah.sso.ddd.model.user.UserName;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.directory.api.ldap.model.schema.syntaxCheckers.TelephoneNumberSyntaxChecker;
 import org.json.JSONException;
@@ -40,7 +44,11 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.personRef = new PersonRef(personRef);
         this.email = new Email(email);
         setCellPhone(cellPhone);
-        this.password = new Password(password);
+        if (password.startsWith("{SSHA}")) {
+            this.hashedPassword = password;
+        } else {
+            this.password = new Password(password);
+        }
     }
 
     public LDAPUserIdentity(UserIdentity userIdentity, String password) {
@@ -51,13 +59,22 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.personRef = new PersonRef(userIdentity.getPersonRef());
         this.email = new Email(userIdentity.getEmail());
         setCellPhone(userIdentity.getCellPhone());
-        this.password = new Password(password);
+        if (password.startsWith("{SSHA}")) {
+            this.hashedPassword = password;
+        } else {
+            this.password = new Password(password);
+        }
     }
 
     protected transient Password password;
+    protected transient String hashedPassword;
 
     public String getPassword() {
         return password!=null?password.getInput():null;
+    }
+
+    public String getHashedPassword() {
+        return hashedPassword;
     }
 
     public String getCellPhone() {
@@ -65,7 +82,20 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
     }
 
     public void setPassword(String password) {
-        this.password = new Password(password);
+        if (password == null) {
+            this.password = null;
+            this.hashedPassword = null;
+            return;
+        }
+        if (password.startsWith("{SSHA}")) {
+            this.hashedPassword = password;
+        } else {
+            this.password = new Password(password);
+        }
+    }
+
+    public void setHashedPassword(String hashedPassword) {
+        this.hashedPassword = hashedPassword;
     }
 
 //    public void validate() throws InvalidUserIdentityFieldException {

@@ -14,13 +14,23 @@ public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUser
         if (ldap == null) {
             return null;
         }
+        String password = ldap.getPassword();
+        String hashedPassword;
+        if (password == null) {
+            hashedPassword = null; // password not set in ldap
+        }
+        else if (password.startsWith("{SSHA}")) {
+            hashedPassword = null; // Already uses another hashing algorithm, do not set password/hash
+        } else {
+            hashedPassword = BCryptUtils.hash(password);
+        }
         final RDBMSUserIdentity userIdentity = new RDBMSUserIdentity(
                 ldap.getUid(),
                 ldap.getUsername(),
                 ldap.getFirstName(),
                 ldap.getLastName(),
                 ldap.getEmail(),
-                ldap.getPassword(),
+                hashedPassword,
                 ldap.getCellPhone(),
                 ldap.getPersonRef()
         );

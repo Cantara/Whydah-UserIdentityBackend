@@ -38,10 +38,14 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public boolean create(RDBMSUserIdentity userIdentity) throws RuntimeException {
+    public boolean create(RDBMSUserIdentity userIdentity) {
         boolean executionOk = false;
         String sql = "INSERT INTO UserIdentity (id, username, firstname, lastname, personref, email, cellphone, password) VALUES (?,?,?,?,?,?,?,?)";
         try {
+            String password = userIdentity.getPasswordBCrypt();
+            if (password == null) {
+                password = userIdentity.getPassword();
+            }
             int numRowsAffected = jdbcTemplate.update(sql,
                     userIdentity.getUid(),
                     userIdentity.getUsername(),
@@ -50,7 +54,7 @@ public class RDBMSLdapUserIdentityDao {
                     userIdentity.getPersonRef(),
                     userIdentity.getEmail(),
                     userIdentity.getCellPhone(),
-                    userIdentity.getPassword()
+                    password
             );
             if (numRowsAffected > 0) {
                 executionOk = true;
@@ -68,7 +72,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public boolean delete(String uuid) throws RuntimeException {
+    public boolean delete(String uuid) {
         boolean executionOk = false;
         String sql = "DELETE FROM UserIdentity WHERE id=?";
         try {
@@ -83,7 +87,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public RDBMSUserIdentity get(String uuid) throws RuntimeException {
+    public RDBMSUserIdentity get(String uuid) {
         try {
             List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(UID_SQL, new RDBMSUserIdentityRowMapper(), uuid);
             if (userIdentities != null && !userIdentities.isEmpty()) {
@@ -101,7 +105,7 @@ public class RDBMSLdapUserIdentityDao {
          return jdbcTemplate.query(LIST_SQL, new RDBMSUserIdentityRowMapper());
     }
 
-    public RDBMSUserIdentity getWithUsername(String username) throws RuntimeException {
+    public RDBMSUserIdentity getWithUsername(String username) {
         try {
             List<RDBMSUserIdentity> userIdentities = jdbcTemplate.query(USERNAME_SQL, new RDBMSUserIdentityRowMapper(), username);
             if (userIdentities != null && !userIdentities.isEmpty()) {
@@ -115,7 +119,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public boolean updatePassword(String username, String password) throws RuntimeException {
+    public boolean updatePassword(String username, String password) {
         boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET password=? WHERE username=?";
         try {
@@ -130,7 +134,7 @@ public class RDBMSLdapUserIdentityDao {
         }
     }
 
-    public boolean update(String uid, RDBMSUserIdentity userIdentity) throws RuntimeException {
+    public boolean update(String uid, RDBMSUserIdentity userIdentity) {
         boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET firstname=?, lastname=?, personref=?, email=?, cellphone=? WHERE id=?";
         try {

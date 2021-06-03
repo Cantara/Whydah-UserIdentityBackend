@@ -6,7 +6,11 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.*;
+import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.UserIdentityConverter;
+import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import org.slf4j.Logger;
@@ -14,7 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
@@ -67,21 +75,21 @@ public class PasswordResource2 {
     public Response resetPassword(@PathParam("uid") String uid) {
         log.info("Reset password for uid={}", uid);
 
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentityForUid(uid);
+            user = userIdentityServiceV2.getUserIdentityForUid(uid);
         } catch (Exception e) {
-            log.warn("resetPassword user={} not found in LDAP", uid);
+            log.warn("resetPassword user={} not found in DB", uid);
         }
 
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+            LDAPUserIdentity userIdentity = userIdentityService.getUserIdentityForUid(uid);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
-            log.error(String.format("resetPassword for useridentity=%s in DB failed", uid), e);
+            log.error(String.format("resetPassword for useridentity=%s in LDAP failed", uid), e);
         }
 
         if (user == null) {
@@ -93,7 +101,7 @@ public class PasswordResource2 {
 
         String changePasswordToken = null;
         try {
-            changePasswordToken = userIdentityService.setTempPassword(uid, user.getUid(),
+            changePasswordToken = userIdentityServiceV2.setTempPassword(uid, user.getUid(),
                     preGeneratedPassword, preGeneratedSaltPassword);
         } catch (Exception e) {
         }
@@ -101,7 +109,7 @@ public class PasswordResource2 {
 
         String changePasswordToken2 = null;
         try {
-            changePasswordToken2 = userIdentityServiceV2.setTempPassword(uid, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+            changePasswordToken2 = userIdentityService.setTempPassword(uid, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
         } catch (Exception e) {
             log.error(String.format("resetPassword failed for useridentity=%s in DB", uid), e);
         }
@@ -143,22 +151,22 @@ public class PasswordResource2 {
                                                             @QueryParam("changePasswordToken") String changePasswordToken, String json) {
         log.info("authenticateAndChangePasswordUsingToken for uid={}", uid);
 
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentityForUid(uid);
+            user = userIdentityServiceV2.getUserIdentityForUid(uid);
 
         } catch (Exception e) {
-            log.warn("authenticateAndChangePasswordUsingToken user={} not found in LDAP", uid);
+            log.warn("authenticateAndChangePasswordUsingToken user={} not found in DB", uid);
         }
 
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
+            LDAPUserIdentity userIdentity = userIdentityService.getUserIdentityForUid(uid);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
-            log.error(String.format("authenticateAndChangePasswordUsingToken user={} not found in DB", uid), e);
+            log.error(String.format("authenticateAndChangePasswordUsingToken user={} not found in LDAP", uid), e);
         }
 
         if (user == null) {
@@ -186,13 +194,13 @@ public class PasswordResource2 {
         boolean authenticated_DB = false;
         String username = user.getUsername();
         try {
-            authenticated = userIdentityService.authenticateWithChangePasswordToken(username, changePasswordToken);
+            authenticated = userIdentityServiceV2.authenticateWithChangePasswordToken(username, changePasswordToken);
         } catch (Exception e) {
             log.warn("Authentication failed using changePasswordToken for username={} in LDAP", username);
         }
 
         try {
-            authenticated_DB = userIdentityServiceV2.authenticateWithChangePasswordToken(username, changePasswordToken);
+            authenticated_DB = userIdentityService.authenticateWithChangePasswordToken(username, changePasswordToken);
         } catch (Exception e) {
             log.warn("Authentication failed using changePasswordToken for username={} in DB", username);
         }
@@ -217,15 +225,14 @@ public class PasswordResource2 {
         }
 
         try {
-            userIdentityService.changePassword(username, user.getUid(), newpassword);
             userIdentityServiceV2.changePassword(username, user.getUid(), newpassword);
+            userIdentityService.changePassword(username, user.getUid(), newpassword);
             return Response.noContent().build();
         } catch (Exception e) {
             log.error("authenticateAndChangePasswordUsingToken failed.", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 
 
     /**
@@ -239,19 +246,19 @@ public class PasswordResource2 {
     public Response hasUserNameSetPassword(@PathParam("username") String username) {
         log.info("password_login_enabled for uid={}", username);
 
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentity(username);
+            user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
             log.warn("password_login_enabled false for uid={} in LDAP", username);
         }
 
         // If not found in LDAP try DB if enabled
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+            LDAPUserIdentity userIdentity = userIdentityService.getUserIdentity(username);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
             log.error(String.format("hasUserNameSetPassword for useridentity=%s in DB failed"), e);

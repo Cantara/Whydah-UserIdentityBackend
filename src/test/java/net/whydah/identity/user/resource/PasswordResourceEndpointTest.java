@@ -17,7 +17,6 @@ import org.constretto.model.Resource;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,7 +176,6 @@ public class PasswordResourceEndpointTest {
     }
 
     @Test
-    @Ignore
     public void test_setPassword_ok() throws Exception {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();

@@ -1,12 +1,12 @@
 package net.whydah.identity.user.authentication;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.UserIdentityConverter;
 import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
-import net.whydah.sso.ddd.model.userrole.RoleValue;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
 import net.whydah.sso.user.types.UserAggregate;
@@ -19,9 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -38,7 +35,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.util.List;
 
 /**
@@ -54,6 +55,7 @@ public class UserAuthenticationEndpoint {
     private final UserAdminHelper userAdminHelper;
     private final UserIdentityService userIdentityService;
     private final UserIdentityServiceV2 userIdentityServiceV2;
+    private final UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
 
     //private final LuceneUserIndexer luceneUserIndexer;
     //private final String hostname;
@@ -107,7 +109,7 @@ public class UserAuthenticationEndpoint {
     private Response authenticateUser(String username, String password) {
         UserIdentity userIdentity = null;
         try {
-            userIdentity = userIdentityService.authenticate(username, password);
+            userIdentity = userIdentityServiceV2.authenticate(username, password);
         } catch (Exception e) {
           log.warn(String.format("User=%s not found in LDAP.", username), e);
         }
@@ -157,7 +159,7 @@ public class UserAuthenticationEndpoint {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("<error>Server error, could not parse input.</error>").build();
         }
 
-        LDAPUserIdentity userIdentity = UserAdminHelper.createWhydahUserIdentity(userDoc);
+        RDBMSUserIdentity userIdentity = UserAdminHelper.createWhydahUserIdentity(userDoc);
 
         if (userIdentity == null) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("<error>Server error, could not parse input.</error>").build();
@@ -229,7 +231,7 @@ public class UserAuthenticationEndpoint {
 
     //TODO Move to UserAdminService (the separate application)
     // FIXME fail if called and a) user exist from earlier  b) the user has reset password
-    Response createAndAuthenticateUser(LDAPUserIdentity userIdentity, String roleValue, boolean reuse) {
+    Response createAndAuthenticateUser(RDBMSUserIdentity userIdentity, String roleValue, boolean reuse) {
         try {
             log.trace("createAndAuthenticateUser - userIdentity:{} roleValue:{} reuse:{}", userIdentity, roleValue, reuse);
             Response response = userAdminHelper.addUser(userIdentity);
@@ -238,16 +240,22 @@ public class UserAuthenticationEndpoint {
             }
 
             if (userIdentity != null) {
-                log.trace("createAndAuthenticateUser - Checking for UID mismatch. received: {} found {}", userIdentity.getUid(), userIdentityService.getUserIdentity(userIdentity.getUsername()).getUid());
-                if (!userIdentity.getUid().equalsIgnoreCase(userIdentityService.getUserIdentity(userIdentity.getUsername()).getUid())) {
-                    log.error("createAndAuthenticateUser - Got user with dogus UID, resetting to found UID");
-                    userIdentity.setUid(userIdentityService.getUserIdentity(userIdentity.getUsername()).getUid());
+                RDBMSUserIdentity existingUserIdentity = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+                if (existingUserIdentity != null) {
+                    log.trace("createAndAuthenticateUser - Checking for UID mismatch. received: {} found {}", userIdentity.getUid(), existingUserIdentity.getUid());
+                    if (!userIdentity.getUid().equalsIgnoreCase(existingUserIdentity.getUid())) {
+                        log.error("createAndAuthenticateUser - Got user with dogus UID, resetting to found UID");
+                        userIdentity.setUid(existingUserIdentity.getUid());
+                    }
                 }
                 userAdminHelper.addDefaultRoles(userIdentity, roleValue);
                 if (reuse) {
                     log.info("createAndAuthenticateUser - update useridentity from 3party token ");
-                    userIdentityService.updateUserIdentity(userIdentity.getUsername(), userIdentity);
+                    userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
+                    // TODO Delete LDAP thingy when not used anymore, for now the update-user-identity will not work with LDAP!
+                    userIdentityService.updateUserIdentity(userIdentity.getUsername(), userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity));
                     log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
+                    userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
                     userIdentityService.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
 
                 }
@@ -259,9 +267,9 @@ public class UserAuthenticationEndpoint {
         } catch (Exception e) {
             if (reuse) {
                 log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
-                userIdentityService.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
+                userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
                 log.info("createAndAuthenticateUser - update useridentity from 3party token ");
-                userIdentityService.updateUserIdentity(userIdentity.getUsername(), userIdentity);
+                userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
                 if (userIdentity != null) {
                     userAdminHelper.addDefaultRoles(userIdentity, roleValue);
                 }

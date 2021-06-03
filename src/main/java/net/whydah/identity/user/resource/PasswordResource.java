@@ -68,24 +68,25 @@ public class PasswordResource {
     public Response resetPassword(@PathParam("username") String username) {
         log.info("Reset password (GET) for username={}", username);
 
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentity(username);
+            user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
-            log.warn(String.format("User=%s could not be found in LDAP", username), e);
+            log.warn(String.format("User=%s could not be found in DB", username), e);
         }
 
         // Check if user exists in DB
         // If user NOT found in LDAP but is found in DB, set user
         // TODO: 22/04/2021 - replace LDAP user lookup with DB lookup when transition from LDAP to DB is complete
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+            LDAPUserIdentity userIdentity = null;
+            userIdentity = userIdentityService.getUserIdentity(username);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
-            log.warn(String.format("User=%s could not be found in DB", username), e);
+            log.warn(String.format("User=%s could not be found in LDAP", username), e);
         }
 
         if (user == null) {
@@ -95,21 +96,20 @@ public class PasswordResource {
         String preGeneratedPassword = new PasswordGenerator().generate();
         String preGeneratedSaltPassword = new PasswordGenerator().generate();
 
-        String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+        String resetPasswordTokenV2 = userIdentityServiceV2.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
 
-        String resetPasswordTokenV2 = null;
         try {
-             resetPasswordTokenV2 = userIdentityServiceV2.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+            String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
         } catch (Exception e) {
-            log.error(String.format("resetPassword for userdentity=%s in DB failed",username), e);
+            log.error(String.format("resetPassword for userdentity=%s in DB failed", username), e);
         }
 
         try {
-            Map<String,String> retVal = new HashMap<>();
+            Map<String, String> retVal = new HashMap<>();
             retVal.put("username", username);
             retVal.put("email", user.getEmail());
             retVal.put("cellPhone", user.getCellPhone());
-            retVal.put("resetPasswordToken", resetPasswordToken);
+            retVal.put("resetPasswordToken", resetPasswordTokenV2);
             String retValJson = objectMapper.writeValueAsString(retVal);
             return Response.ok().entity(retValJson).build();
         } catch (Exception e) {
@@ -123,23 +123,23 @@ public class PasswordResource {
     @Path("/reset/username/{username}")
     public Response resetPasswordPOST(@PathParam("username") String username) {
         log.info("Reset password (POST) for username={}", username);
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentity(username);
+            user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
-            log.warn(String.format("User=%s could not be found in LDAP", username), e);
+            log.warn(String.format("User=%s could not be found in DB", username), e);
         }
         // Check if user exists in DB
         // If user NOT found in LDAP but is found in DB, set user
         // TODO: 22/04/2021 - replace LDAP user lookup with DB lookup when transition from LDAP to DB is complete
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+            LDAPUserIdentity userIdentity = userIdentityService.getUserIdentity(username);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
-            log.warn(String.format("User=%s could not be found in DB", username), e);
+            log.warn(String.format("User=%s could not be found in LDAP", username), e);
         }
 
         if (user == null) {
@@ -149,9 +149,9 @@ public class PasswordResource {
         String preGeneratedPassword = new PasswordGenerator().generate();
         String preGeneratedSaltPassword = new PasswordGenerator().generate();
 
-        String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+        String resetPasswordTokenV2 = userIdentityServiceV2.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
         try {
-            String resetPasswordTokenV2 = userIdentityServiceV2.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+            String resetPasswordToken = userIdentityService.setTempPassword(username, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
         } catch (Exception e) {
             log.error(String.format("resetPasswordPOST for userdentity=%s in DB failed", username), e);
         }
@@ -161,7 +161,7 @@ public class PasswordResource {
             map.put(LDAPUserIdentity.UID, user.getUid());
             map.put(EMAIL_KEY, user.getEmail());
             map.put(CELLPHONE_KEY, user.getCellPhone());
-            map.put(CHANGE_PASSWORD_TOKEN, resetPasswordToken);
+            map.put(CHANGE_PASSWORD_TOKEN, resetPasswordTokenV2);
             String json = objectMapper.writeValueAsString(map);
             return Response.ok().entity(json).build();
         } catch (Exception e) {
@@ -176,18 +176,18 @@ public class PasswordResource {
     public Response setPassword(@PathParam("username") String username, @PathParam("token") String changePasswordTokenAsString, String passwordJson) {
         log.info("Set new password for username={}, changePasswordTokenAsString={}", username, changePasswordTokenAsString);
 
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentity(username);
+            user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
             log.warn(String.format("User=%s could not be found in LDAP", username), e);
         }
 
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+            LDAPUserIdentity userIdentity = userIdentityService.getUserIdentity(username);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
             log.warn(String.format("User=%s could not be found in DB", username), e);
@@ -237,7 +237,7 @@ public class PasswordResource {
             if (!ok_DB) {
                 log.info("Authentication failed while changing password for username={} in DB", username);
             } else {
-                userIdentityService.changePassword(username, user.getUid(), newpassword);
+                userIdentityServiceV2.changePassword(username, user.getUid(), newpassword);
                 UserApplicationRoleEntry pwRole = new UserApplicationRoleEntry();
                 pwRole.setApplicationId(PasswordResource2.PW_APPLICATION_ID);  //UAS
                 pwRole.setApplicationName(PasswordResource2.PW_APPLICATION_NAME);
@@ -283,20 +283,20 @@ public class PasswordResource {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
 
-        LDAPUserIdentity user = null;
+        RDBMSUserIdentity user = null;
         try {
-            user = userIdentityService.getUserIdentity(username);
+            user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
             log.warn(String.format("User=%s could not be found in LDAP", username), e);
         }
 
-        // If user NOT found in LDAP but is found in DB, set user
+        // If user NOT found in DB but is found in LDAP, set user
         // TODO: 22/04/2021 - replace LDAP user lookup with DB lookup when transition from LDAP to DB is complete
         try {
-            RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentity(username);
+            LDAPUserIdentity userIdentity = userIdentityService.getUserIdentity(username);
             if (user == null && userIdentity != null) {
                 UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                user = userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity);
+                user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
             log.warn(String.format("User=%s could not be found in DB", username), e);
@@ -307,11 +307,11 @@ public class PasswordResource {
             return Response.status(Response.Status.NOT_FOUND).entity("{\"error\":\"user not found\"}'").build();
         }
 
-        log.debug("Found user: {}", user.toString());
+        log.debug("Found user: {}", user);
 
         try {
-            userIdentityService.changePassword(username, user.getUid(), password);
             userIdentityServiceV2.changePassword(username, user.getUid(), password);
+            userIdentityService.changePassword(username, user.getUid(), password);
             return Response.ok().build();
         } catch (Exception e) {
             log.error("changePasswordForUser failed", e);

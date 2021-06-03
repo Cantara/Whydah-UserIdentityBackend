@@ -12,9 +12,16 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.*;
+import net.whydah.identity.user.identity.LdapAuthenticator;
+import net.whydah.identity.user.identity.LdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
+import net.whydah.identity.user.search.LuceneUserSearch;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.ddd.model.user.PersonRef;
@@ -43,7 +50,9 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -119,9 +128,10 @@ public class UserAuthenticationEndpointTest {
 
         RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
         RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, configuration);
-        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, null);
+        LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
+        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, searcher);
 
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, configuration);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, configuration);
 
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
@@ -195,7 +205,7 @@ public class UserAuthenticationEndpointTest {
 
     @Test
     public void testAuthenticateUsingFacebookCredentials() {
-        LDAPUserIdentity newIdentity = new LDAPUserIdentity();
+        RDBMSUserIdentity newIdentity = new RDBMSUserIdentity();
         newIdentity.setUid("demofbidentity");
         String username = "facebookUsername";
         newIdentity.setUsername(username);

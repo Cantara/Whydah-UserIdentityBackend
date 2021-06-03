@@ -1,8 +1,12 @@
 package net.whydah.identity.user.signup;
 
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.*;
-import net.whydah.identity.util.PasswordGenerator;
+import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.UserIdentityConverter;
+import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
+import net.whydah.identity.user.identity.UserIdentityWithAutomaticPasswordGeneration;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
 import net.whydah.sso.user.types.UserAggregate;
@@ -41,45 +45,34 @@ public class UserSignupService {
         if (userAggregate != null) {
             UserIdentity createFromIdentity = UserIdentityMapper.fromJson(UserAggregateMapper.toJson(userAggregate));
 
-            UserIdentity userIdentity = null;
-            UserIdentityExtension userIdentityExtension = new UserIdentityExtension(createFromIdentity);
+            RDBMSUserIdentity rdbmsUserIdentity = null;
+            UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(createFromIdentity);
             try {
-                userIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+                rdbmsUserIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
                 try {
-                    RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-                    if (userIdentity == null) {
+                    LDAPUserIdentity ldapUserIdentity;
+                    ldapUserIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+                    if (rdbmsUserIdentity == null) {
                         UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                        userIdentity = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
+                        rdbmsUserIdentity = userIdentityConverter.convertFromLDAPUserIdentity(ldapUserIdentity);
+                        String json = UserAggregateMapper.toJson(userAggregate);
+                        log.warn(String.format("Created LDAP user, but not RDBMS user! \njson=%s", json));
                     }
                 } catch (Exception e) {
                     String json = UserAggregateMapper.toJson(userAggregate);
-                    log.error(String.format("createUserWithRoles DB failed! \njson=%s", json), e);
+                    log.error(String.format("createUserWithRoles LDAP failed! \njson=%s", json), e);
                 }
-
-            } catch (Exception e) {
-                String json = UserAggregateMapper.toJson(userAggregate);
-                log.error(String.format("createUserWithRoles LDAP failed! \njson=%s", json), e);
-                try {
-                    RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
-                    if (userIdentity == null) {
-                        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
-                        userIdentity = userIdentityConverter.convertFromRDBMSUserIdentity(rdbmsUserIdentity);
-                    }
-                } catch (Exception ex) {
-                    log.error("createUserWithRoles DB failed!", ex);
-                }
+            } catch (Exception ex) {
+                log.error("createUserWithRoles DB failed!", ex);
             }
 
 
-
-
-
             //Add roles
-            if (userIdentity != null && userIdentity.getUid() != null) {
+            if (rdbmsUserIdentity != null && rdbmsUserIdentity.getUid() != null) {
                 List<UserApplicationRoleEntry> roles = userAggregate.getRoleList();
-                String uid = userIdentity.getUid();
+                String uid = rdbmsUserIdentity.getUid();
                 List<UserApplicationRoleEntry> createdRoles = userAggregateService.addUserApplicationRoleEntries(uid, roles);
-                returnUserAggregate = UserAggregateMapper.fromJson(UserIdentityMapper.toJson(userIdentity));
+                returnUserAggregate = UserAggregateMapper.fromJson(UserIdentityMapper.toJson(rdbmsUserIdentity));
                 returnUserAggregate.setRoleList(createdRoles);
             }
         }

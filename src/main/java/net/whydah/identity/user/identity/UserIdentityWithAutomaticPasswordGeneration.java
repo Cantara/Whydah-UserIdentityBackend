@@ -9,11 +9,11 @@ import java.util.UUID;
  * Helperclass during transition from LDAP to DB
  * Class should be removed when transition is completed.
  */
-public class UserIdentityExtension extends UserIdentity {
+public class UserIdentityWithAutomaticPasswordGeneration extends UserIdentity {
     private String password;
     private PasswordGenerator passwordGenerator = new PasswordGenerator();
 
-    public UserIdentityExtension(UserIdentity userIdentity) {
+    public UserIdentityWithAutomaticPasswordGeneration(UserIdentity userIdentity) {
         this(userIdentity.getUid() != null ? userIdentity.getUid() : UUID.randomUUID().toString(),
                 userIdentity.getUsername(),
                 userIdentity.getFirstName(),
@@ -23,17 +23,12 @@ public class UserIdentityExtension extends UserIdentity {
                 userIdentity.getCellPhone());
     }
 
-    public UserIdentityExtension(String uid, String password) {
-        super(uid);
-        this.password = passwordGenerator.generate();
-    }
-
-    public UserIdentityExtension(String uid, String username, String firstName, String lastName, String personRef, String email, String cellPhone) {
+    public UserIdentityWithAutomaticPasswordGeneration(String uid, String username, String firstName, String lastName, String personRef, String email, String cellPhone) {
         super(uid, username, firstName, lastName, personRef, email, cellPhone);
         this.password = passwordGenerator.generate();
     }
 
-    public UserIdentityExtension(String username, String firstName, String lastName, String personRef, String email, String cellPhone) {
+    public UserIdentityWithAutomaticPasswordGeneration(String username, String firstName, String lastName, String personRef, String email, String cellPhone) {
         super(username, firstName, lastName, personRef, email, cellPhone);
         this.password = passwordGenerator.generate();
     }

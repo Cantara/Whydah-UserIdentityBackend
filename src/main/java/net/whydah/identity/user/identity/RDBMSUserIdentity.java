@@ -1,11 +1,17 @@
 package net.whydah.identity.user.identity;
 
+import at.favre.lib.bytes.Bytes;
+import at.favre.lib.crypto.bcrypt.BCrypt;
+import at.favre.lib.crypto.bcrypt.IllegalBCryptFormatException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import net.whydah.sso.ddd.model.customer.FirstName;
 import net.whydah.sso.ddd.model.customer.LastName;
-import net.whydah.sso.ddd.model.user.*;
+import net.whydah.sso.ddd.model.user.Email;
+import net.whydah.sso.ddd.model.user.Password;
+import net.whydah.sso.ddd.model.user.PersonRef;
+import net.whydah.sso.ddd.model.user.UID;
+import net.whydah.sso.ddd.model.user.UserName;
 import net.whydah.sso.user.types.UserIdentity;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -14,12 +20,13 @@ import org.slf4j.LoggerFactory;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 
 /**
  *
  */
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RDBMSUserIdentity extends UserIdentity implements Serializable {
     public static final String UID = "uid";
     private static final Logger logger = LoggerFactory.getLogger(RDBMSUserIdentity.class);
@@ -37,7 +44,7 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
         this.personRef = new PersonRef(personRef);
         this.email = new Email(email);
         setCellPhone(cellPhone);
-        this.password = new Password(password);
+        setPassword(password);
     }
 
     public RDBMSUserIdentity(UserIdentity userIdentity, String password) {
@@ -48,21 +55,51 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
         this.personRef = new PersonRef(userIdentity.getPersonRef());
         this.email = new Email(userIdentity.getEmail());
         setCellPhone(userIdentity.getCellPhone());
-        this.password = new Password(password);
+        setPassword(password);
     }
 
     protected transient Password password;
+    protected transient String passwordBCrypt;
 
     public String getPassword() {
-        return password!=null?password.getInput():null;
+        return password != null ? password.getInput() : null;
+    }
+
+    public String getPasswordBCrypt() {
+        return passwordBCrypt;
     }
 
     public String getCellPhone() {
-        return this.cellPhone!=null?this.cellPhone.getInput():null;
+        return this.cellPhone != null ? this.cellPhone.getInput() : null;
     }
 
     public void setPassword(String password) {
-        this.password = new Password(password);
+        if (password == null) {
+            this.password = null;
+            this.passwordBCrypt = null;
+            return;
+        }
+        byte[] passwordBytes = Bytes.from(password, StandardCharsets.UTF_8).array();
+        try {
+            BCrypt.HashData bcryptHashData = BCrypt.Version.VERSION_2A.parser.parse(passwordBytes);
+            this.passwordBCrypt = password;
+        } catch (IllegalBCryptFormatException e) {
+            this.password = new Password(password);
+        }
+    }
+
+    public void setPasswordBCrypt(String passwordBCrypt) {
+        if (passwordBCrypt == null) {
+            this.passwordBCrypt = null;
+            return;
+        }
+        byte[] passwordBytes = Bytes.from(passwordBCrypt, StandardCharsets.UTF_8).array();
+        try {
+            BCrypt.HashData bcryptHashData = BCrypt.Version.VERSION_2A.parser.parse(passwordBytes); // verify that bcrypt-string is well-formed
+            this.passwordBCrypt = passwordBCrypt;
+        } catch (IllegalBCryptFormatException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -124,7 +161,7 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
     }
 
     public String getUid() {
-        return uid!=null?uid.getId():null;
+        return uid != null ? uid.getId() : null;
     }
 
     public void setUid(String uid) {
@@ -140,7 +177,7 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
             String username = (jsonobj.getString("username").length() > 2) ? jsonobj.getString("username") : jsonobj.getString("email");
 
             String email = jsonobj.getString("email");
-            if (email.contains("+")){
+            if (email.contains("+")) {
                 email = replacePlusWithEmpty(email);
             }
 
@@ -167,12 +204,12 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
         }
     }
 
-    private static String replacePlusWithEmpty(String email){
+    private static String replacePlusWithEmpty(String email) {
         String[] words = email.split("[+]");
         if (words.length == 1) {
             return email;
         }
-        email  = "";
+        email = "";
         for (String word : words) {
             email += word;
         }
