@@ -38,12 +38,17 @@ import static org.testng.Assert.assertEquals;
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 02/04/14
+ * @// TODO: 11/04/2021 kiversen - candidate for deletion when ldap is retired
+ * @see UserIdentityServiceV2
  */
 public class UIBUserIdentityServiceTest {
     private static final Logger log = LoggerFactory.getLogger(UIBUserIdentityServiceTest.class);
     private static final String ldapPath = "target/UIBUserIdentityServiceTest/ldap";
 
     private static LdapUserIdentityDao ldapUserIdentityDao;
+    private static RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
+    private static BCryptService bCryptService;
+    private static RDBMSLdapUserIdentityRepository rdbmsLdapUserIdentityRepository;
     private static PasswordGenerator passwordGenerator;
     private static LuceneUserIndexer luceneIndexer;
     private static UserAdminHelper userAdminHelper;
@@ -90,12 +95,17 @@ public class UIBUserIdentityServiceTest {
         String readonly = config.evaluateToString("ldap.primary.readonly");
         ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
 
+        rdbmsUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+
+        bCryptService = new BCryptService(config.evaluateToString("userdb.password.pepper"), config.evaluateToInt("userdb.password.bcrypt.preferredcost"));
+        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, config);
+
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
 
         index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
         luceneIndexer = new LuceneUserIndexer(index);
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneIndexer, auditLogDao, userApplicationRoleEntryDao, config);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, rdbmsUserIdentityDao, luceneIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, config);
         passwordGenerator = new PasswordGenerator();
     }
 
@@ -106,7 +116,7 @@ public class UIBUserIdentityServiceTest {
         }
 
         try {
-            if(!dataSource.isClosed()) {
+            if (!dataSource.isClosed()) {
                 dataSource.close();
             }
         } catch (SQLException e) {
@@ -122,13 +132,16 @@ public class UIBUserIdentityServiceTest {
                 new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneUserSearch.class));
 
         String username = "username123";
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uidvalue", username, "firstName", "lastName", "test@test.no", "password", "12345678", "personRef"
+        RDBMSUserIdentity userIdentity = new RDBMSUserIdentity("uidvalue", username, "firstName", "lastName", "test@test.no", "password", "12345678", "personRef"
         );
         userAdminHelper.addUser(userIdentity);
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(username);
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
         assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus(), "Expected ConflictException because user should already exist.");
     }
@@ -140,7 +153,7 @@ public class UIBUserIdentityServiceTest {
 
         Random rand = new Random();
         rand.setSeed(new java.util.Date().getTime());
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uidvalue",
+        RDBMSUserIdentity userIdentity = new RDBMSUserIdentity("uidvalue",
                 "us" + UUID.randomUUID().toString().replace("-", "").replace("_", ""),
                 "Mt Test",
                 "Testesen",
@@ -153,7 +166,10 @@ public class UIBUserIdentityServiceTest {
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(userIdentity.getUsername());
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
 
     }
 
@@ -163,13 +179,16 @@ public class UIBUserIdentityServiceTest {
                 new UserIdentityService(null, ldapUserIdentityDao, null, passwordGenerator, luceneIndexer, Mockito.mock(LuceneUserSearch.class));
 
         String username = "username1234";
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uid2", username, "firstName2", "lastName2", "test2@test.no", "password2", "+47 123 45 678", "personRef2"
+        RDBMSUserIdentity userIdentity = new RDBMSUserIdentity("uid2", username, "firstName2", "lastName2", "test2@test.no", "password2", "+47 123 45 678", "personRef2"
         );
         userAdminHelper.addUser(userIdentity);
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(username);
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
         assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus(), "Expected ConflictException because user should already exist.");
     }
@@ -181,7 +200,7 @@ public class UIBUserIdentityServiceTest {
 
         Random rand = new Random();
         rand.setSeed(new java.util.Date().getTime());
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uidvalue",
+        RDBMSUserIdentity userIdentity = new RDBMSUserIdentity("uidvalue",
                 "us" + UUID.randomUUID().toString().replace("-", "").replace("_", ""),
                 "Mt Test",
                 "Testesen",
@@ -194,7 +213,10 @@ public class UIBUserIdentityServiceTest {
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(userIdentity.getUsername());
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
         stop();
         setUp();
         UserIdentityService userIdentityService2 =

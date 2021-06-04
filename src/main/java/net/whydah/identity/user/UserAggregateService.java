@@ -4,7 +4,10 @@ import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
+import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.application.types.Application;
@@ -36,29 +39,51 @@ public class UserAggregateService {
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
     private final UserIdentityService userIdentityService;
+    private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private final ApplicationService applicationDao;
     private final LuceneUserIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
 
+    private final boolean rdbmsEnabled;
+
     @Autowired
-    public UserAggregateService(UserIdentityService userIdentityService, UserApplicationRoleEntryDao userApplicationRoleEntryDao,
+    public UserAggregateService(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserApplicationRoleEntryDao userApplicationRoleEntryDao,
                                 ApplicationService applicationDao, LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao) {
         this.luceneIndexer = luceneIndexer;
         this.auditLogDao = auditLogDao;
         this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
         this.applicationDao = applicationDao;
         this.userIdentityService = userIdentityService;
+        this.userIdentityServiceV2 = userIdentityServiceV2;
+        this.rdbmsEnabled = userIdentityServiceV2.isRDBMSEnabled();
     }
 
 
     public UserAggregate getUserAggregateByUsernameOrUid(String usernameOrUid) {
-        UserIdentity userIdentity;
+        UserIdentity userIdentity = null;
+        if (isRDBMSEnabled()) {
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(usernameOrUid);
+                if (rdbmsUserIdentity != null) {
+                    userIdentity = rdbmsUserIdentity;
+                } else {
+                    log.warn("getUserAggregateByUsernameOrUid user={} not found in DB", usernameOrUid);
+                }
+            } catch (Exception e) {
+                log.error(String.format("getUserAggregateByUsernameOrUid for uid=%s failed", usernameOrUid), e);
+            }
+        }
+
         try {
-            userIdentity = userIdentityService.getUserIdentity(usernameOrUid);
+            LDAPUserIdentity ldapUserIdentity = userIdentityService.getUserIdentity(usernameOrUid);
+            if (userIdentity == null && ldapUserIdentity != null) {
+                userIdentity = ldapUserIdentity;
+            }
         } catch (NamingException e) {
             throw new RuntimeException("userIdentityService.getUserIdentity with usernameOrUid=" + usernameOrUid, e);
         }
+
         if (userIdentity == null) {
             log.trace("getUserAggregateByUsernameOrUid could not find user with usernameOrUid={}", usernameOrUid);
             return null;
@@ -69,7 +94,7 @@ public class UserAggregateService {
         return userAggregate;
     }
 
-
+    // TODO: 23/04/2021 kiversen - not in use?
     public UserIdentity getUserIdentityByUsernameOrUid(String usernameOrUid) {
         UserIdentity userIdentity;
         try {
@@ -86,26 +111,41 @@ public class UserAggregateService {
 
 
     public void deleteUserAggregateByUid(String uid) {
-        UserIdentity userIdentity;
+        UserIdentity userIdentity = null;
+        if (isRDBMSEnabled()) {
+            try {
+                RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(uid);
+                if (rdbmsUserIdentity != null) {
+                    userIdentity = rdbmsUserIdentity;
+                    String username = rdbmsUserIdentity.getUsername();
+                    userIdentityServiceV2.deleteUserIdentity(username);
+                } else {
+                    log.warn("Delete user failed, user={} not found in DB", uid);
+                }
+            } catch (Exception e) {
+                log.error(String.format("deleteUserAggregateByUid for user=%s in DB failed", uid), e);
+            }
+        }
+
         try {
-            userIdentity = userIdentityService.getUserIdentityForUid(uid);
-            luceneIndexer.removeFromIndex(uid);
+            LDAPUserIdentity ldapUserIdentity = userIdentityService.getUserIdentityForUid(uid);
+            if (ldapUserIdentity != null) {
+                userIdentityService.deleteUserIdentity(uid);
+                if (userIdentity == null && ldapUserIdentity != null) {
+                    userIdentity = ldapUserIdentity;
+                }
+            } else {
+                log.warn("Delete user failed, user={} not found in LDAP", uid);
+            }
         } catch (NamingException e) {
-            throw new RuntimeException("userIdentityService.getUserIdentity with uid=" + uid, e);
-        }
-        if (userIdentity == null) {
-            throw new IllegalArgumentException("LDAPUserIdentity not found. uid=" + uid);
-        }
-        try {
-            userIdentityService.deleteUserIdentity(uid);
-        } catch (NamingException ne) {
-            log.warn("Trouble trying to delete user with uid:" + uid);
+            log.warn("userIdentityService.getUserIdentity with uid=" + uid, e);
         }
 
-        userApplicationRoleEntryDao.deleteAllRolesForUser(uid);
-        //indexer.removeFromIndex(uid);
-        audit(ActionPerformed.DELETED, "user", "uid=" + uid + ", username=" + userIdentity.getUsername());
-
+        if (userIdentity != null) {
+            luceneIndexer.removeFromIndex(uid);
+            userApplicationRoleEntryDao.deleteAllRolesForUser(uid);
+            audit(ActionPerformed.DELETED, "user", "uid=" + uid + ", username=" + userIdentity.getUsername());
+        }
     }
 
 
@@ -258,5 +298,9 @@ public class UserAggregateService {
 
     public void deleteRole(String uid, String roleid) {
         userApplicationRoleEntryDao.deleteUserRole(uid, roleid);
+    }
+
+    private boolean isRDBMSEnabled() {
+        return rdbmsEnabled;
     }
 }

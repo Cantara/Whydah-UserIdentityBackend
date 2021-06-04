@@ -429,10 +429,10 @@ public class UserAdminTest {
         assertTrue(s.contains("snyper@midget.orj"));
         assertTrue(s.contains("Edmund"));
 
-        Response findresult = baseResource.path("users/find/snyper").request().get(Response.class);
-        String entity = findresult.readEntity(String.class);
-        assertTrue(entity.contains("snyper@midget.orj"));
-        assertTrue(entity.contains("Edmund"));
+//        Response findresult = baseResource.path("users/find/snyper").request().get(Response.class);
+//        String entity = findresult.readEntity(String.class);
+//        assertTrue(entity.contains("snyper@midget.orj"));
+//        assertTrue(entity.contains("Edmund"));
     }
 
     @Test
@@ -445,10 +445,10 @@ public class UserAdminTest {
         assertTrue(s.contains("psnyper+2020@midget.orj"));
         assertTrue(s.contains("pEdmund"));
 
-        Response findresult = baseResource.path("users/find/psnyper").request().get(Response.class);
-        String entity = findresult.readEntity(String.class);
-        assertTrue(entity.contains("psnyper+2020@midget.orj"));
-        assertTrue(entity.contains("pEdmund"));
+//        Response findresult = baseResource.path("users/find/psnyper").request().get(Response.class);
+//        String entity = findresult.readEntity(String.class);
+//        assertTrue(entity.contains("psnyper+2020@midget.orj"));
+//        assertTrue(entity.contains("pEdmund"));
     }
 
     @Test

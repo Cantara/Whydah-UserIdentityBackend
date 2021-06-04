@@ -12,12 +12,17 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapAuthenticator;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
+import net.whydah.identity.user.search.LuceneUserSearch;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.ddd.model.user.PersonRef;
@@ -46,7 +51,9 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -57,6 +64,7 @@ public class UserAuthenticationEndpointTest {
     private static UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private static UserAdminHelper userAdminHelper;
     private static UserIdentityService userIdentityService;
+    private static UserIdentityServiceV2 userIdentityServiceV2;
     private static ApplicationService applicationService;
     private static Main main = null;
 
@@ -68,7 +76,7 @@ public class UserAuthenticationEndpointTest {
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
+                .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
                 .done()
                 .getConfiguration();
 
@@ -113,13 +121,20 @@ public class UserAuthenticationEndpointTest {
         String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
         String readonly = configuration.evaluateToString("ldap.primary.readonly");
 
+        BCryptService bCryptService = new BCryptService("57hruioqe", 4);
+
         LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
         LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute);
 
         PasswordGenerator pwg = new PasswordGenerator();
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, luceneUserIndexer, null);
 
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, configuration);
+        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+        RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
+        LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
+        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, searcher, bCryptService);
+
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, configuration);
 
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
@@ -193,7 +208,7 @@ public class UserAuthenticationEndpointTest {
 
     @Test
     public void testAuthenticateUsingFacebookCredentials() {
-        LDAPUserIdentity newIdentity = new LDAPUserIdentity();
+        RDBMSUserIdentity newIdentity = new RDBMSUserIdentity();
         newIdentity.setUid("demofbidentity");
         String username = "facebookUsername";
         newIdentity.setUsername(username);
@@ -204,9 +219,9 @@ public class UserAuthenticationEndpointTest {
         String email = "e@mail.com";
         newIdentity.setEmail(email);
 
-        UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userApplicationRoleEntryDao,
+        UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userIdentityServiceV2, userApplicationRoleEntryDao,
                 applicationService, null, null);
-        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService);
+        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService, userIdentityServiceV2, new BCryptService("iHI458at4", 4));
 
         String roleValue = "roleValue";
         Response response = resource.createAndAuthenticateUser(newIdentity, roleValue, false);

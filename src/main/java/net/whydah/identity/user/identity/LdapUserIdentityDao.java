@@ -10,13 +10,34 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.naming.*;
-import javax.naming.directory.*;
-import javax.naming.ldap.*;
+import javax.naming.Context;
+import javax.naming.NameAlreadyBoundException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.NoPermissionException;
+import javax.naming.PartialResultException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.BasicAttribute;
+import javax.naming.directory.BasicAttributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import javax.naming.directory.InvalidAttributeValueException;
+import javax.naming.directory.ModificationItem;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
+import javax.naming.ldap.Control;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.PagedResultsControl;
+import javax.naming.ldap.PagedResultsResponseControl;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * https://wiki.cantara.no/display/whydah/UserIdentity+LDAP+mapping
@@ -327,6 +348,12 @@ public class LdapUserIdentityDao {
 	public LDAPUserIdentity getUserIndentity(String usernameOrUid) throws NamingException {
 		Attributes attributes = getUserAttributesForUsernameOrUid(usernameOrUid);
 		LDAPUserIdentity id = fromLdapAttributes(attributes);
+		return id;
+	}
+
+	public LDAPUserIdentity getUserIndentityWithPassword(String usernameOrUid) throws NamingException {
+		Attributes attributes = getUserAttributesForUsernameOrUid(usernameOrUid);
+		LDAPUserIdentity id = fromLdapAttributesWithPassword(attributes);
 		return id;
 	}
 
@@ -694,6 +721,96 @@ public class LdapUserIdentityDao {
 	private String getAdminPrincipal() {
 		return admenv.get(Context.SECURITY_PRINCIPAL);
 	}
+
+    public Iterable<LDAPUserIdentity> allUsersWithPassword() throws NamingException {
+        SearchControls constraints = new SearchControls();
+        constraints.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        final NamingEnumeration objs = new InitialDirContext(admenv).search("", "(objectClass=*)", constraints);
+
+        return new Iterable<LDAPUserIdentity>() {
+            @Override
+            public Iterator<LDAPUserIdentity> iterator() {
+                return new Iterator<LDAPUserIdentity>() {
+                    LDAPUserIdentity next = null;
+
+                    @Override
+                    public boolean hasNext() {
+                        if (next != null) {
+                            return true;
+                        }
+                        try {
+                            while (objs.hasMore()) {
+                                next = doGetNext();
+                                if (next != null) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        } catch (NamingException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    @Override
+                    public LDAPUserIdentity next() {
+                        if (!hasNext()) {
+                            throw new NoSuchElementException("next() called after end of iterator, please guard with hasNext()");
+                        }
+                        LDAPUserIdentity result = next;
+                        next = null;
+                        return result;
+                    }
+
+                    private LDAPUserIdentity doGetNext() {
+                        //Each item is a SearchResult object
+                        try {
+                            SearchResult match = (SearchResult) objs.next();
+
+                            //Get the node's attributes
+                            Attributes attrs = match.getAttributes();
+
+                            LDAPUserIdentity ldapUser = fromLdapAttributesWithPassword(attrs);
+
+                            return ldapUser;
+                        } catch (NamingException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                };
+            }
+        };
+    }
+
+	private LDAPUserIdentity fromLdapAttributesWithPassword(Attributes attributes) throws NamingException {
+		if (attributes == null) {
+			return null;
+		}
+
+		LDAPUserIdentity id = null;
+		Attribute uidAttributeValue = attributes.get(uidAttribute);
+		Attribute usernameAttributeValue = attributes.get(usernameAttribute);
+		if (uidAttributeValue != null && usernameAttributeValue != null) {
+			id = new LDAPUserIdentity();
+			id.setUid((String) attributes.get(uidAttribute).get());
+			id.setUsername((String) attributes.get(usernameAttribute).get());
+			id.setFirstName(getAttribValue(attributes, ATTRIBUTE_NAME_GIVENNAME));
+			id.setLastName(getAttribValue(attributes, ATTRIBUTE_NAME_SN));
+			id.setEmail(getAttribValue(attributes, ATTRIBUTE_NAME_MAIL));
+			id.setPersonRef(getAttribValue(attributes, ATTRIBUTE_NAME_PERSONREF));
+			id.setCellPhone(getAttribValue(attributes, ATTRIBUTE_NAME_MOBILE));
+			id.setPassword(getBinaryAttribValueAsUtf8String(attributes, ATTRIBUTE_NAME_PASSWORD));
+		}
+		return id;
+	}
+
+	private String getBinaryAttribValueAsUtf8String(Attributes attributes, String attributeName) throws NamingException {
+        Attribute attribute = attributes.get(attributeName);
+        if (attribute != null) {
+            return new String((byte[]) attribute.get(0), StandardCharsets.UTF_8);
+        } else {
+            return null;
+        }
+    }
 }
 
 

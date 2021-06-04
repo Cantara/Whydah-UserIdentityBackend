@@ -166,9 +166,9 @@ Notes
 Developer info
 ==============
 
-* https://wiki.cantara.no/display/iam/Architecture+Overview
-* https://wiki.cantara.no/display/iam/Key+Whydah+Data+Structures
-* https://wiki.cantara.no/display/iam/Modules
+* https://wiki.cantara.no/display/whydah/Architecture+Overview
+* https://wiki.cantara.no/display/whydah/Key+Whydah+Data+Structures
+* https://wiki.cantara.no/display/whydah/Whydah+Modules
 
 If you are planning on integrating, you might want to run SecurityTokenService in DEV mode. This shortcuts the authentication.
 You can manually control the UserTokens for the different test-users you want, by creating a file named t_<username>.token which

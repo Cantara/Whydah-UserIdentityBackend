@@ -1,6 +1,6 @@
 package net.whydah.identity.dataimport;
 
-import org.apache.commons.dbutils.QueryRunner;
+import net.whydah.identity.organization.OrganizationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +18,10 @@ public class OrganizationImporter {
 	private static final int APPID = 0;
 	private static final int ORGANIZATIONNAME = 1;
 	
-	private QueryRunner queryRunner;
+	private final OrganizationRepository organizationRepository;
 	
-	public OrganizationImporter(QueryRunner queryRunner) {
-		this.queryRunner = queryRunner;
+	public OrganizationImporter(OrganizationRepository organizationRepository) {
+		this.organizationRepository = organizationRepository;
 	}
 
 	public void importOrganizations(InputStream organizationsSource) {
@@ -76,18 +76,12 @@ public class OrganizationImporter {
 	}
 
     private void saveOrganizations(List<Organization> organizations) {
-		StringBuilder strb = new StringBuilder("Imported ").append(organizations.size()).append(" organizations: \n");
 		try {
-            for (Organization organization: organizations) {
-                queryRunner.update("INSERT INTO Organization values (?, ?)", organization.getAppId(), organization.getName());
-				strb.append("  id=").append(organization.getAppId()).append(", name=").append(organization.getName()).append("\n");
-            }
+			organizations.stream().forEach(organization -> organizationRepository.addOrganization(organization));
         } catch(Exception e) {
             log.error("Unable to persist organizations.", e);
             throw new RuntimeException("Unable to persist organizations.", e);
-        } finally {
-			log.info(strb.toString());
-		}
+        }
     }
 }
 

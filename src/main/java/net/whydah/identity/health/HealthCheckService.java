@@ -1,7 +1,9 @@
 package net.whydah.identity.health;
 
 import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,25 +20,34 @@ public class HealthCheckService {
     static String USERADMIN_UID = "useradmin";    //uid of user which should always exist
     private static final Logger log = LoggerFactory.getLogger(HealthCheckService.class);
     private final UserIdentityService identityService;
+    private final UserIdentityServiceV2 identityServiceV2;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private long intrusionsDetected = 0;
     private long anonymousIntrsionsDetected = 0;
 
     @Autowired
-    public HealthCheckService(UserIdentityService identityService, UserApplicationRoleEntryDao userApplicationRoleEntryDao) {
+    public HealthCheckService(UserIdentityServiceV2 userIdentityServiceV2, UserIdentityService identityService, UserApplicationRoleEntryDao userApplicationRoleEntryDao) {
         this.identityService = identityService;
+        this.identityServiceV2 = userIdentityServiceV2;
         this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
     }
 
 
-    boolean isOK() {
+    boolean isOK_LDAP() {
         log.trace("Checking if uid={} can be found in LDAP and role database.", USERADMIN_UID);
         //How to do count in ldap without fetching all users?
         if (!userExistInLdap(USERADMIN_UID)) {
             USERADMIN_UID = "whydahadmin";  // Initiel support for future support of configurable LDAP admin UID
         }
         return userExistInLdap(USERADMIN_UID) && atLeastOneRoleInDatabase();
+    }
 
+    boolean isOK_DB() {
+        log.trace("Checking if uid={} can be found in DB and role database.", USERADMIN_UID);
+        if (!userExistInDB(USERADMIN_UID)) {
+            USERADMIN_UID = "whydahadmin";  // Initiel support for future support of configurable LDAP admin UID
+        }
+        return userExistInDB(USERADMIN_UID) && atLeastOneRoleInDatabase();
     }
 
     //TODO Make this test more robust
@@ -51,6 +62,20 @@ public class HealthCheckService {
         }
         return false;
     }
+
+    private boolean userExistInDB(String uid) {
+        try {
+            RDBMSUserIdentity userIdentity = identityServiceV2.getUserIdentity(uid);
+            if (userIdentity != null && uid.equals(userIdentity.getUid())) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
     public void addIntrusion(){
         if (intrusionsDetected > Long.MAX_VALUE -10) {
@@ -80,5 +105,9 @@ public class HealthCheckService {
             anonymousIntrsionsDetected = 0;
         }
         anonymousIntrsionsDetected += 1;
+    }
+
+    public boolean isRDBMSEnabled() {
+        return identityServiceV2.isRDBMSEnabled();
     }
 }

@@ -1,5 +1,7 @@
 package net.whydah.identity.user.identity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.health.HealthResource;
@@ -14,69 +16,66 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import javax.naming.NamingException;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.UUID;
 
 /**
- * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 29.03.14
+ * // TODO: 08/04/2021 kiversen
+ *
+ * - remove all ldap operations and replce with db persistence
+ * - avoid intrusion in existing UserIdentityService by using a "shadow" version
+ * - service will replace UserIdentityService when ldap is retired.
+ * - service will be added to UserResource when ready
+ * - service will live and be used in parallell with UserIdentityService for an overlapping period
  */
 @Service
-public class UserIdentityService {
-    private static final Logger log = LoggerFactory.getLogger(UserIdentityService.class);
+public class UserIdentityServiceV2 {
+    private static final Logger log = LoggerFactory.getLogger(UserIdentityServiceV2.class);
 
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
     private static final String SALT_ENCODING = "UTF-8";
 
-    //@Autowired @Named("internal") private LdapAuthenticatorImpl internalLdapAuthenticator;
-    private final LdapAuthenticator primaryLdapAuthenticator;
-    private final LdapUserIdentityDao ldapUserIdentityDao;
     private final AuditLogDao auditLogDao;
 
     private final PasswordGenerator passwordGenerator;
 
     private final LuceneUserIndexer luceneIndexer;
     private final LuceneUserSearch searcher;
+    private final BCryptService bCryptService;
     private static String temporary_pwd=null;
 
+    private final RDBMSLdapUserIdentityRepository userIdentityRepository;
 
-    //@Named("primaryLdap")
     @Autowired
-    public UserIdentityService(LdapAuthenticator primaryLdapAuthenticator, LdapUserIdentityDao ldapUserIdentityDao,
-                               AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
-                               LuceneUserIndexer luceneIndexer, LuceneUserSearch searcher) {
-        this.primaryLdapAuthenticator = primaryLdapAuthenticator;
-        this.ldapUserIdentityDao = ldapUserIdentityDao;
+    public UserIdentityServiceV2(RDBMSLdapUserIdentityRepository userIdentityRepository, AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
+                                 LuceneUserIndexer luceneIndexer, LuceneUserSearch searcher, BCryptService bCryptService) {
+        this.userIdentityRepository = userIdentityRepository;
         this.auditLogDao = auditLogDao;
         this.passwordGenerator = passwordGenerator;
         this.luceneIndexer = luceneIndexer;
         this.searcher = searcher;
-       
+        this.bCryptService = bCryptService;
+        HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
     }
 
-    public LDAPUserIdentity authenticate(final String username, final String password) {
-        return primaryLdapAuthenticator.authenticate(username, password);
+    public RDBMSUserIdentity authenticate(final String username, final String password) {
+        return userIdentityRepository.authenticate(username, password);
     }
 
-    /**
-     * Temporarily helper method to provide same password to both versions of UserIdentityService.
-     * When the transition from ldap to db is completed:
-     * 1. change {@link UserIdentityService#setTempPassword(String, String)} to public
-     * 2. use {@link UserIdentityService#setTempPassword(String, String)}
-     * 3. remove this method
-     *
-     */
+    // TODO: 22/04/2021 kiversen: remove this when transition to db is complete and return to use UsersIdentityService#setTempPassword
     public String setTempPassword(String username, String uid, String preGeneratedPassword, String preGeneratedSaltPassword) {
         temporary_pwd = preGeneratedPassword;
         return setTempPasswordV2(username, uid, preGeneratedSaltPassword);
     }
 
+    // TODO: 22/04/2021 kiversen: remove this when transition to db is complete
     public String setTempPasswordV2(String username, String uid, String preGeneratedSaltPassword) {
         String newPassword = temporary_pwd;
         String salt = preGeneratedSaltPassword;
         //HUY: disable saving a new password
-        ldapUserIdentityDao.setTempPassword(username, null, salt);
+        userIdentityRepository.setTempPassword(username, salt);
         //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
         audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
 
@@ -90,16 +89,13 @@ public class UserIdentityService {
         return changePasswordToken.generateTokenString(saltAsBytes);
     }
 
-
     public String setTempPassword(String username, String uid) {
     	if(temporary_pwd==null){
     		temporary_pwd = passwordGenerator.generate();
     	}
         String newPassword = temporary_pwd;
         String salt = passwordGenerator.generate();
-        //HUY: disable saving a new password
-        ldapUserIdentityDao.setTempPassword(username, null, salt);
-        //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
+        userIdentityRepository.setTempPassword(username, salt);
         audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
 
         byte[] saltAsBytes;
@@ -119,7 +115,7 @@ public class UserIdentityService {
      * @return  true if authentication OK
      */
     public boolean authenticateWithChangePasswordToken(String username, String changePasswordTokenAsString) {
-        String salt = ldapUserIdentityDao.getSalt(username);
+        String salt = userIdentityRepository.getSalt(username);
 
         byte[] saltAsBytes;
         try {
@@ -128,8 +124,6 @@ public class UserIdentityService {
             throw new RuntimeException("Error with salt for username=" + username, e1);
         }
         ChangePasswordToken changePasswordToken = ChangePasswordToken.fromTokenString(changePasswordTokenAsString, saltAsBytes);
-        //HUY: we don't store a temporary password in setTempPassword(), so we just compare the salt 
-        //boolean ok = primaryLdapAuthenticator.authenticateWithTemporaryPassword(username, changePasswordToken.getPassword());
         boolean ok = changePasswordToken.getPassword().equals(temporary_pwd);
         log.info("authenticateWithChangePasswordToken was ok={} for username={}", ok, username);
         return ok;
@@ -137,31 +131,25 @@ public class UserIdentityService {
 
 
     public void changePassword(String username, String userUid, String newPassword) {
-        ldapUserIdentityDao.changePassword(username, newPassword);
+        String bcryptString = bCryptService.hash(newPassword);
+        userIdentityRepository.changePassword(username, bcryptString);
         audit(userUid,ActionPerformed.MODIFIED, "password", userUid);
     }
 
 
-    public LDAPUserIdentity addUserIdentityWithGeneratedPassword(UserIdentityWithAutomaticPasswordGeneration dto) {
+    public RDBMSUserIdentity addUserIdentityWithGeneratedPassword(UserIdentityWithAutomaticPasswordGeneration dto) {
         String username = dto.getUsername();
         if (username == null) {
             String msg = "Can not create a user without username!";
             throw new IllegalStateException(msg);
         }
-        try {
-            if (!searcher.usernameExists(username) && ldapUserIdentityDao.usernameExist(username)) {
-            	ldapUserIdentityDao.deleteUserIdentity(username);
-                //in LDAP
-                //String msg = "User already exists, could not create user with username=" + dto.getUsername();
-                //throw new IllegalStateException(msg);
-            } else if (ldapUserIdentityDao.usernameExist(username)) {
-            	String msg = "User already exists, could not create user with username=" + dto.getUsername();
-                throw new IllegalStateException(msg);
-            } 
-        } catch (NamingException e) {
-            throw new RuntimeException("usernameExist failed for username=" + dto.getUsername(), e);
-        }
 
+        if (!searcher.usernameExists(username) && userIdentityRepository.usernameExist(username)) {
+            userIdentityRepository.deleteUserIdentity(username);
+        } else if (userIdentityRepository.usernameExist(username)) {
+            String msg = "User already exists, could not create user with username=" + dto.getUsername();
+            throw new IllegalStateException(msg);
+        }
 
         String email;
         if (dto.getEmail() != null && dto.getEmail().contains("+")) {
@@ -179,40 +167,32 @@ public class UserIdentityService {
                 throw new IllegalArgumentException(String.format("E-mail: %s is of wrong format.", email));
             }
 
-            /*
-            List<UIBUserIdentityRepresentation> usersWithSameEmail = searcher.search(email);
-            if (!usersWithSameEmail.isEmpty()) {
-                //(in lucene index)
-                String msg = "E-mail " + email + " is already in use, could not create user with username=" + username;
-                throw new IllegalStateException(msg);
-            }
-            */
         }
 
-        String uid = dto.getUid();
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
-                email, dto.getPassword(), dto.getCellPhone(), dto.getPersonRef());
-
-        // TODO: 15/04/2021 kiversen:  Use this constructor when transition from ldap to db is complete
-        //        LDAPUserIdentity userIdentity = new LDAPUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
-        //                email, passwordGenerator.generate(), dto.getCellPhone(), dto.getPersonRef());
-
+        // Must use already created uuid util we part from ldap
+        String tentativeUid = UUID.randomUUID().toString();
+        String uid = dto.getUid() != null ? dto.getUid() : tentativeUid;
+        String passwordPlaintext = dto.getPassword();
+        RDBMSUserIdentity userIdentity = new RDBMSUserIdentity(uid, dto.getUsername(), dto.getFirstName(), dto.getLastName(),
+                email, passwordPlaintext, dto.getCellPhone(), dto.getPersonRef());
         try {
-            ldapUserIdentityDao.addUserIdentity(userIdentity);
+            userIdentityRepository.addUserIdentity(userIdentity);
             if(luceneIndexer.addToIndex(userIdentity)) {
-            	HealthResource.setNumberOfUsers(searcher.getUserIndexSize());
+            	HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
             } else {
-            	 throw new IllegalArgumentException("addUserIdentity failed for " + userIdentity.toString());
+            	 throw new IllegalArgumentException("addUserIdentity to DB failed for " + userIdentity.toString());
             }
 
-        } catch (NamingException e) {
-            throw new RuntimeException("addUserIdentity failed for " + userIdentity.toString(), e);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("addUserIdentity to DB failed for " + userIdentity.toString(), e);
         }
-        log.info("Added new user to LDAP: username={}, uid={}", username, uid);
+        if (userIdentityRepository.isRDBMSEnabled()) {
+            log.info("Added new useridentity to DB: username={}, uid={}", username, uid);
+        }
         return userIdentity;
     }
 
-    public static String replacePlusWithEmpty(String email){
+    public static String replacePlusWithEmpty(String email) {
         String[] words = email.split("[+]");
         if (words.length == 1) {
             return email;
@@ -225,35 +205,51 @@ public class UserIdentityService {
     }
 
 
-    public LDAPUserIdentity getUserIdentityForUid(String uid) throws NamingException {
-        LDAPUserIdentity userIdentity = ldapUserIdentityDao.getUserIndentityByUid(uid);
+    public RDBMSUserIdentity getUserIdentityForUid(String uid) throws RuntimeException {
+        RDBMSUserIdentity userIdentity = userIdentityRepository.getUserIdentityWithId(uid);
         if (userIdentity == null) {
-            //log.warn("Trying to access non-existing UID, removing from index: " + uid);
-            //luceneIndexer.removeFromIndex(uid);
+            log.warn("Trying to access non-existing UID, removing from index: " + uid);
+            luceneIndexer.removeFromIndex(uid);
         }
         return userIdentity;
     }
 
     public void updateUserIdentityForUid(String uid, LDAPUserIdentity newUserIdentity) {
-        ldapUserIdentityDao.updateUserIdentityForUid(uid, newUserIdentity);
+        UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
+        RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLDAPUserIdentity(newUserIdentity);
+
+        userIdentityRepository.updateUserIdentityForUid(uid, userIdentity);
         luceneIndexer.updateIndex(newUserIdentity);
         audit(uid,ActionPerformed.MODIFIED, "user", newUserIdentity.toString());
     }
 
-
-    public LDAPUserIdentity getUserIdentity(String usernameOrUid) throws NamingException {
-        return ldapUserIdentityDao.getUserIndentity(usernameOrUid);
+    // TODO: 08/04/2021 kiversen - Replace with either username or uid
+    public RDBMSUserIdentity getUserIdentity(String usernameOrUid) throws RuntimeException {
+        return userIdentityRepository.getUserIdentityWithUsernameOrUid(usernameOrUid);
     }
 
-    public void updateUserIdentity(String username, LDAPUserIdentity newuser) {
-        ldapUserIdentityDao.updateUserIdentityForUsername(username, newuser);
-        //luceneIndexer.updateIndex(newuser);
+    public void updateUserIdentity(String uid, RDBMSUserIdentity update) throws RuntimeException {
+        String json = null;
+        try {
+            json = new ObjectMapper().writeValueAsString(update);
+        } catch (JsonProcessingException jpe) {
+            //
+        }
+        log.info("update with {} and {}", uid, json);
+        userIdentityRepository.updateUserIdentityForUid(uid, update);
+        log.info("Updated useridentity in DB: uid={}, values={}", uid, update);
+
+        luceneIndexer.updateIndex(update);
     }
 
-    public void deleteUserIdentity(String username) throws NamingException {
+    public void deleteUserIdentity(String username) throws RuntimeException {
         luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
-        ldapUserIdentityDao.deleteUserIdentity(username);
-        HealthResource.setNumberOfUsers(searcher.getUserIndexSize());
+        userIdentityRepository.deleteUserIdentity(username);
+        HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
+    }
+
+    public boolean isRDBMSEnabled() {
+        return userIdentityRepository.isRDBMSEnabled();
     }
 
     private void audit(String uid,String action, String what, String value) {
@@ -262,15 +258,6 @@ public class UserIdentityService {
         auditLogDao.store(actionPerformed);
     }
 
-    //FIXME baardl: implement verification that admin is allowed to update this password.
-    //Find the admin user token, based on tokenid
-    public boolean allowedToUpdate(String applicationtokenid, String adminUserTokenId) {
-        return true;
-    }
 
-    //FIXME baardl: implement verification that admin is allowed to update this password.
-    //Find the admin user token, based on tokenid
-    public String findUserByTokenId(String adminUserTokenId) {
-        return "not-found-not-implemented";
-    }
+
 }

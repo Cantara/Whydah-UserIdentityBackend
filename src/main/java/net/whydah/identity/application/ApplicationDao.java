@@ -42,12 +42,23 @@ public class ApplicationDao {
         }
     }
 
+    boolean create(Application application) {
+        boolean executionOk = false;
+        String applicationId = application.getId().trim();
+        Application exist = getApplication(applicationId);
+        if (exist == null) {
+            String json = ApplicationMapper.toJson(application);
+            String sql = "INSERT INTO Application (id, json) VALUES (?,?)";
+            int numRowsAffected = jdbcTemplate.update(sql, applicationId, json);
+            if (numRowsAffected > 0) {
+                executionOk = true;
+            }
+        } else {
+            log.warn("Application {}-{} already exist", applicationId, application.getName());
+        }
+        return executionOk;
 
-    int create(Application application) {
-        String json = ApplicationMapper.toJson(application);
-        String sql = "INSERT INTO Application (id, json) VALUES (?,?)";
-        int numRowsAffected = jdbcTemplate.update(sql, application.getId().trim(), json);
-        return numRowsAffected;
+
 
         /*
         Application applicationStored = null;

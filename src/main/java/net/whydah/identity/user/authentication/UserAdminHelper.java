@@ -3,8 +3,10 @@ package net.whydah.identity.user.authentication;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.ddd.model.user.Email;
@@ -40,9 +42,11 @@ public class UserAdminHelper {
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
 	private final LdapUserIdentityDao ldapUserIdentityDao;
+	private final RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
 	private final LuceneUserIndexer luceneIndexer;
 	private final AuditLogDao auditLogDao;
 	private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
+	private final BCryptService bCryptService;
 
 	private String defaultApplicationId;
 	private String defaultApplicationName;
@@ -59,13 +63,17 @@ public class UserAdminHelper {
 	private String fbRoleName;
 
 	@Autowired
-	public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, LuceneUserIndexer luceneIndexer,
-			AuditLogDao auditLogDao, UserApplicationRoleEntryDao userApplicationRoleEntryDao,
+	public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, RDBMSLdapUserIdentityDao rdbmsUserIdentityDao,
+						   LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao,
+						   UserApplicationRoleEntryDao userApplicationRoleEntryDao,
+			BCryptService bCryptService,
 			ConstrettoConfiguration configuration) {
 		this.ldapUserIdentityDao = ldapUserIdentityDao;
+		this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
 		this.luceneIndexer = luceneIndexer;
 		this.auditLogDao = auditLogDao;
 		this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
+		this.bCryptService = bCryptService;
 
 		//AppConfig configuration = AppConfig.appConfig;
 		initAddUserDefaults(configuration);
@@ -89,7 +97,7 @@ public class UserAdminHelper {
 		this.fbRoleName = configuration.evaluateToString("adduser.facebook.defaultrole.name");
 	}
 
-	public Response addUser(LDAPUserIdentity newIdentity) {
+	public Response addUser(RDBMSUserIdentity newIdentity) {
 		String username = newIdentity.getUsername();
 
 		if (username == null || username.length() < 2) {
@@ -103,13 +111,21 @@ public class UserAdminHelper {
 
 
 		try {
-			if (ldapUserIdentityDao.usernameExist(username)) {
+			if (rdbmsUserIdentityDao.getWithUsername(username) != null) {
 				logger.info("addUser - User already exists, could not create user " + username);
 				return Response.status(Response.Status.NOT_ACCEPTABLE).build();
 			}
 
 			newIdentity.setUid(UUID.randomUUID().toString());
-			ldapUserIdentityDao.addUserIdentity(newIdentity);
+
+			if (newIdentity.getPassword() != null) {
+				newIdentity.setPasswordBCrypt(bCryptService.hash(newIdentity.getPassword()));
+			}
+
+			rdbmsUserIdentityDao.create(newIdentity);
+
+			ldapUserIdentityDao.addUserIdentity(newIdentity, newIdentity.getPassword());
+
 			logger.info("addUser - Added new user: {}", username);
 		} catch (Exception e) {
 			logger.error("addUser - Could not create user " + username, e);
@@ -128,7 +144,7 @@ public class UserAdminHelper {
 		return Response.ok().build();
 	}
 
-	public static LDAPUserIdentity createWhydahUserIdentity(Document fbUserDoc) {
+	public static RDBMSUserIdentity createWhydahUserIdentity(Document fbUserDoc) {
 		XPath xPath = XPathFactory.newInstance().newXPath();
 
 		try {
@@ -161,7 +177,7 @@ public class UserAdminHelper {
 
 			logger.debug("From fbuserXml, fbUserId=" + uid + ", firstName=" + firstName + ", lastName=" + lastName);
 
-			LDAPUserIdentity userIdentity = new LDAPUserIdentity();
+			RDBMSUserIdentity userIdentity = new RDBMSUserIdentity();
 			userIdentity.setUid(uid.trim());
 			userIdentity.setUsername(username.trim());
 			userIdentity.setFirstName(firstName.trim());
@@ -189,7 +205,7 @@ public class UserAdminHelper {
 	}
 
 
-	public void addDefaultWhydahUserRole(LDAPUserIdentity userIdentity) {
+	public void addDefaultWhydahUserRole(RDBMSUserIdentity userIdentity) {
 		UserApplicationRoleEntry role = new UserApplicationRoleEntry();
 
 		role.setUserId(userIdentity.getUid());
@@ -202,7 +218,7 @@ public class UserAdminHelper {
 		addDefaultRole(userIdentity, role);
 	}
 
-	public void addDefaultRoles(LDAPUserIdentity userIdentity, String roleValue) {
+	public void addDefaultRoles(RDBMSUserIdentity userIdentity, String roleValue) {
 
 		if (roleValue.indexOf("netIQAccessToken") > 0) {
 			addDefaultNetIQRole(userIdentity);
@@ -215,7 +231,7 @@ public class UserAdminHelper {
 		}
 	}
 
-	private void addDefaultNetIQRole(LDAPUserIdentity userIdentity) {
+	private void addDefaultNetIQRole(RDBMSUserIdentity userIdentity) {
 		UserApplicationRoleEntry role;
 		role = new UserApplicationRoleEntry();
 		role.setUserId(userIdentity.getUid());
@@ -227,7 +243,7 @@ public class UserAdminHelper {
 		addDefaultRole(userIdentity, role);
 	}
 
-	private void addDefaultFacebookRole(LDAPUserIdentity userIdentity, String roleValue) {
+	private void addDefaultFacebookRole(RDBMSUserIdentity userIdentity, String roleValue) {
 		UserApplicationRoleEntry role;
 		role = new UserApplicationRoleEntry();
 		role.setUserId(userIdentity.getUid());
@@ -239,7 +255,7 @@ public class UserAdminHelper {
 		addDefaultRole(userIdentity, role);
 	}
 	
-	private void addDefaultAzureActiveDirectoryRole(LDAPUserIdentity userIdentity, String roleValue) {
+	private void addDefaultAzureActiveDirectoryRole(RDBMSUserIdentity userIdentity, String roleValue) {
 		UserApplicationRoleEntry role;
 		role = new UserApplicationRoleEntry();
 		role.setUserId(userIdentity.getUid());
@@ -251,7 +267,7 @@ public class UserAdminHelper {
 		addDefaultRole(userIdentity, role);
 	}
 
-	private void addDefaultRole(LDAPUserIdentity userIdentity, UserApplicationRoleEntry role) {
+	private void addDefaultRole(RDBMSUserIdentity userIdentity, UserApplicationRoleEntry role) {
 		logger.debug("Adding Role: {}", role);
 
 		if (userApplicationRoleEntryDao.hasRole(userIdentity.getUid(), role)) {

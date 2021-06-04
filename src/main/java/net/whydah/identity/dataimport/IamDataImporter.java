@@ -5,8 +5,14 @@ import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.application.search.LuceneApplicationIndexer;
 import net.whydah.identity.audit.AuditLogDao;
+import net.whydah.identity.organization.OrganizationDao;
+import net.whydah.identity.organization.OrganizationRepository;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
+import net.whydah.identity.user.role.UserApplicationRoleEntryRepository;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
@@ -34,6 +40,10 @@ public class IamDataImporter {
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private final ConstrettoConfiguration config;
 
+    private final UserApplicationRoleEntryRepository userApplicationRoleEntryRepository;
+    private final OrganizationRepository organizationRepository;
+    private final RDBMSLdapUserIdentityRepository userIdentityRepository;
+    private final BCryptService bCryptService;
 
     private String applicationsImportSource;
     private String organizationsImportSource;
@@ -50,6 +60,7 @@ public class IamDataImporter {
         this.dataSource = dataSource;
         this.queryRunner = new QueryRunner(dataSource);
         this.userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
+        this.userApplicationRoleEntryRepository = new UserApplicationRoleEntryRepository(userApplicationRoleEntryDao);
 
         this.config = configuration;
 
@@ -63,6 +74,13 @@ public class IamDataImporter {
         this.roleMappingImportSource = configuration.evaluateToString("import.rolemappingsource");
 
         this.ldapUserIdentityDao = initLdapUserIdentityDao(ldapProperties);
+
+        OrganizationDao organizationDao = new OrganizationDao(dataSource);
+        this.organizationRepository = new OrganizationRepository(organizationDao);
+
+        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+        this.bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
+        this.userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
     }
 
 
@@ -79,7 +97,8 @@ public class IamDataImporter {
         InputStream rmis = null;
         try {
             rmis = openInputStream("RoleMappings", roleMappingImportSource);
-            new RoleMappingImporter(userApplicationRoleEntryDao).importRoleMapping(rmis);
+            RoleMappingImporter roleMappingImporter = new RoleMappingImporter(userApplicationRoleEntryRepository);
+            roleMappingImporter.importRoleMapping(rmis);
         } catch (Exception e) {
             log.error("Error in importing roles", e);
         } finally {
@@ -92,7 +111,8 @@ public class IamDataImporter {
         try {
             uis = openInputStream("Users", userImportSource);
             NIOFSDirectory usersIndex = createDirectory(luceneUsersDir);
-            new WhydahUserIdentityImporter(ldapUserIdentityDao, usersIndex).importUsers(uis);
+            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(ldapUserIdentityDao, userIdentityRepository, usersIndex, bCryptService);
+            userIdentityImporter.importUsers(uis);
         } catch (Exception e) {
             log.error("Error in importing users", e);
         } finally {
@@ -104,7 +124,8 @@ public class IamDataImporter {
         InputStream ois = null;
         try {
             ois = openInputStream("Organizations", organizationsImportSource);
-            new OrganizationImporter(queryRunner).importOrganizations(ois);
+            OrganizationImporter organizationImporter = new OrganizationImporter(organizationRepository);
+            organizationImporter.importOrganizations(ois);
         } catch (Exception e) {
             log.error("Error in importing organizations", e);
         } finally {
@@ -175,6 +196,11 @@ public class IamDataImporter {
     //expose for test
     LdapUserIdentityDao getLdapUserIdentityDao() {
         return ldapUserIdentityDao;
+    }
+
+    // expose for test
+    RDBMSLdapUserIdentityRepository getUserIdentityRepository() {
+        return userIdentityRepository;
     }
 
     UserApplicationRoleEntryDao getUserApplicationRoleEntryDao() {

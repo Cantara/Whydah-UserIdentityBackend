@@ -52,8 +52,8 @@ public class ApplicationService {
     //used by ApplicationImporter, should be remove later
     public Application create(String applicationId, Application application) {
         application.setId(applicationId);
-        int numRowsAffected = applicationDao.create(application);
-        if(numRowsAffected>0) {
+        boolean success = applicationDao.create(application);
+        if(success) {
         	luceneApplicationIndexer.addToIndex(application);
         }
         audit(ActionPerformed.ADDED, application.getId() + ", " + application.getName());

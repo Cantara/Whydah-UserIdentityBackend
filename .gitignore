@@ -16,7 +16,14 @@ target/
 /.project
 /.classpath
 
+# OS filetypes
+.DS_store
+
+
 /bootstrapdata
 /lucene
 /useridentitybackend_override.properties
-/data/
+/data
+
+config/
+config_examples/

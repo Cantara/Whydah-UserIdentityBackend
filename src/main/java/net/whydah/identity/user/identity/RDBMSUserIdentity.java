@@ -1,5 +1,8 @@
 package net.whydah.identity.user.identity;
 
+import at.favre.lib.bytes.Bytes;
+import at.favre.lib.crypto.bcrypt.BCrypt;
+import at.favre.lib.crypto.bcrypt.IllegalBCryptFormatException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import net.whydah.sso.ddd.model.customer.FirstName;
 import net.whydah.sso.ddd.model.customer.LastName;
@@ -9,7 +12,6 @@ import net.whydah.sso.ddd.model.user.PersonRef;
 import net.whydah.sso.ddd.model.user.UID;
 import net.whydah.sso.ddd.model.user.UserName;
 import net.whydah.sso.user.types.UserIdentity;
-import org.apache.directory.api.ldap.model.schema.syntaxCheckers.TelephoneNumberSyntaxChecker;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -18,24 +20,23 @@ import org.slf4j.LoggerFactory;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.util.StringJoiner;
 
 /**
- * A class representing the identity of a User - backed by LDAP scheme.
- * See getLdapAttributes in LDAPHelper for mapping to LDAP attributes.
+ *
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LDAPUserIdentity extends UserIdentity implements Serializable {
+public class RDBMSUserIdentity extends UserIdentity implements Serializable {
     public static final String UID = "uid";
-    private static final Logger logger = LoggerFactory.getLogger(LDAPUserIdentity.class);
+    private static final Logger logger = LoggerFactory.getLogger(RDBMSUserIdentity.class);
     private static final long serialVersionUID = 1;
-    private static final TelephoneNumberSyntaxChecker telephoneNumberSyntaxChecker = new TelephoneNumberSyntaxChecker();
-    //private String uid;
 
-    public LDAPUserIdentity() {
+    public RDBMSUserIdentity() {
     }
 
-    public LDAPUserIdentity(String uid, String username, String firstName, String lastName, String email, String password,
-                            String cellPhone, String personRef) {
+    public RDBMSUserIdentity(String uid, String username, String firstName, String lastName, String email, String password,
+                             String cellPhone, String personRef) {
         this.uid = new UID(uid);
         this.username = new UserName(username != null ? username : email);
         this.firstName = new FirstName(firstName);
@@ -46,7 +47,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         setPassword(password);
     }
 
-    public LDAPUserIdentity(UserIdentity userIdentity, String password) {
+    public RDBMSUserIdentity(UserIdentity userIdentity, String password) {
         this.uid = new UID(userIdentity.getUid());
         this.username = new UserName((userIdentity.getUsername() != null ? userIdentity.getUsername() : userIdentity.getEmail()));
         this.firstName = new FirstName(userIdentity.getFirstName());
@@ -58,10 +59,14 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
     }
 
     protected transient Password password;
-    protected transient String hashedPassword;
+    protected transient String passwordBCrypt;
 
     public String getPassword() {
-        return password != null ? password.getInput() : hashedPassword;
+        return password != null ? password.getInput() : null;
+    }
+
+    public String getPasswordBCrypt() {
+        return passwordBCrypt;
     }
 
     public String getCellPhone() {
@@ -71,64 +76,44 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
     public void setPassword(String password) {
         if (password == null) {
             this.password = null;
-            this.hashedPassword = null;
+            this.passwordBCrypt = null;
             return;
         }
-        if (password.startsWith("{SSHA}")) {
-            this.hashedPassword = password;
-        } else {
+        byte[] passwordBytes = Bytes.from(password, StandardCharsets.UTF_8).array();
+        try {
+            BCrypt.HashData bcryptHashData = BCrypt.Version.VERSION_2A.parser.parse(passwordBytes);
+            this.passwordBCrypt = password;
+        } catch (IllegalBCryptFormatException e) {
             this.password = new Password(password);
         }
     }
 
-//    public void validate() throws InvalidUserIdentityFieldException {
-//        validateSetAndMinimumLength(UID, uid, 2);
-//        validateSetAndMinimumLength("username", username.getInput(), 3);
-//
-//        validateEmail();
-//
-//        //Printable string (alphabetic, digits, ', (, ), +, ,, -, ., /, :, ?, and space) and "
-//        //http://pic.dhe.ibm.com/infocenter/zvm/v6r3/index.jsp?topic=%2Fcom.ibm.zvm.v630.kldl0%2Fkldl023.htm
-//        if (cellPhone != null && !telephoneNumberSyntaxChecker.isValidSyntax(cellPhone)) {
-//            throw new InvalidUserIdentityFieldException("cellPhone", cellPhone);
-//        }
-//
-//        // valid
-//    }
-//
-//    private void validateSetAndMinimumLength(String key, String value, int minLength) {
-//        if (value == null || value.length() < minLength) {
-//            throw new InvalidUserIdentityFieldException(key, value);
-//        }
-//    }
-
-
-//    private void validateEmail() {
-//        if (email == null || email.length() < 5) {
-//            throw new InvalidUserIdentityFieldException("email", email);
-//        }
-//
-//        InternetAddress internetAddress = new InternetAddress();
-//        internetAddress.setAddress(email);
-//        try {
-//            internetAddress.validate();
-//        } catch (AddressException e) {
-//            throw new InvalidUserIdentityFieldException("email", email);
-//        }
-//    }
+    public void setPasswordBCrypt(String passwordBCrypt) {
+        if (passwordBCrypt == null) {
+            this.passwordBCrypt = null;
+            return;
+        }
+        byte[] passwordBytes = Bytes.from(passwordBCrypt, StandardCharsets.UTF_8).array();
+        try {
+            BCrypt.HashData bcryptHashData = BCrypt.Version.VERSION_2A.parser.parse(passwordBytes); // verify that bcrypt-string is well-formed
+            this.passwordBCrypt = passwordBCrypt;
+        } catch (IllegalBCryptFormatException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
     @Override
     public String toString() {
-        return "LDAPUserIdentity{" +
-                "uid='" + uid + '\'' +
-                ", username='" + username + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", personRef='" + personRef + '\'' +
-                ", email='" + email + '\'' +
-                ", cellPhone='" + cellPhone + '\'' +
-                '}';
+        return new StringJoiner(", ", RDBMSUserIdentity.class.getSimpleName() + "[", "]")
+                .add("uid=" + uid)
+                .add("username=" + username)
+                .add("firstName=" + firstName)
+                .add("lastName=" + lastName)
+                .add("personRef=" + personRef)
+                .add("email=" + email)
+                .add("cellPhone=" + cellPhone)
+                .toString();
     }
 
     @Override
@@ -140,7 +125,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
             return false;
         }
 
-        LDAPUserIdentity that = (LDAPUserIdentity) o;
+        RDBMSUserIdentity that = (RDBMSUserIdentity) o;
 
         if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
             return false;
@@ -183,9 +168,9 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.uid = new UID(uid);
     }
 
-    public static LDAPUserIdentity fromJson(String userJson) {
+    public static RDBMSUserIdentity fromJson(String userJson) {
         try {
-            LDAPUserIdentity userIdentity = new LDAPUserIdentity();
+            RDBMSUserIdentity userIdentity = new RDBMSUserIdentity();
 
             JSONObject jsonobj = new JSONObject(userJson);
 
@@ -230,18 +215,5 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         }
         return email;
     }
-    /*
-    private static String getValidLDAPPhoneNumber(String text){
-        if (text == null) {
-            return null;
-        }
 
-        text = text.replaceAll(" +", "");
-        if (text != null && Pattern.matches("(d\\+)?([+0-9]*)", text) == true && text.length() > 7) {
-            return text;
-        }
-
-        return null;
-    }
-    */
 }
