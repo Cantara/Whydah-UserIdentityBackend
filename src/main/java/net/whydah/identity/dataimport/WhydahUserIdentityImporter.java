@@ -1,5 +1,6 @@
 package net.whydah.identity.dataimport;
 
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
@@ -37,12 +38,15 @@ public class WhydahUserIdentityImporter {
     private final RDBMSLdapUserIdentityRepository userIdentityRepository;
 
     public LuceneUserIndexer luceneIndexer;
+    private final BCryptService bCryptService;
 
     @Autowired
-    public WhydahUserIdentityImporter(LdapUserIdentityDao ldapUserIdentityDao, RDBMSLdapUserIdentityRepository userIdentityRepository, Directory index) throws IOException {
+    public WhydahUserIdentityImporter(LdapUserIdentityDao ldapUserIdentityDao, RDBMSLdapUserIdentityRepository
+            userIdentityRepository, Directory index, BCryptService bCryptService) throws IOException {
         this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.userIdentityRepository = userIdentityRepository;
         this.luceneIndexer = new LuceneUserIndexer(index);
+        this.bCryptService = bCryptService;
     }
     
     public void importUsers(InputStream userImportSource) {
@@ -136,7 +140,7 @@ public class WhydahUserIdentityImporter {
         try {
             List<UserIdentity> userIdentities = new LinkedList<>();
             for (LDAPUserIdentity userIdentity : users) {
-                UserIdentityConverter converter = new UserIdentityConverter();
+                UserIdentityConverter converter = new UserIdentityConverter(bCryptService);
                 RDBMSUserIdentity rdbmsUserIdentity = converter.convertFromLDAPUserIdentity(userIdentity);
 
                 boolean added = userIdentityRepository.addUserIdentity(rdbmsUserIdentity);

@@ -37,10 +37,9 @@ import static org.testng.Assert.assertEquals;
 
 
 /**
+ * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 02/04/14
  * @// TODO: 11/04/2021 kiversen - candidate for deletion when ldap is retired
  * @see UserIdentityServiceV2
- *
- * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 02/04/14
  */
 public class UIBUserIdentityServiceTest {
     private static final Logger log = LoggerFactory.getLogger(UIBUserIdentityServiceTest.class);
@@ -48,6 +47,8 @@ public class UIBUserIdentityServiceTest {
 
     private static LdapUserIdentityDao ldapUserIdentityDao;
     private static RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
+    private static BCryptService bCryptService;
+    private static RDBMSLdapUserIdentityRepository rdbmsLdapUserIdentityRepository;
     private static PasswordGenerator passwordGenerator;
     private static LuceneUserIndexer luceneIndexer;
     private static UserAdminHelper userAdminHelper;
@@ -96,12 +97,15 @@ public class UIBUserIdentityServiceTest {
 
         rdbmsUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
 
+        bCryptService = new BCryptService(config.evaluateToString("userdb.password.pepper"), config.evaluateToInt("userdb.password.bcrypt.preferredcost"));
+        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, config);
+
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
 
         index = new NIOFSDirectory(Paths.get(new File(luceneUsersDir).getPath()));
         luceneIndexer = new LuceneUserIndexer(index);
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, rdbmsUserIdentityDao, luceneIndexer, auditLogDao, userApplicationRoleEntryDao, config);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, rdbmsUserIdentityDao, luceneIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, config);
         passwordGenerator = new PasswordGenerator();
     }
 
@@ -112,7 +116,7 @@ public class UIBUserIdentityServiceTest {
         }
 
         try {
-            if(!dataSource.isClosed()) {
+            if (!dataSource.isClosed()) {
                 dataSource.close();
             }
         } catch (SQLException e) {
@@ -134,7 +138,10 @@ public class UIBUserIdentityServiceTest {
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(username);
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
         assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus(), "Expected ConflictException because user should already exist.");
     }
@@ -159,7 +166,10 @@ public class UIBUserIdentityServiceTest {
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(userIdentity.getUsername());
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
 
     }
 
@@ -175,7 +185,10 @@ public class UIBUserIdentityServiceTest {
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(username);
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
         assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus(), "Expected ConflictException because user should already exist.");
     }
@@ -200,7 +213,10 @@ public class UIBUserIdentityServiceTest {
 
         UserIdentity fromLdap = userIdentityService.getUserIdentity(userIdentity.getUsername());
 
-        assertEquals(userIdentity, fromLdap);
+        UserIdentityConverter identityConverter = new UserIdentityConverter(bCryptService);
+        LDAPUserIdentity expectedLdapIdentity = identityConverter.convertFromRDBMSUserIdentity(userIdentity);
+
+        assertEquals(fromLdap, expectedLdapIdentity);
         stop();
         setUp();
         UserIdentityService userIdentityService2 =

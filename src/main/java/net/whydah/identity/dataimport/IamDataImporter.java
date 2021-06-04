@@ -7,6 +7,7 @@ import net.whydah.identity.application.search.LuceneApplicationIndexer;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.organization.OrganizationDao;
 import net.whydah.identity.organization.OrganizationRepository;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
@@ -42,6 +43,7 @@ public class IamDataImporter {
     private final UserApplicationRoleEntryRepository userApplicationRoleEntryRepository;
     private final OrganizationRepository organizationRepository;
     private final RDBMSLdapUserIdentityRepository userIdentityRepository;
+    private final BCryptService bCryptService;
 
     private String applicationsImportSource;
     private String organizationsImportSource;
@@ -77,7 +79,8 @@ public class IamDataImporter {
         this.organizationRepository = new OrganizationRepository(organizationDao);
 
         RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        this.userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, configuration);
+        this.bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
+        this.userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
     }
 
 
@@ -108,7 +111,7 @@ public class IamDataImporter {
         try {
             uis = openInputStream("Users", userImportSource);
             NIOFSDirectory usersIndex = createDirectory(luceneUsersDir);
-            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(ldapUserIdentityDao, userIdentityRepository, usersIndex);
+            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(ldapUserIdentityDao, userIdentityRepository, usersIndex, bCryptService);
             userIdentityImporter.importUsers(uis);
         } catch (Exception e) {
             log.error("Error in importing users", e);

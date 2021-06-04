@@ -50,6 +50,7 @@ public class UserIdentityServiceV2Test {
     private static String luceneUsersDirectory;
 
     private static UserIdentityServiceV2 userIdentityServiceV2;
+    private static BCryptService bCryptService;
 
     private String password = new PasswordGenerator().generate();
 
@@ -89,10 +90,12 @@ public class UserIdentityServiceV2Test {
         LuceneUserIndexer luceneUserIndexer= new LuceneUserIndexer(index);
 
         RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, configuration);
+
+        bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
+        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
 
         PasswordGenerator passwordGenerator = new PasswordGenerator();
-        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch);
+        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch, bCryptService);
     }
 
     @Before
@@ -232,15 +235,15 @@ public class UserIdentityServiceV2Test {
 
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
-        assertTrue(BCryptUtils.verifyPassword(fromDB.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+        assertTrue(bCryptService.verifyPassword(fromDB.getPasswordBCrypt(), userIdentityExtension.getPassword()));
 
         String newPassword = passwordGenerator.generate();
         userIdentityServiceV2.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
 
         RDBMSUserIdentity fromDBWithChangedPassword = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
-        assertFalse(BCryptUtils.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), userIdentityExtension.getPassword()));
-        assertTrue(BCryptUtils.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), newPassword));
+        assertFalse(bCryptService.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+        assertTrue(bCryptService.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), newPassword));
 
         assertNotEquals(newPassword, userIdentityExtension.getPassword());
         assertNotEquals(fromDB.getPasswordBCrypt(), fromDBWithChangedPassword.getPasswordBCrypt());

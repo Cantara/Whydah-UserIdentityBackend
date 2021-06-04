@@ -12,6 +12,7 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregateService;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapAuthenticator;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
@@ -120,6 +121,8 @@ public class UserAuthenticationEndpointTest {
         String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
         String readonly = configuration.evaluateToString("ldap.primary.readonly");
 
+        BCryptService bCryptService = new BCryptService("57hruioqe", 4);
+
         LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
         LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute);
 
@@ -127,11 +130,11 @@ public class UserAuthenticationEndpointTest {
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, luceneUserIndexer, null);
 
         RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, configuration);
+        RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
         LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
-        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, searcher);
+        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, searcher, bCryptService);
 
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, configuration);
+        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, configuration);
 
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
@@ -218,7 +221,7 @@ public class UserAuthenticationEndpointTest {
 
         UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userIdentityServiceV2, userApplicationRoleEntryDao,
                 applicationService, null, null);
-        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService, userIdentityServiceV2);
+        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService, userIdentityServiceV2, new BCryptService("iHI458at4", 4));
 
         String roleValue = "roleValue";
         Response response = resource.createAndAuthenticateUser(newIdentity, roleValue, false);

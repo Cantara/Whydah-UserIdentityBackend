@@ -6,6 +6,7 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityConverter;
@@ -53,14 +54,18 @@ public class PasswordResource2 {
     private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserAggregateService userAggregateService;
     private final ObjectMapper objectMapper;
+    private final BCryptService bCryptService;
 
     @Autowired
-    public PasswordResource2(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserAggregateService userAggregateService, ObjectMapper objectMapper) {
+    public PasswordResource2(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2,
+                             UserAggregateService userAggregateService, ObjectMapper objectMapper,
+                             BCryptService bCryptService) {
         this.userIdentityService = userIdentityService;
         this.userIdentityServiceV2 = userIdentityServiceV2;
         this.userAggregateService = userAggregateService;
 
         this.objectMapper = objectMapper;
+        this.bCryptService = bCryptService;
     }
 
 
@@ -85,7 +90,7 @@ public class PasswordResource2 {
         try {
             LDAPUserIdentity userIdentity = userIdentityService.getUserIdentityForUid(uid);
             if (user == null && userIdentity != null) {
-                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
                 user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
@@ -162,7 +167,7 @@ public class PasswordResource2 {
         try {
             LDAPUserIdentity userIdentity = userIdentityService.getUserIdentityForUid(uid);
             if (user == null && userIdentity != null) {
-                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
                 user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {
@@ -257,7 +262,7 @@ public class PasswordResource2 {
         try {
             LDAPUserIdentity userIdentity = userIdentityService.getUserIdentity(username);
             if (user == null && userIdentity != null) {
-                UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
                 user = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             }
         } catch (Exception e) {

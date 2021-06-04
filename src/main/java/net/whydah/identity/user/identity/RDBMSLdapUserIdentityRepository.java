@@ -12,11 +12,13 @@ public class RDBMSLdapUserIdentityRepository {
     private static final Logger log = LoggerFactory.getLogger(RDBMSLdapUserIdentityRepository.class);
 
     private final RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
+    private final BCryptService bCryptService;
     private final boolean enableRDBMSResource;
 
     @Autowired
-    public RDBMSLdapUserIdentityRepository(RDBMSLdapUserIdentityDao rdbmsUserIdentityDao, ConstrettoConfiguration config) {
+    public RDBMSLdapUserIdentityRepository(RDBMSLdapUserIdentityDao rdbmsUserIdentityDao, BCryptService bCryptService, ConstrettoConfiguration config) {
         this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
+        this.bCryptService = bCryptService;
         this.enableRDBMSResource = config.evaluateToBoolean("ldap.rdbms.enabled");
         log.info("RDBMS for user identities enabled: " + enableRDBMSResource);
     }
@@ -33,7 +35,7 @@ public class RDBMSLdapUserIdentityRepository {
                     return false;
                 } else {
                     if (userIdentity.getPassword() != null) {
-                        userIdentity.setPasswordBCrypt(BCryptUtils.hash(userIdentity.getPassword()));
+                        userIdentity.setPasswordBCrypt(bCryptService.hash(userIdentity.getPassword()));
                     }
                     boolean success = rdbmsUserIdentityDao.create(userIdentity);
                     if (success) {
@@ -77,8 +79,8 @@ public class RDBMSLdapUserIdentityRepository {
                 }
                 return null;
             }
-            if (BCryptUtils.verifyPassword(bcryptHash, password)) {
-                String updatedHash = BCryptUtils.updatePasswordHash(bcryptHash, password);
+            if (bCryptService.verifyPassword(bcryptHash, password)) {
+                String updatedHash = bCryptService.updatePasswordHash(bcryptHash, password);
                 if (!updatedHash.equals(bcryptHash)) {
                     // update with a stronger hash in database
                     rdbmsUserIdentityDao.updatePassword(username, updatedHash);

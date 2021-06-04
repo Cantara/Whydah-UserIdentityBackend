@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.user.InvalidRoleModificationException;
 import net.whydah.identity.user.NonExistentRoleException;
 import net.whydah.identity.user.UserAggregateService;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.InvalidUserIdentityFieldException;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
@@ -49,6 +50,7 @@ public class UserResource {
     private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserAggregateService userAggregateService;
     private final ObjectMapper mapper;
+    private final BCryptService bCryptService;
 
     private final boolean rdbmsEnabled;
 
@@ -58,11 +60,13 @@ public class UserResource {
     private UriInfo uriInfo;
 
     @Autowired
-    public UserResource(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2, UserAggregateService userAggregateService, ObjectMapper mapper) {
+    public UserResource(UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2,
+                        UserAggregateService userAggregateService, ObjectMapper mapper, BCryptService bCryptService) {
         this.userIdentityService = userIdentityService;
         this.userIdentityServiceV2 = userIdentityServiceV2;
         this.userAggregateService = userAggregateService;
         this.mapper = mapper;
+        this.bCryptService = bCryptService;
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.rdbmsEnabled = userIdentityServiceV2.isRDBMSEnabled();
         log.trace("Started: UserResource");
@@ -224,7 +228,7 @@ public class UserResource {
 
 
         if(isRDBMSEnabled()) {
-            UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+            UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
             RDBMSUserIdentity rdbmsUserIdentity = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
             try {
                 userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);

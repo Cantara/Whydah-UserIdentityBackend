@@ -3,7 +3,7 @@ package net.whydah.identity.user.authentication;
 import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
-import net.whydah.identity.user.identity.BCryptUtils;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
@@ -46,6 +46,7 @@ public class UserAdminHelper {
 	private final LuceneUserIndexer luceneIndexer;
 	private final AuditLogDao auditLogDao;
 	private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
+	private final BCryptService bCryptService;
 
 	private String defaultApplicationId;
 	private String defaultApplicationName;
@@ -65,12 +66,14 @@ public class UserAdminHelper {
 	public UserAdminHelper(LdapUserIdentityDao ldapUserIdentityDao, RDBMSLdapUserIdentityDao rdbmsUserIdentityDao,
 						   LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao,
 						   UserApplicationRoleEntryDao userApplicationRoleEntryDao,
+			BCryptService bCryptService,
 			ConstrettoConfiguration configuration) {
 		this.ldapUserIdentityDao = ldapUserIdentityDao;
 		this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
 		this.luceneIndexer = luceneIndexer;
 		this.auditLogDao = auditLogDao;
 		this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
+		this.bCryptService = bCryptService;
 
 		//AppConfig configuration = AppConfig.appConfig;
 		initAddUserDefaults(configuration);
@@ -116,10 +119,13 @@ public class UserAdminHelper {
 			newIdentity.setUid(UUID.randomUUID().toString());
 
 			if (newIdentity.getPassword() != null) {
-				newIdentity.setPasswordBCrypt(BCryptUtils.hash(newIdentity.getPassword()));
+				newIdentity.setPasswordBCrypt(bCryptService.hash(newIdentity.getPassword()));
 			}
 
 			rdbmsUserIdentityDao.create(newIdentity);
+
+			ldapUserIdentityDao.addUserIdentity(newIdentity, newIdentity.getPassword());
+
 			logger.info("addUser - Added new user: {}", username);
 		} catch (Exception e) {
 			logger.error("addUser - Could not create user " + username, e);

@@ -7,6 +7,7 @@ import net.whydah.identity.application.search.LuceneApplicationSearch;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregateService;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LdapAuthenticator;
 import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
@@ -69,6 +70,7 @@ public class UserResourceTest {
     private static LuceneUserSearch luceneUserSearch;
 
     private static ConstrettoConfiguration configuration;
+    private static BCryptService bCryptService;
 
     @BeforeClass
     public static void init() throws Exception {
@@ -101,9 +103,11 @@ public class UserResourceTest {
 
         userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao,  auditLogDao, pwdGenerator, luceneIndexer, luceneUserSearch);
 
+        bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
+
         rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        rdbmsUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, configuration);
-        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, pwdGenerator, luceneIndexer, luceneUserSearch);
+        rdbmsUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
+        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, pwdGenerator, luceneIndexer, luceneUserSearch, bCryptService);
 
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         ApplicationService applicationService = new ApplicationService(null, auditLogDao, luceneApplicationIndexer, luceneApplicationSearcher);
@@ -146,7 +150,7 @@ public class UserResourceTest {
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
         //when(ldapUserIdentityDao.addUserIdentity(any())).thenReturn(true);
 
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -163,7 +167,7 @@ public class UserResourceTest {
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(true);
         when(ldapUserIdentityDao.addUserIdentity(any())).thenReturn(true);
 
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -184,7 +188,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
         /** create useridentity */
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -205,7 +209,7 @@ public class UserResourceTest {
 
         /** create useridentity */
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -242,7 +246,7 @@ public class UserResourceTest {
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
         //when(ldapUserIdentityDao.addUserIdentity(any())).thenReturn(true);
 
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -276,7 +280,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(giveMeTestRDBMSUserIdentity());
 
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         Response addResponse = userResource.addUserIdentity(json);
         assertEquals(addResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -310,7 +314,7 @@ public class UserResourceTest {
 
     private Response addUser(RDBMSUserIdentity rdbmsUserIdentity) throws Exception {
         when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper());
+        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
 
         String uid = rdbmsUserIdentity.getUid();
 

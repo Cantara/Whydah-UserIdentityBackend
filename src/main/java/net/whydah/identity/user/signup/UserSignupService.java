@@ -1,6 +1,7 @@
 package net.whydah.identity.user.signup;
 
 import net.whydah.identity.user.UserAggregateService;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityConverter;
@@ -30,13 +31,16 @@ public class UserSignupService {
     private final UserAggregateService userAggregateService;
     private final UserIdentityService userIdentityService;
     private final UserIdentityServiceV2 userIdentityServiceV2;
+    private final BCryptService bCryptService;
 
 
     @Autowired
-    public UserSignupService(UserAggregateService userAggregateService, UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2) {
+    public UserSignupService(UserAggregateService userAggregateService, UserIdentityService userIdentityService,
+                             UserIdentityServiceV2 userIdentityServiceV2, BCryptService bCryptService) {
         this.userAggregateService = userAggregateService;
         this.userIdentityService = userIdentityService;
         this.userIdentityServiceV2 = userIdentityServiceV2;
+        this.bCryptService = bCryptService;
     }
 
 
@@ -53,7 +57,7 @@ public class UserSignupService {
                     LDAPUserIdentity ldapUserIdentity;
                     ldapUserIdentity = userIdentityService.addUserIdentityWithGeneratedPassword(userIdentityExtension);
                     if (rdbmsUserIdentity == null) {
-                        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+                        UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
                         rdbmsUserIdentity = userIdentityConverter.convertFromLDAPUserIdentity(ldapUserIdentity);
                         String json = UserAggregateMapper.toJson(userAggregate);
                         log.warn(String.format("Created LDAP user, but not RDBMS user! \njson=%s", json));

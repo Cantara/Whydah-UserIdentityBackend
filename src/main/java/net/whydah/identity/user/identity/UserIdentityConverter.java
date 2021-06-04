@@ -4,13 +4,15 @@ package net.whydah.identity.user.identity;
  * Helperclass during transition from LDAP to DB
  * Class should be removed when transition is completed.
  */
-public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUserIdentity> {
+public class UserIdentityConverter {
 
-    public UserIdentityConverter(){
-        super(UserIdentityConverter::convertToRDBMSUserIdentity, UserIdentityConverter::convertToLDAPUserIdentity);
+    private final BCryptService bCryptService;
+
+    public UserIdentityConverter(BCryptService bCryptService) {
+        this.bCryptService = bCryptService;
     }
 
-    private static RDBMSUserIdentity convertToRDBMSUserIdentity(LDAPUserIdentity ldap) {
+    public RDBMSUserIdentity convertFromLDAPUserIdentity(LDAPUserIdentity ldap) {
         if (ldap == null) {
             return null;
         }
@@ -18,11 +20,10 @@ public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUser
         String hashedPassword;
         if (password == null) {
             hashedPassword = null; // password not set in ldap
-        }
-        else if (password.startsWith("{SSHA}")) {
+        } else if (password.startsWith("{SSHA}")) {
             hashedPassword = null; // Already uses another hashing algorithm, do not set password/hash
         } else {
-            hashedPassword = BCryptUtils.hash(password);
+            hashedPassword = bCryptService.hash(password);
         }
         final RDBMSUserIdentity userIdentity = new RDBMSUserIdentity(
                 ldap.getUid(),
@@ -37,7 +38,7 @@ public class UserIdentityConverter extends Converter<LDAPUserIdentity, RDBMSUser
         return userIdentity;
     }
 
-    private static LDAPUserIdentity convertToLDAPUserIdentity(RDBMSUserIdentity userIdentity) {
+    public LDAPUserIdentity convertFromRDBMSUserIdentity(RDBMSUserIdentity userIdentity) {
         if (userIdentity == null) {
             return null;
         }

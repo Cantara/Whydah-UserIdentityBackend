@@ -43,18 +43,20 @@ public class UserIdentityServiceV2 {
 
     private final LuceneUserIndexer luceneIndexer;
     private final LuceneUserSearch searcher;
+    private final BCryptService bCryptService;
     private static String temporary_pwd=null;
 
     private final RDBMSLdapUserIdentityRepository userIdentityRepository;
 
     @Autowired
     public UserIdentityServiceV2(RDBMSLdapUserIdentityRepository userIdentityRepository, AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
-                                 LuceneUserIndexer luceneIndexer, LuceneUserSearch searcher) {
+                                 LuceneUserIndexer luceneIndexer, LuceneUserSearch searcher, BCryptService bCryptService) {
         this.userIdentityRepository = userIdentityRepository;
         this.auditLogDao = auditLogDao;
         this.passwordGenerator = passwordGenerator;
         this.luceneIndexer = luceneIndexer;
         this.searcher = searcher;
+        this.bCryptService = bCryptService;
         HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
     }
 
@@ -129,7 +131,7 @@ public class UserIdentityServiceV2 {
 
 
     public void changePassword(String username, String userUid, String newPassword) {
-        String bcryptString = BCryptUtils.BCRYPT_HASHER.hashToString(BCryptUtils.PREFERRED_BCRYPT_COST, newPassword.toCharArray());
+        String bcryptString = bCryptService.hash(newPassword);
         userIdentityRepository.changePassword(username, bcryptString);
         audit(userUid,ActionPerformed.MODIFIED, "password", userUid);
     }
@@ -213,7 +215,7 @@ public class UserIdentityServiceV2 {
     }
 
     public void updateUserIdentityForUid(String uid, LDAPUserIdentity newUserIdentity) {
-        UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+        UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
         RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLDAPUserIdentity(newUserIdentity);
 
         userIdentityRepository.updateUserIdentityForUid(uid, userIdentity);

@@ -3,6 +3,7 @@ package net.whydah.identity.user.authentication;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.user.UserAggregateService;
+import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityConverter;
 import net.whydah.identity.user.identity.UserIdentityService;
@@ -55,7 +56,8 @@ public class UserAuthenticationEndpoint {
     private final UserAdminHelper userAdminHelper;
     private final UserIdentityService userIdentityService;
     private final UserIdentityServiceV2 userIdentityServiceV2;
-    private final UserIdentityConverter userIdentityConverter = new UserIdentityConverter();
+    private final BCryptService bCryptService;
+    private final UserIdentityConverter userIdentityConverter;
 
     //private final LuceneUserIndexer luceneUserIndexer;
     //private final String hostname;
@@ -65,13 +67,16 @@ public class UserAuthenticationEndpoint {
 
     @Autowired
     public UserAuthenticationEndpoint(UserAggregateService userAggregateService, UserAdminHelper userAdminHelper,
-                                      UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2) {
+                                      UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2,
+                                      BCryptService bCryptService) {
         this.userAggregateService = userAggregateService;
         this.userAdminHelper = userAdminHelper;
         this.userIdentityService = userIdentityService;
         this.userIdentityServiceV2 = userIdentityServiceV2;
         //this.luceneUserIndexer=luceneUserIndexer;
         //this.hostname = getLocalhostName();
+        this.bCryptService = bCryptService;
+        userIdentityConverter = new UserIdentityConverter(bCryptService);
     }
 
     /**
@@ -111,7 +116,7 @@ public class UserAuthenticationEndpoint {
         try {
             userIdentity = userIdentityServiceV2.authenticate(username, password);
         } catch (Exception e) {
-          log.warn(String.format("User=%s not found in LDAP.", username), e);
+            log.warn(String.format("User=%s not found in LDAP.", username), e);
         }
 
         try {
@@ -119,9 +124,9 @@ public class UserAuthenticationEndpoint {
             if (userIdentity == null && rdbmsUserIdentity != null) {
                 userIdentity = rdbmsUserIdentity;
             }
-          } catch (Exception e) {
+        } catch (Exception e) {
             log.warn(String.format("User=%s not found in DB.", username), e);
-          }
+        }
 
 
         if (userIdentity == null) {
