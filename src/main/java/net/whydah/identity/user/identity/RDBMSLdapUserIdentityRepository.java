@@ -74,7 +74,7 @@ public class RDBMSLdapUserIdentityRepository {
             if (bcryptHash == null) {
                 log.warn("User with username {} has stored the password as plaintext, please hash password using bcrypt");
                 String storedPassword = userIdentity.getPassword();
-                if (storedPassword.equals(password)) {
+                if (storedPassword != null && storedPassword.equals(password)) {
                     return userIdentity;
                 }
                 return null;
