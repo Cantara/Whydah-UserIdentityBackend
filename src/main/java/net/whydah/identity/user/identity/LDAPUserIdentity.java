@@ -22,9 +22,8 @@ import java.io.Serializable;
 /**
  * A class representing the identity of a User - backed by LDAP scheme.
  * See getLdapAttributes in LDAPHelper for mapping to LDAP attributes.
- *
  */
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LDAPUserIdentity extends UserIdentity implements Serializable {
     public static final String UID = "uid";
     private static final Logger logger = LoggerFactory.getLogger(LDAPUserIdentity.class);
@@ -44,11 +43,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.personRef = new PersonRef(personRef);
         this.email = new Email(email);
         setCellPhone(cellPhone);
-        if (password.startsWith("{SSHA}")) {
-            this.hashedPassword = password;
-        } else {
-            this.password = new Password(password);
-        }
+        setPassword(password);
     }
 
     public LDAPUserIdentity(UserIdentity userIdentity, String password) {
@@ -59,26 +54,18 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.personRef = new PersonRef(userIdentity.getPersonRef());
         this.email = new Email(userIdentity.getEmail());
         setCellPhone(userIdentity.getCellPhone());
-        if (password.startsWith("{SSHA}")) {
-            this.hashedPassword = password;
-        } else {
-            this.password = new Password(password);
-        }
+        setPassword(password);
     }
 
     protected transient Password password;
     protected transient String hashedPassword;
 
     public String getPassword() {
-        return password!=null?password.getInput():null;
-    }
-
-    public String getHashedPassword() {
-        return hashedPassword;
+        return password != null ? password.getInput() : hashedPassword;
     }
 
     public String getCellPhone() {
-        return this.cellPhone!=null?this.cellPhone.getInput():null;
+        return this.cellPhone != null ? this.cellPhone.getInput() : null;
     }
 
     public void setPassword(String password) {
@@ -92,10 +79,6 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         } else {
             this.password = new Password(password);
         }
-    }
-
-    public void setHashedPassword(String hashedPassword) {
-        this.hashedPassword = hashedPassword;
     }
 
 //    public void validate() throws InvalidUserIdentityFieldException {
@@ -193,7 +176,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
     }
 
     public String getUid() {
-        return uid!=null?uid.getId():null;
+        return uid != null ? uid.getId() : null;
     }
 
     public void setUid(String uid) {
@@ -209,7 +192,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
             String username = (jsonobj.getString("username").length() > 2) ? jsonobj.getString("username") : jsonobj.getString("email");
 
             String email = jsonobj.getString("email");
-            if (email.contains("+")){
+            if (email.contains("+")) {
                 email = replacePlusWithEmpty(email);
             }
 
@@ -236,12 +219,12 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         }
     }
 
-    private static String replacePlusWithEmpty(String email){
+    private static String replacePlusWithEmpty(String email) {
         String[] words = email.split("[+]");
         if (words.length == 1) {
             return email;
         }
-        email  = "";
+        email = "";
         for (String word : words) {
             email += word;
         }
