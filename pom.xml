@@ -19,10 +19,10 @@
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
         <whydah.admin.sdk.version>2.7.4</whydah.admin.sdk.version>
-        <apache.ds.version>2.0.0-M20</apache.ds.version>
+        <apache.ds.version>2.0.0.AM26</apache.ds.version>
         <api-ldap.version>1.0.0-M30</api-ldap.version><!-- Make sure api-ldap.version is compatible with apache.ds.version -->
         <lucene.version>8.8.0</lucene.version>
-        <jersey.version>2.31</jersey.version>
+        <jersey.version>2.34</jersey.version>
         <jetty.version>9.4.40.v20210413</jetty.version>
         <spring.version>5.2.15.RELEASE</spring.version>
         <slf4j.version>1.7.30</slf4j.version>
@@ -244,7 +244,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20210307</version>
+            <version>20160212</version>
         </dependency>
 
         <dependency>
@@ -277,7 +277,7 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.6.0</version>
+            <version>2.3.2</version>
         </dependency>
 
         
