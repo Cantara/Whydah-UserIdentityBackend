@@ -253,9 +253,11 @@ public class UserAggregateService {
 
     public UserApplicationRoleEntry getUserApplicationRoleEntry(String roleId) {
         UserApplicationRoleEntry role = userApplicationRoleEntryDao.getUserApplicationRoleEntry(roleId);
-        Application application = applicationDao.getApplication(role.getApplicationId());
-        if (application != null) {
-            role.setApplicationName(application.getName());
+        if(role!=null) {
+        	Application application = applicationDao.getApplication(role.getApplicationId());
+        	if (application != null) {
+        		role.setApplicationName(application.getName());
+        	}
         }
         return role;
     }
@@ -274,22 +276,42 @@ public class UserAggregateService {
 
 
     public UserApplicationRoleEntry updateRole(String uid, String roleId, UserApplicationRoleEntry role) {
-        UserApplicationRoleEntry existingUserApplicationRoleEntry = getUserApplicationRoleEntry(roleId);
+    	UserApplicationRoleEntry existingUserApplicationRoleEntry= null;
+    	if(roleId!=null) {
+    		existingUserApplicationRoleEntry = getUserApplicationRoleEntry(roleId);
+    	}
+        if (existingUserApplicationRoleEntry == null) {
+        	List<UserApplicationRoleEntry> roles = getUserApplicationRoleEntries(uid);
+        	for(UserApplicationRoleEntry e : roles) {
+        		if(e.getApplicationId().equals(role.getApplicationId()) && 
+        			e.getRoleName().equalsIgnoreCase(role.getRoleName())) {
+        			existingUserApplicationRoleEntry = e;
+        			break;
+        		}
+        	}
+        }
+        
+        
         if (existingUserApplicationRoleEntry == null) {
             throw new NonExistentRoleException("RoleID does not exist: " + roleId);
         }
-        if (!existingUserApplicationRoleEntry.getId().equals(role.getId())) {
-            throw new InvalidRoleModificationException("Illegal attempt to change uid from " + existingUserApplicationRoleEntry.getId() + " to " + role.getId() + " for roleId " + roleId);
-        }
+      
+//        if (!existingUserApplicationRoleEntry.getId().equals(role.getId())) {
+//            throw new InvalidRoleModificationException("Illegal attempt to change uid from " + existingUserApplicationRoleEntry.getId() + " to " + role.getId() + " for roleId " + roleId);
+//        }
         if (!existingUserApplicationRoleEntry.getApplicationId().equals(role.getApplicationId())) {
             throw new InvalidRoleModificationException("Illegal attempt to change applicationId from " + existingUserApplicationRoleEntry.getApplicationId() + " to " + role.getApplicationId() + " for roleId " + roleId);
         }
-        if (!existingUserApplicationRoleEntry.getOrgName().equals(role.getOrgName())) {
-            throw new InvalidRoleModificationException("Illegal attempt to change organizationName from " + existingUserApplicationRoleEntry.getOrgName() + " to " + role.getOrgName() + " for roleId " + roleId);
-        }
+//        if (!existingUserApplicationRoleEntry.getOrgName().equals(role.getOrgName())) {
+//            throw new InvalidRoleModificationException("Illegal attempt to change organizationName from " + existingUserApplicationRoleEntry.getOrgName() + " to " + role.getOrgName() + " for roleId " + roleId);
+//        }
 
+        role.setApplicationId(existingUserApplicationRoleEntry.getApplicationId());
+        role.setApplicationName(existingUserApplicationRoleEntry.getApplicationName());
+        role.setId(existingUserApplicationRoleEntry.getId());
         role.setUserId(uid);
-        role.setId(roleId);
+        
+        
         userApplicationRoleEntryDao.updateUserRoleValue(role);
 
         //audit(ActionPerformed.MODIFIED, "role", "uid=" + uid + ", appid=" + role.getApplicationId() + ", role=" + jsonrole);

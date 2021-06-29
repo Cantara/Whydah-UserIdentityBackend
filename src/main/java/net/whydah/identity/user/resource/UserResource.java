@@ -388,6 +388,33 @@ public class UserResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
+    
+    @PUT
+    @Path("/{uid}/role")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateRole(@PathParam("uid") String uid, String roleJson) {
+        log.trace("updateRole, uid={}, roleid={}", uid);
+
+        UserApplicationRoleEntry role = UserRoleMapper.fromJson(roleJson);
+
+        try {
+
+            UserApplicationRoleEntry updatedRole = userAggregateService.updateRole(uid, null, role);
+            String json= UserRoleMapper.toJson(updatedRole);
+            return Response.ok(json).build();
+        } catch (NonExistentRoleException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (InvalidRoleModificationException e) {
+            return Response.status(Response.Status.fromStatusCode(422)).entity(e.getMessage()).build();
+        } catch (RuntimeException e) {
+            log.error("updateRole-RuntimeException. {}", roleJson, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    
+   
 
     @DELETE
     @Path("/{uid}/role/{roleid}")

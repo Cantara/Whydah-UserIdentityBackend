@@ -736,5 +736,51 @@
     "orgs": [],
     "isFiltered": false,
     "isSelected": true
+  },
+  {
+    "id": "c4781cf3da23ae2f7f7565b53",
+    "name": "EntraOS Contract Self Administration",
+    "description": "this is for Contract Admin",
+    "company": "Capra",
+    "tags": "",
+    "applicationUrl": "https://github.com/capralifecycle/INN-SPADEMO",
+    "logoUrl": "",
+    "roles": [],
+    "defaultRoleName": "",
+    "organizationNames": [],
+    "defaultOrganizationName": "",
+    "security": {
+      "minSecurityLevel": "0",
+      "minimumDEFCONLevel": "DEFCON5",
+      "maxSessionTimeoutSeconds": "15552000",
+      "allowedIpAddresses": null,
+      "userTokenFilter": true,
+      "whydahUASAccess": false,
+      "secret": "a9f74276e1ff898a710a006f2",
+      "whydahAdmin": false
+    },
+    "supportedUserSessionLevels": [],
+    "acl": [
+      {
+        "applicationId": "c4781cf3da23ae2f7f7565b53",
+        "applicationACLPath": "",
+        "accessRights": [
+          "READ",
+          "SSO_REDIRECT"
+        ]
+      },
+      {
+        "applicationId": "c4781cf3da23ae2f7f7565b53",
+        "applicationACLPath": "",
+        "accessRights": [
+          "READ",
+          "OAUTH2_REDIRECT"
+        ]
+      }
+    ],
+    "minimumApplicationDEFCON": "DEFCON5",
+    "orgs": [],
+    "isFiltered": false,
+    "isSelected": true
   }
 ]
