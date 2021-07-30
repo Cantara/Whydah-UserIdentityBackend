@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -80,7 +81,10 @@ public class LuceneApplicationSearchImpl extends BaseLuceneReader {
                 Document d = searcher.doc(docId);
                 Application application = ApplicationMapper.fromJson(d.get(LuceneApplicationIndexer.FIELD_FULLJSON));
                 log.debug("findApplications- " + application.toString() + " : " + q + ":" + hit.score);
-                result.add(application);
+                Optional<Application> any = result.stream().filter(i -> i.getId().equalsIgnoreCase(application.getId())).findFirst();
+                if(!any.isPresent()) {
+                	result.add(application);
+                }
             }
         } catch (IOException e) {
             log.error("findApplications - Error when searching.", e);
