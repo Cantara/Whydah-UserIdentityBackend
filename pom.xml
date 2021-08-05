@@ -14,7 +14,7 @@
         <developerConnection>scm:git:ssh://git@github.com/cantara/Whydah-UserIdentityBackend.git</developerConnection>
         <connection>scm:git:https://github.com/cantara/Whydah-UserIdentityBackend.git</connection>
         <url>https://wiki.cantara.no/display/whydah/UserIdentityBackend+-+UIB</url>
-      <tag>HEAD</tag>
+      
    </scm>
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
