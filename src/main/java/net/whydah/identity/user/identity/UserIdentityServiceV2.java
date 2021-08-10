@@ -57,7 +57,7 @@ public class UserIdentityServiceV2 {
         this.luceneIndexer = luceneIndexer;
         this.searcher = searcher;
         this.bCryptService = bCryptService;
-        HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
+        HealthResource.setNumberOfUsersDB(userIdentityRepository.countUsers());
     }
 
     public RDBMSUserIdentity authenticate(final String username, final String password) {
@@ -178,7 +178,8 @@ public class UserIdentityServiceV2 {
         try {
             userIdentityRepository.addUserIdentity(userIdentity);
             if(luceneIndexer.addToIndex(userIdentity)) {
-            	HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
+                int usersInDb = userIdentityRepository.countUsers();
+                HealthResource.setNumberOfUsersDB(usersInDb);
             } else {
             	 throw new IllegalArgumentException("addUserIdentity to DB failed for " + userIdentity.toString());
             }
@@ -245,7 +246,7 @@ public class UserIdentityServiceV2 {
     public void deleteUserIdentity(String username) throws RuntimeException {
         luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
         userIdentityRepository.deleteUserIdentity(username);
-        HealthResource.setNumberOfUsersDB(Integer.toString(searcher.getUserIndexSize()));
+        HealthResource.setNumberOfUsersDB(userIdentityRepository.countUsers());
     }
 
     public boolean isRDBMSEnabled() {

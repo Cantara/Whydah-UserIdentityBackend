@@ -19,6 +19,7 @@ public class RDBMSLdapUserIdentityDao {
     private static String UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE id=?";
     private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=?";
     private static String LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password FROM UserIdentity";
+    private static String COUNT_SQL = "SELECT COUNT(id) FROM UserIdentity";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -102,7 +103,7 @@ public class RDBMSLdapUserIdentityDao {
     }
 
     public List<RDBMSUserIdentity> allUsersList() {
-         return jdbcTemplate.query(LIST_SQL, new RDBMSUserIdentityRowMapper());
+        return jdbcTemplate.query(LIST_SQL, new RDBMSUserIdentityRowMapper());
     }
 
     public RDBMSUserIdentity getWithUsername(String username) {
@@ -159,6 +160,18 @@ public class RDBMSLdapUserIdentityDao {
             }
             log.error(String.format("SQL update for user=%s failed. json=\n %s ", uid, json), e);
             return false;
+        }
+    }
+
+    public int countUsers() {
+        try {
+            Integer count = jdbcTemplate.queryForObject(COUNT_SQL, Integer.class);
+            if (count == null) {
+                return 0;
+            }
+            return count;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("userIdentity count failed.", e);
         }
     }
 }

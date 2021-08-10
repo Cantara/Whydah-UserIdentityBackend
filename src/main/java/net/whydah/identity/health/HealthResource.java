@@ -33,7 +33,7 @@ public class HealthResource {
     private static boolean ok = true;
     private static boolean ok_db = true;
     private static long numberOfUsers = 0;
-    private static String numberOfUsers_DB = "0";
+    private static int numberOfUsers_DB = 0;
     private static long numberOfApplications = 0;
 
     private boolean usersRDBMSEnabled = false;
@@ -152,7 +152,7 @@ public class HealthResource {
         HealthResource.numberOfUsers = numberOfUsers;
     }
 
-    public static void setNumberOfUsersDB(String numberOfUsers) {
+    public static void setNumberOfUsersDB(int numberOfUsers) {
         HealthResource.numberOfUsers_DB = numberOfUsers;
     }
 

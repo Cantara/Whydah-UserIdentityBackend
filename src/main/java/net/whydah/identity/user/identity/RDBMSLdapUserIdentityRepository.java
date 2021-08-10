@@ -183,4 +183,11 @@ public class RDBMSLdapUserIdentityRepository {
         }
         return null;
     }
+
+    public int countUsers() {
+        if (isRDBMSEnabled()) {
+            return rdbmsUserIdentityDao.countUsers();
+        }
+        return 0;
+    }
 }
