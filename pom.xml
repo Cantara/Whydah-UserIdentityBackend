@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.whydah.identity</groupId>
     <artifactId>UserIdentityBackend</artifactId>
-     <version>2.7.12-SNAPSHOT</version>
+     <version>2.7.12</version>
     <name>UserIdentityBackend</name>
     <url>https://wiki.cantara.no/display/whydah/UserIdentityBackend+-+UIB</url>
     <parent>
@@ -15,7 +15,8 @@
         <connection>scm:git:https://github.com/cantara/Whydah-UserIdentityBackend.git</connection>
         <url>https://wiki.cantara.no/display/whydah/UserIdentityBackend+-+UIB</url>
       
-   </scm>
+     <tag>UserIdentityBackend-2.7.12</tag>
+  </scm>
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
         <whydah.admin.sdk.version>2.7.10</whydah.admin.sdk.version>
