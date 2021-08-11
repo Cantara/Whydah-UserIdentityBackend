@@ -68,6 +68,7 @@ public class UserIdentityServiceV2Test {
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.upgradeDatabase();
 
         /** lucene setup **/
         luceneUsersDirectory = "target/" + configuration.evaluateToString("lucene.usersdirectory");
@@ -236,6 +237,37 @@ public class UserIdentityServiceV2Test {
         RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
 
         assertTrue(bCryptService.verifyPassword(fromDB.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+
+        String newPassword = passwordGenerator.generate();
+        userIdentityServiceV2.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);
+
+        RDBMSUserIdentity fromDBWithChangedPassword = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
+
+        assertFalse(bCryptService.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+        assertTrue(bCryptService.verifyPassword(fromDBWithChangedPassword.getPasswordBCrypt(), newPassword));
+
+        assertNotEquals(newPassword, userIdentityExtension.getPassword());
+        assertNotEquals(fromDB.getPasswordBCrypt(), fromDBWithChangedPassword.getPasswordBCrypt());
+    }
+
+    @Test
+    public void test_password_reset_then_set() {
+        UserIdentity userIdentity = giveMeTestUserIdentity();
+        UserIdentityWithAutomaticPasswordGeneration userIdentityExtension = new UserIdentityWithAutomaticPasswordGeneration(userIdentity);
+
+        userIdentityServiceV2.addUserIdentityWithGeneratedPassword(userIdentityExtension);
+
+        RDBMSUserIdentity fromDB = userIdentityServiceV2.getUserIdentity(userIdentity.getUid());
+
+        assertTrue(bCryptService.verifyPassword(fromDB.getPasswordBCrypt(), userIdentityExtension.getPassword()));
+
+        String preGeneratedPassword = passwordGenerator.generate();
+        String preGeneratedSaltPassword = passwordGenerator.generate();
+
+        String changePasswordToken = userIdentityServiceV2.setTempPassword(fromDB.getUsername(), fromDB.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+
+        boolean authenticateWithChangePasswordToken = userIdentityServiceV2.authenticateWithChangePasswordToken(fromDB.getUsername(), changePasswordToken);
+        assertEquals(true, authenticateWithChangePasswordToken);
 
         String newPassword = passwordGenerator.generate();
         userIdentityServiceV2.changePassword(fromDB.getUsername(), fromDB.getUid(), newPassword);

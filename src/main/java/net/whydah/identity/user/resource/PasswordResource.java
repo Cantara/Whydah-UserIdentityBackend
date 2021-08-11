@@ -232,7 +232,7 @@ public class PasswordResource {
                 UserApplicationRoleEntry updatedRole = userAggregateService.addRoleIfNotExist(user.getUid(), pwRole);
             }
         } catch (Exception e) {
-            log.error("changePasswordForUser-RuntimeException username={}, message={}", username, e.getMessage(), e);
+            log.warn("changePasswordForUser-RuntimeException username={}, message={}. Will fallback to using DB.", username, e.getMessage(), e);
             //return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -256,7 +256,7 @@ public class PasswordResource {
         }
 
 
-        if (ok && ok_DB) {
+        if (ok_DB) {
             ObjectMapper mapper = new ObjectMapper();
             try {
                 String userAsJson = mapper.writeValueAsString(user);
