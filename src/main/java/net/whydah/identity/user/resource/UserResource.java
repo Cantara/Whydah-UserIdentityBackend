@@ -289,30 +289,28 @@ public class UserResource {
     public Response addRole(@PathParam("uid") String uid, String roleJson) {
         log.trace("addRole for uid={}, roleJson={}", uid, roleJson);
 
-        LDAPUserIdentity user = null;
+        UserIdentity user = null;
         String msg = "addRole failed. No user with uid=" + uid;
 
         if(isRDBMSEnabled()) {
             try {
-                RDBMSUserIdentity userIdentity = userIdentityServiceV2.getUserIdentityForUid(uid);
-                if (userIdentity == null) {
-                    log.warn("addRole DB failed. User={} not found", uid);
-                    return Response.status(Response.Status.NOT_FOUND).build();
-                }
+                user = userIdentityServiceV2.getUserIdentityForUid(uid);
             } catch (Exception e) {
                 log.error(String.format("addRole DB for uid=%s failed. User not found", uid), e);
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
             }
         }
-
-        try {
-            user = userIdentityService.getUserIdentityForUid(uid);
-        } catch (NamingException e) {
-            log.info(msg, e);
-            return Response.status(Response.Status.NOT_FOUND).entity(msg).build();
-        }
         if (user == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity(msg).build();
+            try {
+                user = userIdentityService.getUserIdentityForUid(uid);
+            } catch (NamingException e) {
+                log.info(msg, e);
+                return Response.status(Response.Status.NOT_FOUND).entity(msg).build();
+            }
+            if (user == null) {
+                log.warn("addRole DB failed. User={} not found", uid);
+                return Response.status(Response.Status.NOT_FOUND).entity(msg).build();
+            }
         }
 
         UserApplicationRoleEntry request;
