@@ -87,7 +87,7 @@ public class HealthResource {
                     "  \"DEFCON\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getDefcon() + "\",\n" +
                     "  \"STS\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getSTS() + "\",\n" +
                     "  \"hasApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getActiveApplicationTokenId() != null) + "\",\n" +
-                    "  \"hasValidApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().checkActiveSession()) + "\",\n" +
+                   // "  \"hasValidApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().checkActiveSession()) + "\",\n" +
                     "  \"users (LDAP)\": \"" + numberOfUsers + "\",\n" +
                     "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
                     "  \"rdbms enabled)\": \"" + Boolean.toString(isUsersRDBMSEnabled()) + "\",\n" +
