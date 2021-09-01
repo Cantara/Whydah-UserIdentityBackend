@@ -114,8 +114,9 @@ public class UserAuthenticationEndpoint {
     private Response authenticateUser(String username, String password) {
         UserIdentity userIdentity = null;
         try {
-            userIdentity = userIdentityServiceV2.authenticate(username, password);
+            userIdentity = userIdentityService.authenticate(username, password);
         } catch (Exception e) {
+        	e.printStackTrace();
             log.warn(String.format("User=%s not found in LDAP.", username), e);
         }
 
@@ -125,6 +126,7 @@ public class UserAuthenticationEndpoint {
                 userIdentity = rdbmsUserIdentity;
             }
         } catch (Exception e) {
+        	e.printStackTrace();
             log.warn(String.format("User=%s not found in DB.", username), e);
         }
 
