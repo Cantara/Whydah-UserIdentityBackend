@@ -182,22 +182,24 @@ public class UserResource {
             }
         }
 
-
-        try {
-            LDAPUserIdentity ldapUserIdentity = userIdentityService.getUserIdentityForUid(uid);
-            if (userIdentity == null && ldapUserIdentity != null) {
-                userIdentity = ldapUserIdentity;
-            } else {
-                log.warn("User={} not found in LDAP", uid);
-            }
-        } catch (Exception e) {
-            log.warn("User={} not found in LDAP", uid);
+        if(userIdentity == null) {
+        	try {
+        		LDAPUserIdentity ldapUserIdentity = userIdentityService.getUserIdentityForUid(uid);
+        		if (ldapUserIdentity != null) {
+        			userIdentity = ldapUserIdentity;
+        		} else {
+        			log.warn("User={} not found in LDAP", uid);
+        		}
+        	} catch (Exception e) {
+        		e.printStackTrace();
+        		log.warn("User={} not found in LDAP", uid);
+        	}
         }
-
+        
         if (userIdentity == null) {
-            log.trace("getUserIdentityForUid could not find user with uid={}", uid);
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+    		log.trace("getUserIdentityForUid could not find user with uid={}", uid);
+    		return Response.status(Response.Status.NOT_FOUND).build();
+    	}
 
         String json;
         try {

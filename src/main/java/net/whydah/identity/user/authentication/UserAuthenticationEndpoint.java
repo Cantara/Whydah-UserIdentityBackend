@@ -113,13 +113,7 @@ public class UserAuthenticationEndpoint {
 
     private Response authenticateUser(String username, String password) {
         UserIdentity userIdentity = null;
-        try {
-            userIdentity = userIdentityService.authenticate(username, password);
-        } catch (Exception e) {
-        	e.printStackTrace();
-            log.warn(String.format("User=%s not found in LDAP.", username), e);
-        }
-
+        //rdbms takes precedence
         try {
             RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.authenticate(username, password);
             if (userIdentity == null && rdbmsUserIdentity != null) {
@@ -129,7 +123,14 @@ public class UserAuthenticationEndpoint {
         	e.printStackTrace();
             log.warn(String.format("User=%s not found in DB.", username), e);
         }
-
+        if(userIdentity ==null) {
+        	try {
+        		userIdentity = userIdentityService.authenticate(username, password);
+        	} catch (Exception e) {
+        		e.printStackTrace();
+        		log.warn(String.format("User=%s not found in LDAP.", username), e);
+        	}
+        }
 
         if (userIdentity == null) {
             log.debug("Authentication failed for user with username={}. Returning {}", username, Response.Status.FORBIDDEN.toString());
