@@ -13,7 +13,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +165,8 @@ public abstract class BaseLuceneIndexer<T> {
 		IndexWriter w = null;
 		try {
 			w = getIndexWriter();
-			w.deleteDocuments(getTermForDeletion(id));		
+			w.deleteDocuments(getTermForDeletion(id));
+			w.commit();
 			return true;
 		} catch (Exception e) {
 			log.error("removeFromIndex failed. uid={}. Error {}", id, e);
