@@ -15,7 +15,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 
 @Service
@@ -87,6 +92,9 @@ public class ApplicationService {
     }
 
     public int update(Application application) {
+        if (application.getId() == null) {
+            return 0;
+        }
         int numRowsAffected = applicationDao.update(application);
         luceneApplicationIndexer.updateIndex(application);
         audit(ActionPerformed.MODIFIED, application.getId() + ", " + application.getName());
