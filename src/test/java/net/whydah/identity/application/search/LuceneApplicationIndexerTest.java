@@ -21,8 +21,8 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class LuceneApplicationIndexerTest {
 	private static final Logger log = LoggerFactory.getLogger(LuceneApplicationIndexerTest.class);
@@ -40,7 +40,7 @@ public class LuceneApplicationIndexerTest {
 		log.debug("initializing before tests...");
 		dir = null;
 		if(type == DirectoryType.NIOF) {
-			File path = new File("lunceneApplciationIndexDirectoryTest");
+			File path = new File("lunceneApplicationIndexDirectoryTest");
 			if (!path.exists()) {
 				path.mkdir();
 			} else {
@@ -64,7 +64,7 @@ public class LuceneApplicationIndexerTest {
 	public void afterTest() throws Exception {		
 		log.debug("tear down after tests...");
 		
-		File path = new File("lunceneApplciationIndexDirectoryTest");
+		File path = new File("lunceneApplicationIndexDirectoryTest");
 		FileSystemUtils.deleteRecursively(path);
 	}
 
@@ -128,7 +128,7 @@ public class LuceneApplicationIndexerTest {
 		
 		//we have to reopen the directory (the directory is closed after every operation in order to avoid the "too many open files" exception in Linux)
 		if(type == DirectoryType.NIOF) {
-			File path = new File("lunceneApplciationIndexDirectoryTest");
+			File path = new File("lunceneApplicationIndexDirectoryTest");
 			dir = new NIOFSDirectory(Paths.get(path.getPath()));
 		}
 
@@ -224,7 +224,7 @@ public class LuceneApplicationIndexerTest {
 		
 		//we have to reopen the directory (the directory is closed after every operation in order to avoid the "too many open files" exception in Linux)
 		if(type == DirectoryType.NIOF) {
-			File path = new File("lunceneApplciationIndexDirectoryTest");
+			File path = new File("lunceneApplicationIndexDirectoryTest");
 			dir = new NIOFSDirectory(Paths.get(path.getPath()));
 		}
 		

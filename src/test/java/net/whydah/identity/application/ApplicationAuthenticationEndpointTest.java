@@ -15,11 +15,11 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.sql.SQLException;
 
@@ -39,15 +39,15 @@ public class ApplicationAuthenticationEndpointTest {
     private static String AUTH_PATH = "/{stsapplicationtokenId}/application/auth";
     private static final String STS_APPTOKEN_ID_NOT_IN_USE = "stsApptokenIdNotInUse";
 
-    private final String appToken1 = "appToken1";
-    private final String userToken1 = "userToken1";
-    private Main main;
-    private Application uas;
-    private Application testapp;
-    BasicDataSource dataSource;
+    private static final String appToken1 = "appToken1";
+    private static final String userToken1 = "userToken1";
+    private static Main main;
+    private static Application uas;
+    private static Application testapp;
+    private static BasicDataSource dataSource;
 
     @BeforeClass
-    public void startServer() {
+    public static void startServer() {
         ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -71,7 +71,7 @@ public class ApplicationAuthenticationEndpointTest {
         createApplications();
     }
 
-    private void createApplications() {
+    private static void createApplications() {
         uas = createApplication(UAS_APPLICATION_ID, "UAS", UAS_APPLICATION_SECRET);
         testapp = createApplication(TESTAPP_APPLICATION_ID, "TESTAPP", TESTAPP_APPLICATION_SECRET);
     }
@@ -91,7 +91,7 @@ public class ApplicationAuthenticationEndpointTest {
     }
 
     @AfterClass
-    public void stop() {
+    public static void stop() {
         if (main != null) {
             main.stop();
         }
@@ -105,7 +105,7 @@ public class ApplicationAuthenticationEndpointTest {
     }
 
 
-    Application createApplication(String applicationId, String appName, String applicationSecret) {
+    static Application createApplication(String applicationId, String appName, String applicationSecret) {
         Application uas = new Application(applicationId, appName);
         uas.getSecurity().setSecret(applicationSecret);
 

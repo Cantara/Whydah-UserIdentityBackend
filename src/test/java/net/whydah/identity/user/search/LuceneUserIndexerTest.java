@@ -21,8 +21,8 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class LuceneUserIndexerTest {
 	private static final Logger log = LoggerFactory.getLogger(LuceneUserIndexerTest.class);

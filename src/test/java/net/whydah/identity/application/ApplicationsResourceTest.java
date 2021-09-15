@@ -13,17 +13,18 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.sql.SQLException;
 import java.util.List;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * End-to-end test against the exposed HTTP endpoint and down to the in-mem HSQLDB.
@@ -34,18 +35,18 @@ public class ApplicationsResourceTest {
     private static final Logger log = LoggerFactory.getLogger(ApplicationsResourceTest.class);
     private final String appToken1 = "appToken1";
     private final String userToken1 = "userToken1";
-    private Main main;
+    private static Main main;
     
-    ConstrettoConfiguration configuration = new ConstrettoBuilder()
+    static ConstrettoConfiguration configuration = new ConstrettoBuilder()
             .createPropertiesStore()
             .addResource(Resource.create("classpath:useridentitybackend.properties"))
             .addResource(Resource.create("file:./useridentitybackend_override.properties"))
             .done()
             .getConfiguration();
-    BasicDataSource dataSource;
+    static BasicDataSource dataSource;
 
     @BeforeClass
-    public void startServer() {
+    public static void startServer() {
     	 ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
          final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                  .createPropertiesStore()
@@ -84,7 +85,7 @@ public class ApplicationsResourceTest {
     }
 
     @AfterClass
-    public void stop() {
+    public static void stop() {
         if (main != null) {
             main.stop();
         }
@@ -97,7 +98,7 @@ public class ApplicationsResourceTest {
 		}
     }
     
-    private void removeLuceneAppData() {
+    private static void removeLuceneAppData() {
     	String luceneApplicationDirectory = configuration.evaluateToString("lucene.applicationsdirectory");
     	FileUtils.deleteDirectory(luceneApplicationDirectory);
     }
@@ -121,8 +122,10 @@ public class ApplicationsResourceTest {
         assertEquals(applications.size(), 0);
     }
 
-    @Test(dependsOnMethods = "testGetApplicationsEmptyList", enabled = false)
+    @Test
+    @Ignore
     public void testGetApplicationsOK() {
+        testGetApplicationsEmptyList();
         //Add applications
         int nrOfApplications = 4;
         String createPath = "/{applicationtokenid}/{userTokenId}/application";

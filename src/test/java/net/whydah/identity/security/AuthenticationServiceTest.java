@@ -3,15 +3,15 @@ package net.whydah.identity.security;
 import net.whydah.identity.application.ApplicationCredentialRepository;
 import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
 import net.whydah.sso.application.types.ApplicationCredential;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 /**
  * Created by baardl on 23.11.15.
@@ -21,9 +21,9 @@ public class AuthenticationServiceTest {
 
     private AuthenticationService authenticationService;
     private ApplicationCredentialRepository appCredRepo;
-    private ApplicationCredential storedUasApplciationCredential = new ApplicationCredential("2212","Whydah-UserAdminService","adsfasdfasdasdfasd");
+    private ApplicationCredential storedUasApplicationCredential = new ApplicationCredential("2212","Whydah-UserAdminService","adsfasdfasdasdfasd");
 
-    @BeforeMethod
+    @Before
     public void setUp() throws Exception {
         appCredRepo = mock(ApplicationCredentialRepository.class);
         authenticationService = new AuthenticationService(appCredRepo);
@@ -31,8 +31,8 @@ public class AuthenticationServiceTest {
 
     @Test
     public void testIsAuthenticatedAsUAS() throws Exception {
-//        log.info("xml:" + ApplicationCredentialMapper.toXML(storedUasApplciationCredential));
-        when(appCredRepo.getUasAppCred()).thenReturn(storedUasApplciationCredential);
+//        log.info("xml:" + ApplicationCredentialMapper.toXML(storedUasApplicationCredential));
+        when(appCredRepo.getUasAppCred()).thenReturn(storedUasApplicationCredential);
         ApplicationCredential validAppCred = ApplicationCredentialMapper.fromXml(applicatinCredential);
         assertTrue(authenticationService.isAuthenticatedAsUAS(validAppCred));
 

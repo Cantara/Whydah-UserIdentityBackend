@@ -20,32 +20,31 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 
 public class IamDataImporterTest {
     private static final Logger log = LoggerFactory.getLogger(IamDataImporterTest.class);
     private static final String ldapPath = "target/IamDataImporterTest/ldap";
 
-    private BasicDataSource dataSource;
-    private IamDataImporter dataImporter;
-    private Main main;
+    private static BasicDataSource dataSource;
+    private static IamDataImporter dataImporter;
+    private static Main main;
 
     @BeforeClass
-    public void startServer() {
+    public static void startServer() {
         ApplicationMode.setCIMode();
         final ConstrettoConfiguration config = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -78,7 +77,7 @@ public class IamDataImporterTest {
 
 
     @AfterClass
-    public void stop() {
+    public static void stop() {
         if (main != null) {
             main.stopEmbeddedDS();
         }

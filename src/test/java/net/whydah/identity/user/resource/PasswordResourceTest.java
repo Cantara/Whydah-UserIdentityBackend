@@ -43,9 +43,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
 
 public class PasswordResourceTest {
     private static final Logger log = LoggerFactory.getLogger(PasswordResourceTest.class);
@@ -80,6 +80,8 @@ public class PasswordResourceTest {
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.cleanDatabase();
+        dbHelper.upgradeDatabase();
 
         /** lucene setup **/
         luceneUsersDirectory = "target/" + configuration.evaluateToString("lucene.usersdirectory");

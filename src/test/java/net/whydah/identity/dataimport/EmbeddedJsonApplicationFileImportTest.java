@@ -3,37 +3,41 @@ package net.whydah.identity.dataimport;
 import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.application.ApplicationService;
+import net.whydah.identity.application.search.LuceneApplicationIndexer;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.ldapserver.EmbeddedADS;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.UUID;
 
 
 public class EmbeddedJsonApplicationFileImportTest {
     private static final Logger log = LoggerFactory.getLogger(EmbeddedJsonApplicationFileImportTest.class);
     private static final String ldapPath = "target/EmbeddedJsonApplicationFileImportTest/ldap";
 
-    private BasicDataSource dataSource;
-    private Main main;
-    private String applicationsImportSource;
+    private static BasicDataSource dataSource;
+    private static Main main;
+    private static String applicationsImportSource;
    
     
     @BeforeClass
-    public void startServer() {
+    public static void startServer() {
         ApplicationMode.setCIMode();
         final ConstrettoConfiguration config = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -67,7 +71,7 @@ public class EmbeddedJsonApplicationFileImportTest {
 
 
     @AfterClass
-    public void stop() {
+    public static void stop() {
         if (main != null) {
             main.stopEmbeddedDS();
         }
@@ -84,18 +88,26 @@ public class EmbeddedJsonApplicationFileImportTest {
     }
 
     @Test
-    public void testEmbeddedJsonApplicationsFile(ConstrettoConfiguration configuration) throws IOException {
+    public void testEmbeddedJsonApplicationsFile() throws IOException {
+        final ConstrettoConfiguration config = new ConstrettoBuilder()
+                .createPropertiesStore()
+                .addResource(Resource.create("classpath:useridentitybackend.properties"))
+                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
+                .done()
+                .getConfiguration();
+
         InputStream ais = null;
         try {
             ais = openInputStream("Applications", applicationsImportSource);
             log.debug("Testimporting:" + applicationsImportSource);
 
-            ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), new AuditLogDao(dataSource), null, null);
+            LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(new NIOFSDirectory(Paths.get("target/lucene/EmbeddedJsonApplicationFileImportTest/" + UUID.randomUUID())));
+            ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), new AuditLogDao(dataSource), luceneApplicationIndexer, null);
 
             if (applicationsImportSource.endsWith(".csv")) {
                 new ApplicationImporter(applicationService).importApplications(ais);
             } else {
-                new ApplicationJsonImporter(applicationService,configuration).importApplications(ais);
+                new ApplicationJsonImporter(applicationService, config).importApplications(ais);
             }
         } finally {
             FileUtils.close(ais);

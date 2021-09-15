@@ -15,18 +15,20 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.sql.SQLException;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * End-to-end test against the exposed HTTP endpoint and down to the in-mem HSQLDB.
@@ -35,18 +37,18 @@ import static org.testng.Assert.assertNotNull;
  */
 
 //TODO Tests disabled due to strange test error when run by Jenkins. Perhaps shared ldap or db with other tests?
-@Test(enabled = false)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ApplicationResourceTest {
     private static final Logger log = LoggerFactory.getLogger(ApplicationResourceTest.class);
     private final String appToken1 = "appToken1";
     private final String userTokenID1 = "userTokenID1";
-    private Main main;
-    private String appId1FromCreatedResponse;
-    private Application app;
-    BasicDataSource dataSource;
+    private static Main main;
+    private static String appId1FromCreatedResponse;
+    private static Application app;
+    private static BasicDataSource dataSource;
     
     @BeforeClass
-    public void startServer() {
+    public static void startServer() {
         ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -83,7 +85,7 @@ public class ApplicationResourceTest {
     }
 
     @AfterClass
-    public void stop() {
+    public static void stop() {
         if (main != null) {
             main.stop();
         }
@@ -97,10 +99,10 @@ public class ApplicationResourceTest {
 		}
     }
 
-    @Test(enabled = false)
-    public void testCreateApplication() throws Exception {
-        app = new Application("ignoredId", "appName1");
-        app.getSecurity().setSecret("secret1");
+    @Test
+    public void t01_testCreateApplication() throws Exception {
+        app = new Application(null, "appName1");
+        app.getSecurity().setSecret("secret12");
         app.getSecurity().setUserTokenFilter("false");
         app.setDefaultRoleName("originalDefaultRoleName");
         app.setApplicationUrl("https://myapp.net/");
@@ -134,8 +136,8 @@ public class ApplicationResourceTest {
         assertEquals(applicationResponse.getDefaultRoleName(), app.getDefaultRoleName());
     }
 
-    @Test(enabled = false, dependsOnMethods = "testCreateApplication")
-    public void testGetApplicationOK() throws Exception {
+    @Test
+    public void t05_testGetApplicationOK() throws Exception {
         String path = "/{applicationtokenid}/{userTokenId}/application/{applicationId}";
         Response response = given()
                 .log().everything()
@@ -153,8 +155,8 @@ public class ApplicationResourceTest {
         assertEquals(applicationResponse.getDefaultRoleName(), "originalDefaultRoleName");
     }
 
-    @Test(enabled = false, dependsOnMethods = "testGetApplicationOK")
-    public void testUpdateApplicationNotFound() throws Exception {
+    @Test
+    public void t10_testUpdateApplicationNotFound() throws Exception {
         String json = ApplicationMapper.toJson(app);
 
         String path = "/{applicationtokenid}/{userTokenId}/application/{applicationId}";
@@ -169,8 +171,8 @@ public class ApplicationResourceTest {
                 .put(path, appToken1, userTokenID1, appId1FromCreatedResponse);
     }
 
-    @Test(enabled = false, dependsOnMethods = "testUpdateApplicationNotFound")
-    public void testUpdateApplicationNoContent() throws Exception {
+    @Test
+    public void t15_testUpdateApplicationNoContent() throws Exception {
         app.setId(appId1FromCreatedResponse);
         app.setDefaultRoleName("anotherRoleName");
         String json = ApplicationMapper.toJson(app);
@@ -188,8 +190,8 @@ public class ApplicationResourceTest {
     }
 
 
-    @Test(enabled = false, dependsOnMethods = "testUpdateApplicationNoContent")
-    public void testDeleteApplication() throws Exception {
+    @Test
+    public void t20_testDeleteApplication() throws Exception {
         String path = "/{applicationtokenid}/{userTokenId}/application/{applicationId}";
         given()
                 .log().everything()
@@ -199,8 +201,8 @@ public class ApplicationResourceTest {
                 .when()
                 .delete(path, appToken1, userTokenID1, appId1FromCreatedResponse);
     }
-    @Test(enabled = false, dependsOnMethods = "testDeleteApplication")
-    public void testDeleteApplicationNotFound() throws Exception {
+    @Test
+    public void t25_testDeleteApplicationNotFound() throws Exception {
         String path = "/{applicationtokenid}/{userTokenId}/application/{applicationId}";
         given()
                 .log().everything()
@@ -211,8 +213,8 @@ public class ApplicationResourceTest {
                 .delete(path, appToken1, userTokenID1, appId1FromCreatedResponse);
     }
 
-    @Test(enabled = false, dependsOnMethods = "testDeleteApplication")
-    public void testGetApplicationNotFound() throws Exception {
+    @Test
+    public void t30_testGetApplicationNotFound() throws Exception {
         String path = "/{applicationtokenid}/{userTokenId}/application/{applicationId}";
         given()
                 .log().everything()

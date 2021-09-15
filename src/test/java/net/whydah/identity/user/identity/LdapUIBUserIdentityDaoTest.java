@@ -16,7 +16,10 @@ import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.testng.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class LdapUIBUserIdentityDaoTest {
     private static final String ldapPath = "target/LdapUIBUserIdentityDaoTest/ldap";
@@ -136,7 +139,7 @@ public class LdapUIBUserIdentityDaoTest {
         assertTrue(deleteSuccessful);
 
         UserIdentity gotUser2 = ldapUserIdentityDao.getUserIndentity(username);
-        assertNull(gotUser2, "Expected user to be deleted. " + (gotUser2 != null ? gotUser2.toString() : "null"));
+        assertNull("Expected user to be deleted. " + (gotUser2 != null ? gotUser2.toString() : "null"), gotUser2);
     }
 
     @Test

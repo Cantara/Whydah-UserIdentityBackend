@@ -18,12 +18,12 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 import java.io.File;
@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 
 /**
@@ -55,11 +55,11 @@ public class UIBUserIdentityServiceTest {
     private static Directory index;
 
     private static Main main = null;
-    private BasicDataSource dataSource;
+    private static BasicDataSource dataSource;
 
 
     @BeforeClass
-    public void setUp() throws Exception {
+    public static void setUp() throws Exception {
         ApplicationMode.setCIMode();
         final ConstrettoConfiguration config = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -110,7 +110,7 @@ public class UIBUserIdentityServiceTest {
     }
 
     @AfterClass
-    public void stop() {
+    public static void stop() {
         if (main != null) {
             main.stopEmbeddedDS();
         }
@@ -143,7 +143,7 @@ public class UIBUserIdentityServiceTest {
 
         assertEquals(fromLdap, expectedLdapIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
-        assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus(), "Expected ConflictException because user should already exist.");
+        assertEquals("Expected ConflictException because user should already exist.", Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus());
     }
 
     @Test
@@ -190,7 +190,7 @@ public class UIBUserIdentityServiceTest {
 
         assertEquals(fromLdap, expectedLdapIdentity);
         Response response = userAdminHelper.addUser(userIdentity);
-        assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus(), "Expected ConflictException because user should already exist.");
+        assertEquals("Expected ConflictException because user should already exist.", Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus());
     }
 
     @Test
