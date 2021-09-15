@@ -1,2 +1,2 @@
 */13 * * * * ./scripts/download_and_restart_if_new.sh
-* 1 * * *  ./scripts/reportServiceHealthToVisuale.sh > /dev/null
+* * * * *  ./scripts/reportServiceHealthToVisuale.sh > /dev/null
