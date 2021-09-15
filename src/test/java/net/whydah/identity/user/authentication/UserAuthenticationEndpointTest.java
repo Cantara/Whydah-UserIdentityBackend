@@ -91,8 +91,10 @@ public class UserAuthenticationEndpointTest {
       
         
         BasicDataSource dataSource = Main.initBasicDataSource(configuration);
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
-       
+        DatabaseMigrationHelper dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.cleanDatabase();
+        dbHelper.upgradeDatabase();
+
         
         main.startJetty();
 

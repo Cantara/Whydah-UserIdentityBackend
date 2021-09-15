@@ -68,6 +68,7 @@ public class UserIdentityServiceV2Test {
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
         /** lucene setup **/

@@ -84,6 +84,8 @@ public class UserResourceTest {
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         dbHelper = new DatabaseMigrationHelper(dataSource);
+        dbHelper.cleanDatabase();
+        dbHelper.upgradeDatabase();
 
         /** lucene setup **/
         luceneUsersDirectory = "target/" + configuration.evaluateToString("lucene.usersdirectory");
