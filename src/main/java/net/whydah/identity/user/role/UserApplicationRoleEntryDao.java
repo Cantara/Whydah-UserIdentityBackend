@@ -32,9 +32,19 @@ public class UserApplicationRoleEntryDao {
 
 
     public UserApplicationRoleEntry getUserApplicationRoleEntry(String roleId) {
-        log.debug("getUserPropertyAndRole for roleId {}", roleId);
+        log.debug("getUserApplicationRoleEntry for roleId {}", roleId);
         String sql = "SELECT RoleID, UserID, AppID, OrganizationName, RoleName, RoleValues FROM UserRoles WHERE RoleID=?";
         List<UserApplicationRoleEntry> roles = jdbcTemplate.query(sql, new String[]{roleId}, new UserApplicationRoleEntryMapper());
+        if (roles.isEmpty()) {
+            return null;
+        }
+        return roles.get(0);
+    }
+
+    public UserApplicationRoleEntry getUserApplicationRoleEntryByValues(String UserID, String AppID, String OrganizationName, String RoleName, String RoleValues) {
+        log.debug("getUserApplicationRoleEntryByValues for UserID '{}', AppID '{}', OrganizationName '{}', RoleName '{}', RoleValues '{}'", UserID, AppID, OrganizationName, RoleName, RoleValues);
+        String sql = "SELECT RoleID, UserID, AppID, OrganizationName, RoleName, RoleValues FROM UserRoles WHERE UserID=? AND AppID=? AND OrganizationName=? AND RoleName=? AND RoleValues=?";
+        List<UserApplicationRoleEntry> roles = jdbcTemplate.query(sql, new Object[]{UserID, AppID, OrganizationName, RoleName, RoleValues}, new UserApplicationRoleEntryMapper());
         if (roles.isEmpty()) {
             return null;
         }

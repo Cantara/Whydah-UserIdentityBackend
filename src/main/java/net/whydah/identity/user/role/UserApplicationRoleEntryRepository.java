@@ -18,16 +18,33 @@ public class UserApplicationRoleEntryRepository {
     }
 
     public void addUserApplicationRoleEntry(UserApplicationRoleEntry userApplicationRoleEntry) throws RuntimeException {
-        UserApplicationRoleEntry exists = getUserApplicationRoleEntry(userApplicationRoleEntry.getId());
-        if (exists != null) {
-            userApplicationRoleEntryDao.updateUserRoleValue(exists);
+        UserApplicationRoleEntry exists;
+        if (userApplicationRoleEntry.getId() != null && !userApplicationRoleEntry.getId().trim().isEmpty()) {
+            exists = getUserApplicationRoleEntry(userApplicationRoleEntry.getId());
+            if (exists != null) {
+                userApplicationRoleEntryDao.updateUserRoleValue(userApplicationRoleEntry);
+            } else {
+                userApplicationRoleEntryDao.addUserApplicationRoleEntry(userApplicationRoleEntry);
+            }
         } else {
-            userApplicationRoleEntryDao.addUserApplicationRoleEntry(userApplicationRoleEntry);
+            exists = getUserApplicationRoleEntryByValues(userApplicationRoleEntry.getUserId(),
+                    userApplicationRoleEntry.getApplicationId(), userApplicationRoleEntry.getOrgName(),
+                    userApplicationRoleEntry.getRoleName(), userApplicationRoleEntry.getRoleValue()
+            );
+            if (exists == null) {
+                userApplicationRoleEntryDao.addUserApplicationRoleEntry(userApplicationRoleEntry);
+            } else {
+                log.trace("Role-mapping already exists, will not create a new mapping for: ");
+            }
         }
     }
 
     public UserApplicationRoleEntry getUserApplicationRoleEntry(String roleId) {
         return userApplicationRoleEntryDao.getUserApplicationRoleEntry(roleId);
+    }
+
+    public UserApplicationRoleEntry getUserApplicationRoleEntryByValues(String UserID, String AppID, String OrganizationName, String RoleName, String RoleValues) {
+        return userApplicationRoleEntryDao.getUserApplicationRoleEntryByValues(UserID, AppID, OrganizationName, RoleName, RoleValues);
     }
 
     public void deleteUserApplicationRoleWithRoleId(String roleId) {
