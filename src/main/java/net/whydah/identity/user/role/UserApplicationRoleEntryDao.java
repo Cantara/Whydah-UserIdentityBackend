@@ -83,7 +83,7 @@ public class UserApplicationRoleEntryDao {
     public int countUserRolesInDB() {
         String sql = "SELECT count(*) FROM UserRoles";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class);
-        log.debug("countUserRolesInDB={}", count);
+        log.trace("countUserRolesInDB={}", count);
         return count;
     }
 
