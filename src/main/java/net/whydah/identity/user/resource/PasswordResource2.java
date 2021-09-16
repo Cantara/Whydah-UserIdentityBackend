@@ -106,7 +106,7 @@ public class PasswordResource2 {
 
         String changePasswordToken = null;
         try {
-            changePasswordToken = userIdentityServiceV2.setTempPassword(uid, user.getUid(),
+            changePasswordToken = userIdentityServiceV2.setTempPassword(user.getUsername(), user.getUid(),
                     preGeneratedPassword, preGeneratedSaltPassword);
         } catch (Exception e) {
         }
@@ -114,7 +114,8 @@ public class PasswordResource2 {
 
         String changePasswordToken2 = null;
         try {
-            changePasswordToken2 = userIdentityService.setTempPassword(uid, user.getUid(), preGeneratedPassword, preGeneratedSaltPassword);
+            changePasswordToken2 = userIdentityService.setTempPassword(user.getUsername(), user.getUid(),
+                    preGeneratedPassword, preGeneratedSaltPassword);
         } catch (Exception e) {
             log.error(String.format("resetPassword failed for useridentity=%s in DB", uid), e);
         }

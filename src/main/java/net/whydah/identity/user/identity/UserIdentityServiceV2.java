@@ -8,7 +8,6 @@ import net.whydah.identity.health.HealthResource;
 import net.whydah.identity.user.ChangePasswordToken;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.identity.user.search.LuceneUserSearch;
-import net.whydah.identity.util.PasswordGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +18,13 @@ import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * // TODO: 08/04/2021 kiversen
- *
+ * <p>
  * - remove all ldap operations and replce with db persistence
  * - avoid intrusion in existing UserIdentityService by using a "shadow" version
  * - service will replace UserIdentityService when ldap is retired.
@@ -39,21 +40,18 @@ public class UserIdentityServiceV2 {
 
     private final AuditLogDao auditLogDao;
 
-    private final PasswordGenerator passwordGenerator;
-
     private final LuceneUserIndexer luceneIndexer;
     private final LuceneUserSearch searcher;
     private final BCryptService bCryptService;
-    private static String temporary_pwd=null;
+    private final Map<String, String> temporaryPwdByUsername = new ConcurrentHashMap<>();
 
     private final RDBMSLdapUserIdentityRepository userIdentityRepository;
 
     @Autowired
-    public UserIdentityServiceV2(RDBMSLdapUserIdentityRepository userIdentityRepository, AuditLogDao auditLogDao, PasswordGenerator passwordGenerator,
+    public UserIdentityServiceV2(RDBMSLdapUserIdentityRepository userIdentityRepository, AuditLogDao auditLogDao,
                                  LuceneUserIndexer luceneIndexer, LuceneUserSearch searcher, BCryptService bCryptService) {
         this.userIdentityRepository = userIdentityRepository;
         this.auditLogDao = auditLogDao;
-        this.passwordGenerator = passwordGenerator;
         this.luceneIndexer = luceneIndexer;
         this.searcher = searcher;
         this.bCryptService = bCryptService;
@@ -64,39 +62,13 @@ public class UserIdentityServiceV2 {
         return userIdentityRepository.authenticate(username, password);
     }
 
-    // TODO: 22/04/2021 kiversen: remove this when transition to db is complete and return to use UsersIdentityService#setTempPassword
-    public String setTempPassword(String username, String uid, String preGeneratedPassword, String preGeneratedSaltPassword) {
-        temporary_pwd = preGeneratedPassword;
-        return setTempPasswordV2(username, uid, preGeneratedSaltPassword);
-    }
-
     // TODO: 22/04/2021 kiversen: remove this when transition to db is complete
-    public String setTempPasswordV2(String username, String uid, String preGeneratedSaltPassword) {
-        String newPassword = temporary_pwd;
-        String salt = preGeneratedSaltPassword;
+    public String setTempPassword(String username, String uid, String newPassword, String salt) {
+        temporaryPwdByUsername.put(username, newPassword);
         //HUY: disable saving a new password
         userIdentityRepository.setTempPassword(username, salt);
         //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
-        audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
-
-        byte[] saltAsBytes;
-        try {
-            saltAsBytes = salt.getBytes(SALT_ENCODING);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        ChangePasswordToken changePasswordToken = new ChangePasswordToken(username, newPassword);
-        return changePasswordToken.generateTokenString(saltAsBytes);
-    }
-
-    public String setTempPassword(String username, String uid) {
-    	if(temporary_pwd==null){
-    		temporary_pwd = passwordGenerator.generate();
-    	}
-        String newPassword = temporary_pwd;
-        String salt = passwordGenerator.generate();
-        userIdentityRepository.setTempPassword(username, salt);
-        audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
+        audit(uid, ActionPerformed.MODIFIED, "resetpassword", uid);
 
         byte[] saltAsBytes;
         try {
@@ -110,9 +82,10 @@ public class UserIdentityServiceV2 {
 
     /**
      * Authenticate using token generated when resetting the password
-     * @param username  username to authenticate
+     *
+     * @param username                    username to authenticate
      * @param changePasswordTokenAsString with temporary access
-     * @return  true if authentication OK
+     * @return true if authentication OK
      */
     public boolean authenticateWithChangePasswordToken(String username, String changePasswordTokenAsString) {
         String salt = userIdentityRepository.getSalt(username);
@@ -124,7 +97,14 @@ public class UserIdentityServiceV2 {
             throw new RuntimeException("Error with salt for username=" + username, e1);
         }
         ChangePasswordToken changePasswordToken = ChangePasswordToken.fromTokenString(changePasswordTokenAsString, saltAsBytes);
-        boolean ok = changePasswordToken.getPassword().equals(temporary_pwd);
+        String temporaryPassword = temporaryPwdByUsername.get(username);
+        boolean ok;
+        if (temporaryPassword == null) {
+            log.warn("authenticateWithChangePasswordToken could not find a temporary password. Please reset password again. username={}", username);
+            ok = false;
+        } else {
+            ok = changePasswordToken.getPassword().equals(temporaryPassword);
+        }
         log.info("authenticateWithChangePasswordToken was ok={} for username={}", ok, username);
         return ok;
     }
@@ -133,7 +113,7 @@ public class UserIdentityServiceV2 {
     public void changePassword(String username, String userUid, String newPassword) {
         String bcryptString = bCryptService.hash(newPassword);
         userIdentityRepository.changePassword(username, bcryptString);
-        audit(userUid,ActionPerformed.MODIFIED, "password", userUid);
+        audit(userUid, ActionPerformed.MODIFIED, "password", userUid);
     }
 
 
@@ -177,11 +157,11 @@ public class UserIdentityServiceV2 {
                 email, passwordPlaintext, dto.getCellPhone(), dto.getPersonRef());
         try {
             userIdentityRepository.addUserIdentity(userIdentity);
-            if(luceneIndexer.addToIndex(userIdentity)) {
+            if (luceneIndexer.addToIndex(userIdentity)) {
                 int usersInDb = userIdentityRepository.countUsers();
                 HealthResource.setNumberOfUsersDB(usersInDb);
             } else {
-            	 throw new IllegalArgumentException("addUserIdentity to DB failed for " + userIdentity.toString());
+                throw new IllegalArgumentException("addUserIdentity to DB failed for " + userIdentity.toString());
             }
 
         } catch (RuntimeException e) {
@@ -198,7 +178,7 @@ public class UserIdentityServiceV2 {
         if (words.length == 1) {
             return email;
         }
-        email  = "";
+        email = "";
         for (String word : words) {
             email += word;
         }
@@ -221,7 +201,7 @@ public class UserIdentityServiceV2 {
 
         userIdentityRepository.updateUserIdentityForUid(uid, userIdentity);
         luceneIndexer.updateIndex(newUserIdentity);
-        audit(uid,ActionPerformed.MODIFIED, "user", newUserIdentity.toString());
+        audit(uid, ActionPerformed.MODIFIED, "user", newUserIdentity.toString());
     }
 
     // TODO: 08/04/2021 kiversen - Replace with either username or uid
@@ -253,12 +233,11 @@ public class UserIdentityServiceV2 {
         return userIdentityRepository.isRDBMSEnabled();
     }
 
-    private void audit(String uid,String action, String what, String value) {
+    private void audit(String uid, String action, String what, String value) {
         String now = sdf.format(new Date());
         ActionPerformed actionPerformed = new ActionPerformed(uid, now, action, what, value);
         auditLogDao.store(actionPerformed);
     }
-
 
 
 }

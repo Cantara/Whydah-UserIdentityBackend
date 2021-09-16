@@ -109,7 +109,7 @@ public class UserResourceTest {
 
         rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
         rdbmsUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
-        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, pwdGenerator, luceneIndexer, luceneUserSearch, bCryptService);
+        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, luceneIndexer, luceneUserSearch, bCryptService);
 
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         ApplicationService applicationService = new ApplicationService(null, auditLogDao, luceneApplicationIndexer, luceneApplicationSearcher);

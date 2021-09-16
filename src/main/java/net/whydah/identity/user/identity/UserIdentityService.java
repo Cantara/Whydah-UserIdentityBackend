@@ -18,6 +18,8 @@ import javax.naming.NamingException;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 29.03.14
@@ -38,7 +40,7 @@ public class UserIdentityService {
 
     private final LuceneUserIndexer luceneIndexer;
     private final LuceneUserSearch searcher;
-    private static String temporary_pwd=null;
+    private final Map<String, String> temporaryPwdByUsername = new ConcurrentHashMap<>();
 
 
     //@Named("primaryLdap")
@@ -67,14 +69,8 @@ public class UserIdentityService {
      * 3. remove this method
      *
      */
-    public String setTempPassword(String username, String uid, String preGeneratedPassword, String preGeneratedSaltPassword) {
-        temporary_pwd = preGeneratedPassword;
-        return setTempPasswordV2(username, uid, preGeneratedSaltPassword);
-    }
-
-    public String setTempPasswordV2(String username, String uid, String preGeneratedSaltPassword) {
-        String newPassword = temporary_pwd;
-        String salt = preGeneratedSaltPassword;
+    public String setTempPassword(String username, String uid, String newPassword, String salt) {
+        temporaryPwdByUsername.put(username, newPassword);
         //HUY: disable saving a new password
         ldapUserIdentityDao.setTempPassword(username, null, salt);
         //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
@@ -90,27 +86,6 @@ public class UserIdentityService {
         return changePasswordToken.generateTokenString(saltAsBytes);
     }
 
-
-    public String setTempPassword(String username, String uid) {
-    	if(temporary_pwd==null){
-    		temporary_pwd = passwordGenerator.generate();
-    	}
-        String newPassword = temporary_pwd;
-        String salt = passwordGenerator.generate();
-        //HUY: disable saving a new password
-        ldapUserIdentityDao.setTempPassword(username, null, salt);
-        //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
-        audit(uid,ActionPerformed.MODIFIED, "resetpassword", uid);
-
-        byte[] saltAsBytes;
-        try {
-            saltAsBytes = salt.getBytes(SALT_ENCODING);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        ChangePasswordToken changePasswordToken = new ChangePasswordToken(username, newPassword);
-        return changePasswordToken.generateTokenString(saltAsBytes);
-    }
 
     /**
      * Authenticate using token generated when resetting the password
@@ -130,7 +105,15 @@ public class UserIdentityService {
         ChangePasswordToken changePasswordToken = ChangePasswordToken.fromTokenString(changePasswordTokenAsString, saltAsBytes);
         //HUY: we don't store a temporary password in setTempPassword(), so we just compare the salt 
         //boolean ok = primaryLdapAuthenticator.authenticateWithTemporaryPassword(username, changePasswordToken.getPassword());
-        boolean ok = changePasswordToken.getPassword().equals(temporary_pwd);
+
+        String temporaryPassword = temporaryPwdByUsername.get(username);
+        boolean ok;
+        if (temporaryPassword == null) {
+            log.warn("authenticateWithChangePasswordToken could not find a temporary password. Please reset password again. username={}", username);
+            ok = false;
+        } else {
+            ok = changePasswordToken.getPassword().equals(temporaryPassword);
+        }
         log.info("authenticateWithChangePasswordToken was ok={} for username={}", ok, username);
         return ok;
     }

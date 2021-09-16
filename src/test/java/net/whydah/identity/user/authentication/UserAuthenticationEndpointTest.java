@@ -134,7 +134,7 @@ public class UserAuthenticationEndpointTest {
         RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
         RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
         LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
-        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, pwg, luceneUserIndexer, searcher, bCryptService);
+        userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, luceneUserIndexer, searcher, bCryptService);
 
         userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, configuration);
 

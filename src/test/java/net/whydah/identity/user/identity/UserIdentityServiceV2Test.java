@@ -96,8 +96,7 @@ public class UserIdentityServiceV2Test {
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
         rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
 
-        PasswordGenerator passwordGenerator = new PasswordGenerator();
-        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, passwordGenerator, luceneUserIndexer, luceneUserSearch, bCryptService);
+        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, luceneUserIndexer, luceneUserSearch, bCryptService);
     }
 
     @Before

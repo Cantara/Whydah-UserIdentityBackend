@@ -134,6 +134,29 @@ public class PasswordResource2EndpointTest {
         }
     }
 
+    private void addTestUserTwin() {
+        String appTokenId = "applicationTestToken";
+        String userTokenId = "userTestToken";
+        String path = "/{applicationtokenid}/{userTokenId}/user";
+        UserIdentity userIdentity = new UserIdentity("test.you.uid", "test.you.username", "test", "you", null, "test.you@example.com", "+4722312345");
+
+        try {
+            String json = new ObjectMapper().writeValueAsString(userIdentity);
+            com.jayway.restassured.response.Response response = given()
+                    .request().body(json)
+                    .request().contentType(MediaType.APPLICATION_JSON)
+                    .log().everything()
+                    .expect()
+                    .statusCode(Response.Status.CREATED.getStatusCode())
+                    .log().ifError()
+                    .when()
+                    .post(path, appTokenId, userTokenId);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Test
     public void test_resetPassword_ok() throws Exception {
@@ -165,6 +188,19 @@ public class PasswordResource2EndpointTest {
         String changePasswordToken = resetPassword(appTokenId, uid);
 
         changePassword(appTokenId, uid, changePasswordToken);
+    }
+
+    @Test
+    public void test_concurrent_resetPassword_then_authenticate_ok() throws Exception {
+        ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
+        addTestUser();
+        addTestUserTwin();
+
+        String changePasswordTokenMe = resetPassword("test", "test.me.uid");
+        String changePasswordTokenYou = resetPassword("test", "test.you.uid");
+
+        changePassword("test", "test.me.uid", changePasswordTokenMe);
+        changePassword("test", "test.you.uid", changePasswordTokenYou);
     }
 
     private void changePassword(String appTokenId, String uid, String changePasswordToken) {
