@@ -9,11 +9,8 @@ import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.LDAPUserIdentity;
-import net.whydah.identity.user.identity.LdapAuthenticator;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
-import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -44,19 +41,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 public class PasswordResourceTest {
     private static final Logger log = LoggerFactory.getLogger(PasswordResourceTest.class);
 
-    private static LdapAuthenticator ldapAuthenticator = Mockito.mock(LdapAuthenticator.class);
-    private static LdapUserIdentityDao ldapUserIdentityDao = Mockito.mock(LdapUserIdentityDao.class);;
-
     private static String luceneApplicationDirectory;
     private static String luceneUsersDirectory;
 
-    private static UserIdentityService userIdentityService;
     private static UserIdentityServiceV2 userIdentityServiceV2;
     private static UserAggregateService userAggregateService;
 
@@ -98,9 +89,6 @@ public class PasswordResourceTest {
         PasswordGenerator pwdGenerator = new PasswordGenerator();
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
-
-        userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao,  auditLogDao, pwdGenerator, luceneIndexer, luceneUserSearch);
-
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
 
         RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
@@ -110,7 +98,7 @@ public class PasswordResourceTest {
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         ApplicationService applicationService = new ApplicationService(null, auditLogDao, luceneApplicationIndexer, luceneApplicationSearcher);
 
-        userAggregateService = new UserAggregateService(userIdentityService, userIdentityServiceV2, userApplicationRoleEntryDao, applicationService, luceneIndexer, auditLogDao);
+        userAggregateService = new UserAggregateService(userIdentityServiceV2, userApplicationRoleEntryDao, applicationService, luceneIndexer, auditLogDao);
 
     }
 
@@ -127,8 +115,7 @@ public class PasswordResourceTest {
 
     @AfterClass
     public static void deleteTestDataDirectories() {
-        List<String> testDataDirectories = new ArrayList<String>()
-        {{
+        List<String> testDataDirectories = new ArrayList<String>() {{
             add(luceneUsersDirectory);
             add(luceneApplicationDirectory);
         }};
@@ -161,7 +148,7 @@ public class PasswordResourceTest {
 
         String password = new PasswordGenerator().generate();
 
-        PasswordResource passwordResource = new PasswordResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        PasswordResource passwordResource = new PasswordResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         Response response = passwordResource.changePasswordbyAdmin(applicationTokenId, adminUserTokenId, username, password);
 
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
@@ -177,7 +164,7 @@ public class PasswordResourceTest {
 
         String password = new PasswordGenerator().generate();
 
-        PasswordResource passwordResource = new PasswordResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        PasswordResource passwordResource = new PasswordResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         Response response = passwordResource.changePasswordbyAdmin(applicationTokenId, adminUserTokenId, username, password);
 
         assertEquals(response.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
@@ -186,13 +173,11 @@ public class PasswordResourceTest {
     }
 
 
-     void addTestUser() throws Exception {
+    void addTestUser() throws Exception {
         LDAPUserIdentity ldapUserIdentity = giveMeTestLdapUserIdentity();
         String json = new ObjectMapper().writeValueAsString(ldapUserIdentity);
 
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 

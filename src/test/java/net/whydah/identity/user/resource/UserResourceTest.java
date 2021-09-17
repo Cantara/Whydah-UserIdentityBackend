@@ -8,12 +8,9 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LdapAuthenticator;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
-import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -36,7 +33,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.naming.NamingException;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.nio.file.Paths;
@@ -52,13 +48,9 @@ import static org.mockito.Mockito.when;
 public class UserResourceTest {
     private static final Logger log = LoggerFactory.getLogger(UserResourceTest.class);
 
-    private static LdapAuthenticator ldapAuthenticator = Mockito.mock(LdapAuthenticator.class);
-    private static LdapUserIdentityDao ldapUserIdentityDao = Mockito.mock(LdapUserIdentityDao.class);;
-
     private static String luceneApplicationDirectory;
     private static String luceneUsersDirectory;
 
-    private static UserIdentityService userIdentityService;
     private static UserIdentityServiceV2 userIdentityServiceV2;
     private static UserAggregateService userAggregateService;
 
@@ -102,9 +94,6 @@ public class UserResourceTest {
         PasswordGenerator pwdGenerator = new PasswordGenerator();
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
-
-        userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao,  auditLogDao, pwdGenerator, luceneIndexer, luceneUserSearch);
-
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
 
         rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
@@ -114,7 +103,7 @@ public class UserResourceTest {
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         ApplicationService applicationService = new ApplicationService(null, auditLogDao, luceneApplicationIndexer, luceneApplicationSearcher);
 
-        userAggregateService = new UserAggregateService(userIdentityService, userIdentityServiceV2, userApplicationRoleEntryDao, applicationService, luceneIndexer, auditLogDao);
+        userAggregateService = new UserAggregateService(userIdentityServiceV2, userApplicationRoleEntryDao, applicationService, luceneIndexer, auditLogDao);
     }
 
     @Before
@@ -148,11 +137,7 @@ public class UserResourceTest {
         RDBMSUserIdentity rdbmsUserIdentity = giveMeTestRDBMSUserIdentity();
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
-        //when(ldapUserIdentityDao.deleteUserIdentity(any())).thenReturn(true);
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        //when(ldapUserIdentityDao.addUserIdentity(any())).thenReturn(true);
-
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -165,11 +150,7 @@ public class UserResourceTest {
         RDBMSUserIdentity rdbmsUserIdentity = giveMeTestRDBMSUserIdentity();
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
-        when(ldapUserIdentityDao.deleteUserIdentity(any())).thenReturn(true);
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(true);
-        when(ldapUserIdentityDao.addUserIdentity(any())).thenReturn(true);
-
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -190,7 +171,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
         /** create useridentity */
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -210,8 +191,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
         /** create useridentity */
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -220,13 +200,11 @@ public class UserResourceTest {
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
 
         /** get useridentity - useridentity only exists in db  */
-        when(userIdentityService.getUserIdentityForUid(any())).thenReturn(null);
         response = userResource.getUserIdentity(uid);
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
 
 
         /** get useridentity - after NamingException from LDAP occur  */
-        when(userIdentityService.getUserIdentityForUid(any())).thenThrow(new NamingException(""));
         response = userResource.getUserIdentity(uid);
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -244,11 +222,7 @@ public class UserResourceTest {
 
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
-        //when(ldapUserIdentityDao.deleteUserIdentity(any())).thenReturn(true);
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        //when(ldapUserIdentityDao.addUserIdentity(any())).thenReturn(true);
-
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -260,8 +234,6 @@ public class UserResourceTest {
         userIdentity.setEmail("test.testesen@gmail.com");
 
         String jsonUpdate = new ObjectMapper().writeValueAsString(userIdentity);
-
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(true);
 
         response = userResource.updateUserIdentity(uid, jsonUpdate);
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
@@ -281,8 +253,7 @@ public class UserResourceTest {
     public void test_deleteUserIdentityAndRoles_ok() throws Exception {
         String json = new ObjectMapper().writeValueAsString(giveMeTestRDBMSUserIdentity());
 
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         Response addResponse = userResource.addUserIdentity(json);
         assertEquals(addResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -292,7 +263,6 @@ public class UserResourceTest {
         String uid = addedUserIdentity.getUid();
         log.info("User={} added with username={}", uid, addedUserIdentity.getUsername());
 
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(true);
         Response deleteResponse = userResource.deleteUserIdentityAndRoles(uid);
         assertEquals(deleteResponse.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
     }
@@ -315,8 +285,7 @@ public class UserResourceTest {
 
 
     private Response addUser(RDBMSUserIdentity rdbmsUserIdentity) throws Exception {
-        when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-        UserResource userResource = new UserResource(userIdentityService, userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
 
         String uid = rdbmsUserIdentity.getUid();
 

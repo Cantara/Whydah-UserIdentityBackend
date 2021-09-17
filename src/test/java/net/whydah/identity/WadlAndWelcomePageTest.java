@@ -28,7 +28,6 @@ public class WadlAndWelcomePageTest {
     private Client client = ClientBuilder.newClient();
 
 
-
     private static Main main = null;
 
     @BeforeClass
@@ -50,7 +49,6 @@ public class WadlAndWelcomePageTest {
         FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneDir);
 
         main = new Main(6644);
-        main.startEmbeddedDS(configuration.asMap());
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper = new DatabaseMigrationHelper(dataSource);
@@ -77,8 +75,6 @@ public class WadlAndWelcomePageTest {
         dataSource.setPassword(roledbpasswd);
         return dataSource;
     }
-
-
 
 
     @AfterClass

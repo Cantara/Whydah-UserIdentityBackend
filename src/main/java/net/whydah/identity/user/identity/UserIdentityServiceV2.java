@@ -167,9 +167,7 @@ public class UserIdentityServiceV2 {
         } catch (RuntimeException e) {
             throw new RuntimeException("addUserIdentity to DB failed for " + userIdentity.toString(), e);
         }
-        if (userIdentityRepository.isRDBMSEnabled()) {
-            log.info("Added new useridentity to DB: username={}, uid={}", username, uid);
-        }
+        log.info("Added new useridentity to DB: username={}, uid={}", username, uid);
         return userIdentity;
     }
 
@@ -227,10 +225,6 @@ public class UserIdentityServiceV2 {
         luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
         userIdentityRepository.deleteUserIdentity(username);
         HealthResource.setNumberOfUsersDB(userIdentityRepository.countUsers());
-    }
-
-    public boolean isRDBMSEnabled() {
-        return userIdentityRepository.isRDBMSEnabled();
     }
 
     private void audit(String uid, String action, String what, String value) {

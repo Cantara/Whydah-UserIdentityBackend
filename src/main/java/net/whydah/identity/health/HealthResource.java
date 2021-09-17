@@ -30,13 +30,12 @@ public class HealthResource {
     private final HealthCheckService healthCheckService;
     private static SecurityTokenServiceClient securityTokenServiceClient;
     private static String applicationInstanceName;
-    private static boolean ok = true;
     private static boolean ok_db = true;
     private static long numberOfUsers = 0;
     private static int numberOfUsers_DB = 0;
     private static long numberOfApplications = 0;
 
-    private boolean usersRDBMSEnabled = false;
+    private final boolean usersRDBMSEnabled = false;
 
     @Autowired
     @Configure
@@ -49,12 +48,11 @@ public class HealthResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response isHealthy() {
-        ok = healthCheckService.isOK_LDAP();
         ok_db = healthCheckService.isOK_DB();
         try {
             String statusText = WhydahUtil.getPrintableStatus(securityTokenServiceClient.getWAS());
-            log.trace("isHealthy={}, {status}", ok, statusText);
-            if (ok) {
+            log.trace("isHealthy={}, {status}", ok_db, statusText);
+            if (ok_db) {
                 //return Response.status(Response.Status.NO_CONTENT).build();
                 return Response.ok(getHealthTextJson()).build();
             } else {
@@ -81,16 +79,14 @@ public class HealthResource {
     public String getHealthTextJson() {
         if (SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS() != null) {
             return "{\n" +
-                    "  \"Status\": \"" + ok + "\",\n" +
-                    "  \"Status (DB)\": \"" + ok_db + "\",\n" +
+                    "  \"Status\": \"" + ok_db + "\",\n" +
                     "  \"Version\": \"" + getVersion() + "\",\n" +
                     "  \"DEFCON\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getDefcon() + "\",\n" +
                     "  \"STS\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getSTS() + "\",\n" +
                     "  \"hasApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getActiveApplicationTokenId() != null) + "\",\n" +
-                   // "  \"hasValidApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().checkActiveSession()) + "\",\n" +
+                    // "  \"hasValidApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().checkActiveSession()) + "\",\n" +
                     "  \"users (LDAP)\": \"" + numberOfUsers + "\",\n" +
                     "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
-                    "  \"rdbms enabled)\": \"" + Boolean.toString(isUsersRDBMSEnabled()) + "\",\n" +
                     "  \"applications\": \"" + numberOfApplications + "\",\n" +
                     "  \"now\": \"" + Instant.now() + "\",\n" +
                     "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
@@ -101,8 +97,7 @@ public class HealthResource {
 
         }  // Else, return uninitialized was result
         return "{\n" +
-                "  \"Status\": \"" + ok + "\",\n" +
-                "  \"Status (DB)\": \"" + ok_db + "\",\n" +
+                "  \"Status\": \"" + ok_db + "\",\n" +
                 "  \"Version\": \"" + getVersion() + "\",\n" +
                 "  \"DEFCON\": \"" + "N/A" + "\",\n" +
                 "  \"STS\": \"" + "N/A" + "\",\n" +
@@ -110,7 +105,6 @@ public class HealthResource {
                 "  \"hasValidApplicationToken\": \"" + "false" + "\",\n" +
                 "  \"users (LDAP)\": \"" + numberOfUsers + "\",\n" +
                 "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
-                "  \"rdbms enabled)\": \"" + Boolean.toString(isUsersRDBMSEnabled()) + "\",\n" +
                 "  \"applications\": \"" + numberOfApplications + "\",\n" +
                 "  \"now\": \"" + Instant.now() + "\",\n" +
                 "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\",\n\n" +
@@ -122,7 +116,7 @@ public class HealthResource {
 
     public String getSimpleTextJson() {
         return "{\n" +
-                "  \"Status\": \"" + ok + "\",\n" +
+                "  \"Status\": \"" + ok_db + "\",\n" +
                 "  \"Version\": \"" + getVersion() + "\",\n" +
                 "  \"now\": \"" + Instant.now() + "\",\n" +
                 "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\"\n" +
@@ -165,14 +159,8 @@ public class HealthResource {
     }
 
 
-
     private static final String getLuceneVersion() {
         return Version.LATEST.toString();
     }
-
-    private boolean isUsersRDBMSEnabled() {
-        return healthCheckService.isRDBMSEnabled();
-    }
-
 }
 

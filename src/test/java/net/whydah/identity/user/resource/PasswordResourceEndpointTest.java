@@ -57,7 +57,6 @@ public class PasswordResourceEndpointTest {
         FileUtils.deleteDirectories(ldapPath, "target/bootstrapdata/", luceneUsersDir);
 
         main = new Main(6653);
-        main.startEmbeddedDS(configuration.asMap());
 
         dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);
