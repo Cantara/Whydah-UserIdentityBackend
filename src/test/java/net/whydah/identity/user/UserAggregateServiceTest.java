@@ -1,7 +1,7 @@
 package net.whydah.identity.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
@@ -106,7 +106,7 @@ public class UserAggregateServiceTest {
     @Ignore
     public void testJsonFromUserAggregate() throws IOException {
         String username = "usernameABC";
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uid", username, "firstName", "lastName", "email", "password", "12345678", "personRef"
+        LuceneUserIdentity userIdentity = new LuceneUserIdentity("uid", username, "firstName", "lastName", "email", "password", "12345678", "personRef"
         );
 
         UserApplicationRoleEntry role = new UserApplicationRoleEntry();

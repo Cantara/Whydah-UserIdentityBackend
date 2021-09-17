@@ -1,10 +1,9 @@
 package net.whydah.identity.dataimport;
 
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.identity.UserIdentityConverter;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.user.types.UserIdentity;
@@ -34,33 +33,29 @@ public class WhydahUserIdentityImporter {
 	private static final int CELLPHONE = 6;
 	private static final int PERSONREF = 7;
 	
-    private final LdapUserIdentityDao ldapUserIdentityDao;
-    private final RDBMSLdapUserIdentityRepository userIdentityRepository;
+    private final RDBMSUserIdentityRepository userIdentityRepository;
 
     public LuceneUserIndexer luceneIndexer;
     private final BCryptService bCryptService;
 
     @Autowired
-    public WhydahUserIdentityImporter(LdapUserIdentityDao ldapUserIdentityDao, RDBMSLdapUserIdentityRepository
+    public WhydahUserIdentityImporter(RDBMSUserIdentityRepository
             userIdentityRepository, Directory index, BCryptService bCryptService) throws IOException {
-        this.ldapUserIdentityDao = ldapUserIdentityDao;
         this.userIdentityRepository = userIdentityRepository;
         this.luceneIndexer = new LuceneUserIndexer(index);
         this.bCryptService = bCryptService;
     }
     
     public void importUsers(InputStream userImportSource) {
-        List<LDAPUserIdentity> users = parseUsers(userImportSource);
-        int userAddedLdapCount = saveUsers(users);
+        List<LuceneUserIdentity> users = parseUsers(userImportSource);
         int userAddedDBCount = saveUsersToDB(users);
-        log.info("{} users imported to LDAP.", userAddedLdapCount);
         log.info("{} users imported to DB", userAddedDBCount);
     }
 
-    public static List<LDAPUserIdentity> parseUsers(InputStream userImportStream) {
+    public static List<LuceneUserIdentity> parseUsers(InputStream userImportStream) {
         BufferedReader reader = null;
 		try {
-            List<LDAPUserIdentity> users = new ArrayList<>();
+            List<LuceneUserIdentity> users = new ArrayList<>();
             reader = new BufferedReader(new InputStreamReader(userImportStream, IamDataImporter.CHARSET_NAME));
 	        String line;
 	        while (null != (line = reader.readLine())) {
@@ -73,8 +68,8 @@ public class WhydahUserIdentityImporter {
                 String[] lineArray = line.split(",");
                 validateLine(line, lineArray);
 
-                LDAPUserIdentity userIdentity;
-                userIdentity = new LDAPUserIdentity();
+                LuceneUserIdentity userIdentity;
+                userIdentity = new LuceneUserIdentity();
                 userIdentity.setUid(cleanString(lineArray[USERID]));
                 userIdentity.setUsername(cleanString(lineArray[USERNAME]));
 	        	userIdentity.setPassword(cleanString(lineArray[PASSWORD]));
@@ -112,36 +107,13 @@ public class WhydahUserIdentityImporter {
 		}
 	}
 
-    private int saveUsers(List<LDAPUserIdentity> users) {
+    private int saveUsersToDB(List<LuceneUserIdentity> users) {
         int userAddedCount = 0;
         try {
             List<UserIdentity> userIdentities = new LinkedList<>();
-            for (LDAPUserIdentity userIdentity : users) {
-                boolean added = ldapUserIdentityDao.addUserIdentity(userIdentity);
-                if (added) {
-                    log.info("Imported user: uid={}, username={}, name={} {}, email={}",
-                            userIdentity.getUid(), userIdentity.getUsername(), userIdentity.getFirstName(), userIdentity.getLastName(), userIdentity.getEmail());
-                    userAddedCount++;
-                }
-                userIdentities.add(userIdentity);
-            }
-
-            luceneIndexer.addToIndex(userIdentities);
-
-        } catch (Exception e) {
-            log.error("Error importing users to LDAP!", e);
-        }
-
-        return userAddedCount;
-    }
-
-    private int saveUsersToDB(List<LDAPUserIdentity> users) {
-        int userAddedCount = 0;
-        try {
-            List<UserIdentity> userIdentities = new LinkedList<>();
-            for (LDAPUserIdentity userIdentity : users) {
+            for (LuceneUserIdentity userIdentity : users) {
                 UserIdentityConverter converter = new UserIdentityConverter(bCryptService);
-                RDBMSUserIdentity rdbmsUserIdentity = converter.convertFromLDAPUserIdentity(userIdentity);
+                RDBMSUserIdentity rdbmsUserIdentity = converter.convertFromLuceneUserIdentity(userIdentity);
 
                 boolean added = userIdentityRepository.addUserIdentity(rdbmsUserIdentity);
 

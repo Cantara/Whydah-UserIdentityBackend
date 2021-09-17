@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 public class UserIdentityServiceV2Test {
     private static PasswordGenerator passwordGenerator;
     private static DatabaseMigrationHelper dbHelper;
-    private static RDBMSLdapUserIdentityRepository rdbmsLdapUserIdentityRepository;
+    private static RDBMSUserIdentityRepository rdbmsUserIdentityRepository;
     private static ConstrettoConfiguration configuration;
 
     private static LuceneUserSearch luceneUserSearch;
@@ -91,12 +91,12 @@ public class UserIdentityServiceV2Test {
         FileUtils.deleteDirectories(luceneUsersDir);
         LuceneUserIndexer luceneUserIndexer= new LuceneUserIndexer(index);
 
-        RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource);
 
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
-        rdbmsLdapUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
+        rdbmsUserIdentityRepository = new RDBMSUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, configuration);
 
-        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsLdapUserIdentityRepository, auditLogDao, luceneUserIndexer, luceneUserSearch, bCryptService);
+        userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, luceneUserIndexer, luceneUserSearch, bCryptService);
     }
 
     @Before

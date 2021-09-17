@@ -13,18 +13,14 @@ import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LdapAuthenticator;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
-import net.whydah.identity.user.identity.UserIdentityService;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.identity.user.search.LuceneUserSearch;
 import net.whydah.identity.util.FileUtils;
-import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.ddd.model.user.PersonRef;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.types.UserAggregate;
@@ -63,7 +59,6 @@ import static org.junit.Assert.assertTrue;
 public class UserAuthenticationEndpointTest {
     private static UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private static UserAdminHelper userAdminHelper;
-    private static UserIdentityService userIdentityService;
     private static UserIdentityServiceV2 userIdentityServiceV2;
     private static ApplicationService applicationService;
     private static Main main = null;
@@ -71,7 +66,7 @@ public class UserAuthenticationEndpointTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-    	//ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
+        //ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
         ApplicationMode.setCIMode();
         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
                 .createPropertiesStore()
@@ -81,21 +76,19 @@ public class UserAuthenticationEndpointTest {
                 .getConfiguration();
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
-        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
         String luceneUserDir = configuration.evaluateToString("lucene.usersdirectory");
         String luceneAppDir = configuration.evaluateToString("lucene.applicationsdirectory");
-        FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneUserDir, luceneAppDir);
+        FileUtils.deleteDirectories(roleDBDirectory, luceneUserDir, luceneAppDir);
 
         main = new Main(6649);
-        main.startEmbeddedDS(configuration.asMap());
-      
-        
+
+
         BasicDataSource dataSource = Main.initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper = new DatabaseMigrationHelper(dataSource);
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
-        
+
         main.startJetty();
 
         ApplicationDao applicationDao = new ApplicationDao(dataSource);
@@ -108,44 +101,30 @@ public class UserAuthenticationEndpointTest {
         LuceneUserIndexer luceneUserIndexer = new LuceneUserIndexer(userIndex);
 
         LuceneApplicationSearch luceneAppSearch = new LuceneApplicationSearch(appIndex);
-        
+
         userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
-        applicationService=  new ApplicationService(applicationDao,  auditLogDao, luceneApplicationIndexer, luceneAppSearch);
+        applicationService = new ApplicationService(applicationDao, auditLogDao, luceneApplicationIndexer, luceneAppSearch);
 
 
         new IamDataImporter(dataSource, configuration).importIamData();
 
-
-        String primaryLdapUrl = configuration.evaluateToString("ldap.primary.url");
-        String primaryAdmPrincipal = configuration.evaluateToString("ldap.primary.admin.principal");
-        String primaryAdmCredentials = configuration.evaluateToString("ldap.primary.admin.credentials");
-        String primaryUidAttribute = configuration.evaluateToString("ldap.primary.uid.attribute");
-        String primaryUsernameAttribute = configuration.evaluateToString("ldap.primary.username.attribute");
-        String readonly = configuration.evaluateToString("ldap.primary.readonly");
-
         BCryptService bCryptService = new BCryptService("57hruioqe", 4);
 
-        LdapUserIdentityDao ldapUserIdentityDao = new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
-        LdapAuthenticator ldapAuthenticator = new LdapAuthenticator(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute);
-
-        PasswordGenerator pwg = new PasswordGenerator();
-        userIdentityService = new UserIdentityService(ldapAuthenticator, ldapUserIdentityDao, auditLogDao, pwg, luceneUserIndexer, null);
-
-        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
+        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        RDBMSUserIdentityRepository userIdentityRepository = new RDBMSUserIdentityRepository(userIdentityDao, bCryptService, configuration);
         LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
         userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, luceneUserIndexer, searcher, bCryptService);
 
-        userAdminHelper = new UserAdminHelper(ldapUserIdentityDao, userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, configuration);
+        userAdminHelper = new UserAdminHelper(userIdentityDao, luceneUserIndexer, auditLogDao, userApplicationRoleEntryDao, bCryptService, configuration);
 
         RestAssured.port = main.getPort();
         RestAssured.basePath = Main.CONTEXT_PATH;
-        
+
     }
 
     @AfterClass
-	public static void tearDown() {
-    	if (main != null) {
+    public static void tearDown() {
+        if (main != null) {
             main.stop();
         }
     }
@@ -221,9 +200,9 @@ public class UserAuthenticationEndpointTest {
         String email = "e@mail.com";
         newIdentity.setEmail(email);
 
-        UserAggregateService userAggregateService = new UserAggregateService(userIdentityService, userIdentityServiceV2, userApplicationRoleEntryDao,
+        UserAggregateService userAggregateService = new UserAggregateService(userIdentityServiceV2, userApplicationRoleEntryDao,
                 applicationService, null, null);
-        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityService, userIdentityServiceV2, new BCryptService("iHI458at4", 4));
+        UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityServiceV2, new BCryptService("iHI458at4", 4));
 
         String roleValue = "roleValue";
         Response response = resource.createAndAuthenticateUser(newIdentity, roleValue, false);
@@ -234,12 +213,6 @@ public class UserAuthenticationEndpointTest {
         String userXml = (String) response.getEntity();
         UserAggregate userAggregate = UserAggregateMapper.fromXML(userXml);
 
-        /*
-        Viewable entity = (Viewable) response.getEntity();
-        UIBUserAggregate model = (UIBUserAggregate) entity.getModel();
-        LDAPUserIdentity identity = model.getIdentity();
-        */
-        //LDAPUserIdentity identity = userAggregate.getIdentity();
         assertEquals(username, userAggregate.getUsername());
         assertTrue(PersonRef.isValid(userAggregate.getPersonRef()));
         assertEquals(email, userAggregate.getEmail());

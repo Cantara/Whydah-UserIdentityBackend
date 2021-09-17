@@ -13,8 +13,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public class RDBMSLdapUserIdentityDao {
-    private static final Logger log = LoggerFactory.getLogger(RDBMSLdapUserIdentityDao.class);
+public class RDBMSUserIdentityDao {
+    private static final Logger log = LoggerFactory.getLogger(RDBMSUserIdentityDao.class);
 
     private static String UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE id=?";
     private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=?";
@@ -26,7 +26,7 @@ public class RDBMSLdapUserIdentityDao {
     private final ObjectMapper mapper;
 
     @Autowired
-    public RDBMSLdapUserIdentityDao(BasicDataSource dataSource) {
+    public RDBMSUserIdentityDao(BasicDataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.mapper = new ObjectMapper();
 

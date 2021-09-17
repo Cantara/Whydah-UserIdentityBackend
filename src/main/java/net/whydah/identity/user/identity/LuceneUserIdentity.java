@@ -9,7 +9,6 @@ import net.whydah.sso.ddd.model.user.PersonRef;
 import net.whydah.sso.ddd.model.user.UID;
 import net.whydah.sso.ddd.model.user.UserName;
 import net.whydah.sso.user.types.UserIdentity;
-import org.apache.directory.api.ldap.model.schema.syntaxCheckers.TelephoneNumberSyntaxChecker;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -20,22 +19,18 @@ import javax.mail.internet.InternetAddress;
 import java.io.Serializable;
 
 /**
- * A class representing the identity of a User - backed by LDAP scheme.
- * See getLdapAttributes in LDAPHelper for mapping to LDAP attributes.
+ * A class representing the identity of a User.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LDAPUserIdentity extends UserIdentity implements Serializable {
-    public static final String UID = "uid";
-    private static final Logger logger = LoggerFactory.getLogger(LDAPUserIdentity.class);
+public class LuceneUserIdentity extends UserIdentity implements Serializable {
+    private static final Logger logger = LoggerFactory.getLogger(LuceneUserIdentity.class);
     private static final long serialVersionUID = 1;
-    private static final TelephoneNumberSyntaxChecker telephoneNumberSyntaxChecker = new TelephoneNumberSyntaxChecker();
-    //private String uid;
 
-    public LDAPUserIdentity() {
+    public LuceneUserIdentity() {
     }
 
-    public LDAPUserIdentity(String uid, String username, String firstName, String lastName, String email, String password,
-                            String cellPhone, String personRef) {
+    public LuceneUserIdentity(String uid, String username, String firstName, String lastName, String email, String password,
+                              String cellPhone, String personRef) {
         this.uid = new UID(uid);
         this.username = new UserName(username != null ? username : email);
         this.firstName = new FirstName(firstName);
@@ -46,7 +41,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         setPassword(password);
     }
 
-    public LDAPUserIdentity(UserIdentity userIdentity, String password) {
+    public LuceneUserIdentity(UserIdentity userIdentity, String password) {
         this.uid = new UID(userIdentity.getUid());
         this.username = new UserName((userIdentity.getUsername() != null ? userIdentity.getUsername() : userIdentity.getEmail()));
         this.firstName = new FirstName(userIdentity.getFirstName());
@@ -81,46 +76,9 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         }
     }
 
-//    public void validate() throws InvalidUserIdentityFieldException {
-//        validateSetAndMinimumLength(UID, uid, 2);
-//        validateSetAndMinimumLength("username", username.getInput(), 3);
-//
-//        validateEmail();
-//
-//        //Printable string (alphabetic, digits, ', (, ), +, ,, -, ., /, :, ?, and space) and "
-//        //http://pic.dhe.ibm.com/infocenter/zvm/v6r3/index.jsp?topic=%2Fcom.ibm.zvm.v630.kldl0%2Fkldl023.htm
-//        if (cellPhone != null && !telephoneNumberSyntaxChecker.isValidSyntax(cellPhone)) {
-//            throw new InvalidUserIdentityFieldException("cellPhone", cellPhone);
-//        }
-//
-//        // valid
-//    }
-//
-//    private void validateSetAndMinimumLength(String key, String value, int minLength) {
-//        if (value == null || value.length() < minLength) {
-//            throw new InvalidUserIdentityFieldException(key, value);
-//        }
-//    }
-
-
-//    private void validateEmail() {
-//        if (email == null || email.length() < 5) {
-//            throw new InvalidUserIdentityFieldException("email", email);
-//        }
-//
-//        InternetAddress internetAddress = new InternetAddress();
-//        internetAddress.setAddress(email);
-//        try {
-//            internetAddress.validate();
-//        } catch (AddressException e) {
-//            throw new InvalidUserIdentityFieldException("email", email);
-//        }
-//    }
-
-
     @Override
     public String toString() {
-        return "LDAPUserIdentity{" +
+        return "LuceneUserIdentity{" +
                 "uid='" + uid + '\'' +
                 ", username='" + username + '\'' +
                 ", firstName='" + firstName + '\'' +
@@ -140,7 +98,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
             return false;
         }
 
-        LDAPUserIdentity that = (LDAPUserIdentity) o;
+        LuceneUserIdentity that = (LuceneUserIdentity) o;
 
         if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
             return false;
@@ -183,9 +141,9 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.uid = new UID(uid);
     }
 
-    public static LDAPUserIdentity fromJson(String userJson) {
+    public static LuceneUserIdentity fromJson(String userJson) {
         try {
-            LDAPUserIdentity userIdentity = new LDAPUserIdentity();
+            LuceneUserIdentity userIdentity = new LuceneUserIdentity();
 
             JSONObject jsonobj = new JSONObject(userJson);
 
@@ -202,8 +160,6 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
                 internetAddress.validate();
                 userIdentity.setEmail(email);
             } catch (AddressException e) {
-                //log.error(String.format("E-mail: %s is of wrong format.", email));
-                //return Response.status(Response.Status.BAD_REQUEST).build();
                 throw new IllegalArgumentException(String.format("E-mail: %s is of wrong format.", email));
             }
             userIdentity.setUsername(username);
@@ -212,7 +168,6 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
 
             userIdentity.setCellPhone(jsonobj.getString("cellPhone"));
             userIdentity.setPersonRef(jsonobj.getString("personRef"));
-            //userIdentity.setUid(UUID.randomUUID().toString());
             return userIdentity;
         } catch (JSONException e) {
             throw new IllegalArgumentException("Error parsing json", e);
@@ -230,18 +185,4 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         }
         return email;
     }
-    /*
-    private static String getValidLDAPPhoneNumber(String text){
-        if (text == null) {
-            return null;
-        }
-
-        text = text.replaceAll(" +", "");
-        if (text != null && Pattern.matches("(d\\+)?([+0-9]*)", text) == true && text.length() > 7) {
-            return text;
-        }
-
-        return null;
-    }
-    */
 }

@@ -36,7 +36,11 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 
 public class UserAdminTest {
@@ -63,12 +67,10 @@ public class UserAdminTest {
                 .done()
                 .getConfiguration();
 
-        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
         luceneUsersDir = configuration.evaluateToString("lucene.usersdirectory");
-        FileUtils.deleteDirectories(ldapPath, "target/bootstrapdata/", luceneUsersDir);
+        FileUtils.deleteDirectories("target/bootstrapdata/", luceneUsersDir);
         
         main = new Main(6653);
-        main.startEmbeddedDS(configuration.asMap());
 
         dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);

@@ -6,13 +6,11 @@ import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityConverter;
-import net.whydah.identity.user.identity.UserIdentityService;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
 import net.whydah.sso.user.types.UserAggregate;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
-import net.whydah.sso.user.types.UserIdentity;
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +52,6 @@ public class UserAuthenticationEndpoint {
 
     private final UserAggregateService userAggregateService;
     private final UserAdminHelper userAdminHelper;
-    private final UserIdentityService userIdentityService;
     private final UserIdentityServiceV2 userIdentityServiceV2;
     private final BCryptService bCryptService;
     private final UserIdentityConverter userIdentityConverter;
@@ -67,11 +64,10 @@ public class UserAuthenticationEndpoint {
 
     @Autowired
     public UserAuthenticationEndpoint(UserAggregateService userAggregateService, UserAdminHelper userAdminHelper,
-                                      UserIdentityService userIdentityService, UserIdentityServiceV2 userIdentityServiceV2,
+                                      UserIdentityServiceV2 userIdentityServiceV2,
                                       BCryptService bCryptService) {
         this.userAggregateService = userAggregateService;
         this.userAdminHelper = userAdminHelper;
-        this.userIdentityService = userIdentityService;
         this.userIdentityServiceV2 = userIdentityServiceV2;
         //this.luceneUserIndexer=luceneUserIndexer;
         //this.hostname = getLocalhostName();
@@ -112,24 +108,13 @@ public class UserAuthenticationEndpoint {
     }
 
     private Response authenticateUser(String username, String password) {
-        UserIdentity userIdentity = null;
+        RDBMSUserIdentity userIdentity = null;
         //rdbms takes precedence
         try {
-            RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.authenticate(username, password);
-            if (userIdentity == null && rdbmsUserIdentity != null) {
-                userIdentity = rdbmsUserIdentity;
-            }
+            userIdentity = userIdentityServiceV2.authenticate(username, password);
         } catch (Exception e) {
-        	e.printStackTrace();
+            e.printStackTrace();
             log.warn(String.format("User=%s not found in DB.", username), e);
-        }
-        if(userIdentity ==null) {
-        	try {
-        		userIdentity = userIdentityService.authenticate(username, password);
-        	} catch (Exception e) {
-        		e.printStackTrace();
-        		log.warn(String.format("User=%s not found in LDAP.", username), e);
-        	}
         }
 
         if (userIdentity == null) {
@@ -230,7 +215,7 @@ public class UserAuthenticationEndpoint {
             DocumentBuilder builder = domFactory.newDocumentBuilder();
             userDoc = builder.parse(input);
         } catch (Exception e) {
-            log.error("Error when creating LDAPUserIdentity from incoming xml stream.", e);
+            log.error("Error when creating Document from incoming xml stream.", e);
             return null;
         }
         return userDoc;
@@ -247,26 +232,20 @@ public class UserAuthenticationEndpoint {
                 return response;
             }
 
-            if (userIdentity != null) {
-                RDBMSUserIdentity existingUserIdentity = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
-                if (existingUserIdentity != null) {
-                    log.trace("createAndAuthenticateUser - Checking for UID mismatch. received: {} found {}", userIdentity.getUid(), existingUserIdentity.getUid());
-                    if (!userIdentity.getUid().equalsIgnoreCase(existingUserIdentity.getUid())) {
-                        log.error("createAndAuthenticateUser - Got user with dogus UID, resetting to found UID");
-                        userIdentity.setUid(existingUserIdentity.getUid());
-                    }
+            RDBMSUserIdentity existingUserIdentity = userIdentityServiceV2.getUserIdentity(userIdentity.getUsername());
+            if (existingUserIdentity != null) {
+                log.trace("createAndAuthenticateUser - Checking for UID mismatch. received: {} found {}", userIdentity.getUid(), existingUserIdentity.getUid());
+                if (!userIdentity.getUid().equalsIgnoreCase(existingUserIdentity.getUid())) {
+                    log.error("createAndAuthenticateUser - Got user with dogus UID, resetting to found UID");
+                    userIdentity.setUid(existingUserIdentity.getUid());
                 }
-                userAdminHelper.addDefaultRoles(userIdentity, roleValue);
-                if (reuse) {
-                    log.info("createAndAuthenticateUser - update useridentity from 3party token ");
-                    userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
-                    // TODO Delete LDAP thingy when not used anymore, for now the update-user-identity will not work with LDAP!
-                    userIdentityService.updateUserIdentity(userIdentity.getUsername(), userIdentityConverter.convertFromRDBMSUserIdentity(userIdentity));
-                    log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
-                    userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
-                    userIdentityService.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
-
-                }
+            }
+            userAdminHelper.addDefaultRoles(userIdentity, roleValue);
+            if (reuse) {
+                log.info("createAndAuthenticateUser - update useridentity from 3party token ");
+                userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
+                log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
+                userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
             }
 
             log.trace("createAndAuthenticateUser - authenticateUser:{}", userIdentity.getUsername());
@@ -278,9 +257,7 @@ public class UserAuthenticationEndpoint {
                 userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
                 log.info("createAndAuthenticateUser - update useridentity from 3party token ");
                 userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
-                if (userIdentity != null) {
-                    userAdminHelper.addDefaultRoles(userIdentity, roleValue);
-                }
+                userAdminHelper.addDefaultRoles(userIdentity, roleValue);
 
                 log.trace("createAndAuthenticateUser authenticateUser:{}", userIdentity.getUsername());
                 return authenticateUser(userIdentity.getUsername(), userIdentity.getPassword());

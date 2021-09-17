@@ -1,6 +1,5 @@
 package net.whydah.identity.dataimport;
 
-import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.application.search.LuceneApplicationIndexer;
@@ -8,14 +7,12 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.organization.OrganizationDao;
 import net.whydah.identity.organization.OrganizationRepository;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.role.UserApplicationRoleEntryRepository;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.constretto.ConstrettoConfiguration;
@@ -26,15 +23,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
-import java.util.Map;
 
 public class IamDataImporter {
     private static final Logger log = LoggerFactory.getLogger(IamDataImporter.class);
     static final String CHARSET_NAME = "UTF-8";
 
     private final BasicDataSource dataSource;
-    private final QueryRunner queryRunner;
-    private final LdapUserIdentityDao ldapUserIdentityDao;
     private final String luceneUsersDir;
     private final String luceneApplicationsDir;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
@@ -42,23 +36,17 @@ public class IamDataImporter {
 
     private final UserApplicationRoleEntryRepository userApplicationRoleEntryRepository;
     private final OrganizationRepository organizationRepository;
-    private final RDBMSLdapUserIdentityRepository userIdentityRepository;
+    private final RDBMSUserIdentityRepository userIdentityRepository;
     private final BCryptService bCryptService;
 
-    private String applicationsImportSource;
-    private String organizationsImportSource;
-    private String userImportSource;
-    private String roleMappingImportSource;
+    private final String applicationsImportSource;
+    private final String organizationsImportSource;
+    private final String userImportSource;
+    private final String roleMappingImportSource;
 
 
-    public IamDataImporter(BasicDataSource dataSource, ConstrettoConfiguration config)  {
-        this(dataSource, config, Main.ldapProperties(config));
-    }
-
-    //used by tests
-    IamDataImporter(BasicDataSource dataSource, ConstrettoConfiguration configuration, Map<String, String> ldapProperties)  {
+    public IamDataImporter(BasicDataSource dataSource, ConstrettoConfiguration configuration) {
         this.dataSource = dataSource;
-        this.queryRunner = new QueryRunner(dataSource);
         this.userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         this.userApplicationRoleEntryRepository = new UserApplicationRoleEntryRepository(userApplicationRoleEntryDao);
 
@@ -73,20 +61,17 @@ public class IamDataImporter {
         this.userImportSource = configuration.evaluateToString("import.usersource");
         this.roleMappingImportSource = configuration.evaluateToString("import.rolemappingsource");
 
-        this.ldapUserIdentityDao = initLdapUserIdentityDao(ldapProperties);
-
         OrganizationDao organizationDao = new OrganizationDao(dataSource);
         this.organizationRepository = new OrganizationRepository(organizationDao);
 
-        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource);
         this.bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
-        this.userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
+        this.userIdentityRepository = new RDBMSUserIdentityRepository(userIdentityDao, bCryptService, configuration);
     }
 
 
-
     //Database migrations should already have been performed before import.
-	public void importIamData() {
+    public void importIamData() {
         importApplications(applicationsImportSource);
         importOrganizations(organizationsImportSource);
         importUsers(userImportSource);
@@ -111,7 +96,7 @@ public class IamDataImporter {
         try {
             uis = openInputStream("Users", userImportSource);
             NIOFSDirectory usersIndex = createDirectory(luceneUsersDir);
-            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(ldapUserIdentityDao, userIdentityRepository, usersIndex, bCryptService);
+            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(userIdentityRepository, usersIndex, bCryptService);
             userIdentityImporter.importUsers(uis);
         } catch (Exception e) {
             log.error("Error in importing users", e);
@@ -158,7 +143,7 @@ public class IamDataImporter {
     InputStream openInputStream(String tableName, String importSource) {
         InputStream is;
         if (FileUtils.localFileExist(importSource)) {
-            log.info("Importing {} from local config override. {}", tableName,importSource);
+            log.info("Importing {} from local config override. {}", tableName, importSource);
             is = FileUtils.openLocalFile(importSource);
         } else {
             log.info("Import {} from classpath {}", tableName, importSource);
@@ -167,16 +152,6 @@ public class IamDataImporter {
         return is;
     }
 
-
-    private LdapUserIdentityDao initLdapUserIdentityDao(Map<String, String> ldapProperties) {
-        String primaryLdapUrl = ldapProperties.get("ldap.primary.url");
-        String primaryAdmPrincipal = ldapProperties.get("ldap.primary.admin.principal");
-        String primaryAdmCredentials = ldapProperties.get("ldap.primary.admin.credentials");
-        String primaryUidAttribute = ldapProperties.get("ldap.primary.uid.attribute");
-        String primaryUsernameAttribute = ldapProperties.get("ldap.primary.username.attribute");
-        String readonly = ldapProperties.get("ldap.primary.readonly");
-        return new LdapUserIdentityDao(primaryLdapUrl, primaryAdmPrincipal, primaryAdmCredentials, primaryUidAttribute, primaryUsernameAttribute, readonly);
-    }
 
     private NIOFSDirectory createDirectory(String luceneDir) {
         try {
@@ -193,13 +168,8 @@ public class IamDataImporter {
         }
     }
 
-    //expose for test
-    LdapUserIdentityDao getLdapUserIdentityDao() {
-        return ldapUserIdentityDao;
-    }
-
     // expose for test
-    RDBMSLdapUserIdentityRepository getUserIdentityRepository() {
+    RDBMSUserIdentityRepository getUserIdentityRepository() {
         return userIdentityRepository;
     }
 

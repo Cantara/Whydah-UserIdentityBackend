@@ -2,7 +2,6 @@ package net.whydah.identity;
 
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
-import net.whydah.identity.ldapserver.EmbeddedADS;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.sso.util.SSLTool;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -22,28 +21,22 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toMap;
 
 public class Main {
     public static final String CONTEXT_PATH = "/uib";
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
-    private EmbeddedADS ads;
     private int webappPort;
     private Server server;
 
     /*
-     * 1a. Default:        External ldap and database
+     * 1a. Default:        External database
      * or
-     * 1b. Test scenario:  startJetty embedded Ldap and database
+     * 1b. Test scenario:  startJetty and database
      *
      * 2. run db migrations (should not share any objects with the web application)
      *
@@ -102,37 +95,18 @@ public class Main {
 
 
         boolean importEnabled = config.evaluateToBoolean("import.enabled");
-        boolean embeddedDSEnabled = config.evaluateToBoolean("ldap.embedded");
         String version = Main.class.getPackage().getImplementationVersion();
-        log.info("Starting UserIdentityBackend version={}, import.enabled={}, embeddedDSEnabled={}", version, importEnabled, embeddedDSEnabled);
+        log.info("Starting UserIdentityBackend version={}, import.enabled={}", version, importEnabled);
 
 
         initLucene(config);
 
-        if (embeddedDSEnabled) {
-            startEmbeddedDS(config);
-        }
-
-
         BasicDataSource dataSource = initRoleDB(config);
 
         if (importEnabled) {
-            // Populate ldap, database and lucene index
+            // Populate database and lucene index
             new IamDataImporter(dataSource, config).importIamData();
         }
-
-
-        if (!embeddedDSEnabled) {
-            try {
-                // wait forever...
-                Thread.currentThread().join();
-            } catch (InterruptedException ie) {
-                log.warn("Thread was interrupted.", ie);
-            }
-            log.debug("Finished waiting for Thread.currentThread().join()");
-            stop();
-        }
-
 
         startJetty();
         joinJetty();
@@ -155,39 +129,6 @@ public class Main {
         log.info("Import enabled: {}", importEnabled);
         log.info("luceneUserdirectory: {}", luceneUsersDirectory);
         log.info("luceneApplicationDirectory: {}", luceneApplicationDirectory);
-    }
-
-
-    private void startEmbeddedDS(ConstrettoConfiguration config) {
-        boolean importEnabled = config.evaluateToBoolean("import.enabled");
-        if (importEnabled) {
-            String ldapEmbeddedpath = config.evaluateToString("ldap.embedded.directory");
-            FileUtils.deleteDirectories(ldapEmbeddedpath);
-        }
-        startEmbeddedDS(ldapProperties(config));
-    }
-
-    public static Map<String, String> ldapProperties(ConstrettoConfiguration config) {
-        String prefix = "ldap";
-        final Map<String, String> ldapProperties = new HashMap<>();
-        config.forEach(property -> {
-            if (property.getKey().startsWith(prefix)) {
-                ldapProperties.put(property.getKey(), property.getValue());
-            }
-        });
-        ldapProperties.put("import.enabled", config.evaluateToString("import.enabled"));
-        return ldapProperties;
-    }
-
-    public void startEmbeddedDS(Map<String, String> properties) {
-        ads = new EmbeddedADS(properties);
-        try {
-            ads.init();
-            ads.start();
-        } catch (Exception e) {
-            //runtimeException(e);
-            log.error("Unable to startJetty Embedded LDAP chema", e);
-        }
     }
 
 
@@ -259,19 +200,6 @@ public class Main {
             server.stop();
         } catch (Exception e) {
             log.warn("Error when stopping Jetty server", e);
-        }
-
-        stopEmbeddedDS();
-    }
-
-    public void stopEmbeddedDS() {
-        if (ads != null) {
-            log.info("Stopping embedded Apache DS.");
-            try {
-                ads.stop();
-            } catch (Exception e) {
-                runtimeException(e);
-            }
         }
     }
 

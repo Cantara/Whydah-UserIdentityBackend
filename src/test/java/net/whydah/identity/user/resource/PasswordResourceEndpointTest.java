@@ -52,12 +52,10 @@ public class PasswordResourceEndpointTest {
                 .done()
                 .getConfiguration();
 
-        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
         luceneUsersDir = configuration.evaluateToString("lucene.usersdirectory");
-        FileUtils.deleteDirectories(ldapPath, "target/bootstrapdata/", luceneUsersDir);
+        FileUtils.deleteDirectories( "target/bootstrapdata/", luceneUsersDir);
 
         main = new Main(6653);
-        main.startEmbeddedDS(configuration.asMap());
 
         dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper =  new DatabaseMigrationHelper(dataSource);

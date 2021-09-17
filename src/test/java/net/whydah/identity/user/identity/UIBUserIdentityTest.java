@@ -14,7 +14,7 @@ import java.util.UUID;
 public class UIBUserIdentityTest {
     @Test
     public void testValidateCellPhoneOK() {
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uid1", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", "", "personRef1");
+        LuceneUserIdentity userIdentity = new LuceneUserIdentity("uid1", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", "", "personRef1");
         String[] telephoneNumbers = new String[]{"12345678", "+47 12345678", "+4799999999", "90 90 90 90", "", null};
 
         for (String telephoneNumber : telephoneNumbers) {
@@ -24,7 +24,7 @@ public class UIBUserIdentityTest {
     @Test(expected = IllegalArgumentException.class)
     public void testValidateCellPhoneInvalid() {
     	try{
-    		LDAPUserIdentity userIdentity = new LDAPUserIdentity("uid1", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", "", "personRef1");
+    		LuceneUserIdentity userIdentity = new LuceneUserIdentity("uid1", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", "", "personRef1");
     		userIdentity.setCellPhone("900-FLYING-CIRCUS");
     	} catch(Exception ex ){
     		throw ex;
@@ -34,7 +34,7 @@ public class UIBUserIdentityTest {
 
     @Test
     public void testValidatePersonRefOK() {
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uid2", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", null, "personRef1");
+        LuceneUserIdentity userIdentity = new LuceneUserIdentity("uid2", "username1", "firstName1", "lastName1", "valid@email.dk", "password1", null, "personRef1");
         String[] personRefs = new String[]{"0", "123", "abc", "123abc", "valid@email.dk", "123-456", "123/456", "", null};
         for (String personRef : personRefs) {
             userIdentity.setPersonRef(personRef);
@@ -65,7 +65,7 @@ public class UIBUserIdentityTest {
 
         Random rand = new Random();
         rand.setSeed(new java.util.Date().getTime());
-        LDAPUserIdentity userIdentity = new LDAPUserIdentity("uid3",
+        LuceneUserIdentity userIdentity = new LuceneUserIdentity("uid3",
                 "us" + UUID.randomUUID().toString().replace("-", "").replace("_", ""),
                 "Mt Test",
                 "Testesen",

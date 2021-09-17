@@ -34,8 +34,6 @@ public class RoleMappingImporter {
 		List<UserApplicationRoleEntry> roles = parseRoleMapping(roleMappingSource);
 		saveRoleMapping(roles);
         log.info("{} roles imported.", roles.size());
-
-        // Ignore and log warning about lucene update if problems with LDAP/AD lookup.
     }
 
 	protected static List<UserApplicationRoleEntry> parseRoleMapping(InputStream roleMappingStream) {

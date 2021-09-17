@@ -28,11 +28,6 @@ public class UserIdentityWithAutomaticPasswordGeneration extends UserIdentity {
         this.password = passwordGenerator.generate();
     }
 
-    public UserIdentityWithAutomaticPasswordGeneration(String username, String firstName, String lastName, String personRef, String email, String cellPhone) {
-        super(username, firstName, lastName, personRef, email, cellPhone);
-        this.password = passwordGenerator.generate();
-    }
-
     public String getPassword() {
         return password;
     }
