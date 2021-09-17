@@ -19,20 +19,18 @@ import javax.mail.internet.InternetAddress;
 import java.io.Serializable;
 
 /**
- * A class representing the identity of a User - backed by LDAP scheme.
- * See getLdapAttributes in LDAPHelper for mapping to LDAP attributes.
+ * A class representing the identity of a User.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LDAPUserIdentity extends UserIdentity implements Serializable {
-    public static final String UID = "uid";
-    private static final Logger logger = LoggerFactory.getLogger(LDAPUserIdentity.class);
+public class LuceneUserIdentity extends UserIdentity implements Serializable {
+    private static final Logger logger = LoggerFactory.getLogger(LuceneUserIdentity.class);
     private static final long serialVersionUID = 1;
 
-    public LDAPUserIdentity() {
+    public LuceneUserIdentity() {
     }
 
-    public LDAPUserIdentity(String uid, String username, String firstName, String lastName, String email, String password,
-                            String cellPhone, String personRef) {
+    public LuceneUserIdentity(String uid, String username, String firstName, String lastName, String email, String password,
+                              String cellPhone, String personRef) {
         this.uid = new UID(uid);
         this.username = new UserName(username != null ? username : email);
         this.firstName = new FirstName(firstName);
@@ -43,7 +41,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         setPassword(password);
     }
 
-    public LDAPUserIdentity(UserIdentity userIdentity, String password) {
+    public LuceneUserIdentity(UserIdentity userIdentity, String password) {
         this.uid = new UID(userIdentity.getUid());
         this.username = new UserName((userIdentity.getUsername() != null ? userIdentity.getUsername() : userIdentity.getEmail()));
         this.firstName = new FirstName(userIdentity.getFirstName());
@@ -80,7 +78,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
 
     @Override
     public String toString() {
-        return "LDAPUserIdentity{" +
+        return "LuceneUserIdentity{" +
                 "uid='" + uid + '\'' +
                 ", username='" + username + '\'' +
                 ", firstName='" + firstName + '\'' +
@@ -100,7 +98,7 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
             return false;
         }
 
-        LDAPUserIdentity that = (LDAPUserIdentity) o;
+        LuceneUserIdentity that = (LuceneUserIdentity) o;
 
         if (uid != null ? !uid.equals(that.uid) : that.uid != null) {
             return false;
@@ -143,9 +141,9 @@ public class LDAPUserIdentity extends UserIdentity implements Serializable {
         this.uid = new UID(uid);
     }
 
-    public static LDAPUserIdentity fromJson(String userJson) {
+    public static LuceneUserIdentity fromJson(String userJson) {
         try {
-            LDAPUserIdentity userIdentity = new LDAPUserIdentity();
+            LuceneUserIdentity userIdentity = new LuceneUserIdentity();
 
             JSONObject jsonobj = new JSONObject(userJson);
 

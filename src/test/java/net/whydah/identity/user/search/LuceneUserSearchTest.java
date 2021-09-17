@@ -1,6 +1,6 @@
 package net.whydah.identity.user.search;
 
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -108,8 +108,8 @@ public class LuceneUserSearchTest {
         return luceneIndexer;
     }
 
-    private static LDAPUserIdentity createUser(String username, String fornavn, String etternavn, String email, String uid) {
-        LDAPUserIdentity user1 = new LDAPUserIdentity();
+    private static LuceneUserIdentity createUser(String username, String fornavn, String etternavn, String email, String uid) {
+        LuceneUserIdentity user1 = new LuceneUserIdentity();
         user1.setUsername(username);
         user1.setFirstName(fornavn);
         user1.setLastName(etternavn);

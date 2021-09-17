@@ -8,9 +8,9 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -91,8 +91,8 @@ public class PasswordResourceTest {
 
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
 
-        RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        RDBMSLdapUserIdentityRepository rdbmsUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
+        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        RDBMSUserIdentityRepository rdbmsUserIdentityRepository = new RDBMSUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, configuration);
         userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, luceneIndexer, luceneUserSearch, bCryptService);
 
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
@@ -144,7 +144,7 @@ public class PasswordResourceTest {
 
         String applicationTokenId = "applicationTokenId";
         String adminUserTokenId = "adminUserTokenId";
-        String username = giveMeTestLdapUserIdentity().getUsername();
+        String username = giveMeTestLuceneUserIdentity().getUsername();
 
         String password = new PasswordGenerator().generate();
 
@@ -174,18 +174,18 @@ public class PasswordResourceTest {
 
 
     void addTestUser() throws Exception {
-        LDAPUserIdentity ldapUserIdentity = giveMeTestLdapUserIdentity();
-        String json = new ObjectMapper().writeValueAsString(ldapUserIdentity);
+        LuceneUserIdentity luceneUserIdentity = giveMeTestLuceneUserIdentity();
+        String json = new ObjectMapper().writeValueAsString(luceneUserIdentity);
 
         UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
-        LDAPUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), LDAPUserIdentity.class);
-        assertEquals(ldapUserIdentity, userIdentity);
+        LuceneUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), LuceneUserIdentity.class);
+        assertEquals(luceneUserIdentity, userIdentity);
     }
 
-    LDAPUserIdentity giveMeTestLdapUserIdentity() {
+    LuceneUserIdentity giveMeTestLuceneUserIdentity() {
         String uid = UUID.randomUUID().toString();
         String username = "test.testesen@test.no";
         String firstname = "Test";
@@ -196,7 +196,7 @@ public class PasswordResourceTest {
 
         UserIdentity userIdentity = new UserIdentity(uid, username, firstname, lastname, personRef, email, cellPhone);
         String password = new PasswordGenerator().generate();
-        return new LDAPUserIdentity(userIdentity, password);
+        return new LuceneUserIdentity(userIdentity, password);
     }
 
 }

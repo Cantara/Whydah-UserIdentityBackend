@@ -7,7 +7,6 @@ import com.jayway.jsonpath.JsonPath;
 import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.util.PasswordGenerator;
@@ -103,7 +102,7 @@ public class PasswordResource2 {
         }
 
         Map<String, String> map = new HashMap<>();
-        map.put(LDAPUserIdentity.UID, user.getUid());
+        map.put(RDBMSUserIdentity.UID, user.getUid());
         map.put(EMAIL_KEY, user.getEmail());
         map.put(CELLPHONE_KEY, user.getCellPhone());
         map.put(CHANGE_PASSWORD_TOKEN, changePasswordToken);
@@ -169,7 +168,7 @@ public class PasswordResource2 {
         try {
             authenticated = userIdentityServiceV2.authenticateWithChangePasswordToken(username, changePasswordToken);
         } catch (Exception e) {
-            log.warn("Authentication failed using changePasswordToken for username={} in LDAP", username);
+            log.warn("Authentication failed using changePasswordToken for username={} in DB", username);
         }
 
         if (!authenticated) {
@@ -216,7 +215,7 @@ public class PasswordResource2 {
         try {
             user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
-            log.warn("password_login_enabled false for uid={} in LDAP", username);
+            log.warn("password_login_enabled false for uid={} in DB", username);
         }
 
         if (user == null) {

@@ -14,7 +14,7 @@ class RDBMSUserIdentityRowMapper implements RowMapper<RDBMSUserIdentity> {
         RDBMSUserIdentity userIdentity = null;
         try {
             if (rs == null) {
-                log.info("RDBMS LDAP User Identity - No resultset found.");
+                log.info("RDBMS User Identity - No resultset found.");
             } else {
                 String uid = rs.getString("id");
                 String username = rs.getString("username");

@@ -8,9 +8,9 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -54,8 +54,8 @@ public class UserResourceTest {
     private static UserIdentityServiceV2 userIdentityServiceV2;
     private static UserAggregateService userAggregateService;
 
-    private static RDBMSLdapUserIdentityDao rdbmsLdapUserIdentityDao;
-    private static RDBMSLdapUserIdentityRepository rdbmsUserIdentityRepository;
+    private static RDBMSUserIdentityDao rdbmsUserIdentityDao;
+    private static RDBMSUserIdentityRepository rdbmsUserIdentityRepository;
 
     private static DatabaseMigrationHelper dbHelper;
 
@@ -91,13 +91,12 @@ public class UserResourceTest {
         LuceneApplicationIndexer luceneApplicationIndexer = new LuceneApplicationIndexer(applicationsDirectory);
         LuceneApplicationSearch luceneApplicationSearcher = new LuceneApplicationSearch(applicationsDirectory);
 
-        PasswordGenerator pwdGenerator = new PasswordGenerator();
         AuditLogDao auditLogDao = new AuditLogDao(dataSource);
 
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
 
-        rdbmsLdapUserIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        rdbmsUserIdentityRepository = new RDBMSLdapUserIdentityRepository(rdbmsLdapUserIdentityDao, bCryptService, configuration);
+        rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        rdbmsUserIdentityRepository = new RDBMSUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, configuration);
         userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, luceneIndexer, luceneUserSearch, bCryptService);
 
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
@@ -164,26 +163,6 @@ public class UserResourceTest {
     }
 
     @Test
-    public void test_getUserIdentity_from_ldap_and_db_ok() throws Exception {
-        RDBMSUserIdentity rdbmsUserIdentity = giveMeTestRDBMSUserIdentity();
-        String uid = rdbmsUserIdentity.getUid();
-
-        String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
-
-        /** create useridentity */
-        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
-        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
-        assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
-
-        //when(ldapUserIdentityDao.usernameExist(any())).thenReturn(false);
-
-        /* get useridentity - useridentity exists in both ldap and db  */
-        response = userResource.getUserIdentity(uid);
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-    }
-
-
-    @Test
     public void test_getUserIdentity_from_db_ok() throws Exception {
         RDBMSUserIdentity rdbmsUserIdentity = giveMeTestRDBMSUserIdentity();
         String uid = rdbmsUserIdentity.getUid();
@@ -195,24 +174,31 @@ public class UserResourceTest {
         javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
-        /** get useridentity - useridentity exists in both ldap and db  */
+        /* get useridentity - useridentity exists in db  */
         response = userResource.getUserIdentity(uid);
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+    }
 
-        /** get useridentity - useridentity only exists in db  */
+
+    @Test
+    public void test_getUserIdentity_from_db_ok_2() throws Exception {
+        RDBMSUserIdentity rdbmsUserIdentity = giveMeTestRDBMSUserIdentity();
+        String uid = rdbmsUserIdentity.getUid();
+
+        String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
+
+        /** create useridentity */
+        UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
+        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
+        assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
+
+        /** get useridentity - useridentity exists in db  */
         response = userResource.getUserIdentity(uid);
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-
-
-        /** get useridentity - after NamingException from LDAP occur  */
-        response = userResource.getUserIdentity(uid);
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-
 
         RDBMSUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), RDBMSUserIdentity.class);
         assertEquals(rdbmsUserIdentity, userIdentity);
     }
-
 
 
     @Test
@@ -268,7 +254,6 @@ public class UserResourceTest {
     }
 
 
-
     private RDBMSUserIdentity giveMeTestRDBMSUserIdentity() {
         String uid = UUID.randomUUID().toString();
         String username = "test.testesen@test.no";
@@ -295,8 +280,7 @@ public class UserResourceTest {
 
     @AfterClass
     public static void deleteTestDataDirectories() {
-        List<String> testDataDirectories = new ArrayList<String>()
-        {{
+        List<String> testDataDirectories = new ArrayList<String>() {{
             add(luceneUsersDirectory);
             add(luceneApplicationDirectory);
         }};

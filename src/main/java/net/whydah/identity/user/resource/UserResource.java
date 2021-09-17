@@ -7,7 +7,7 @@ import net.whydah.identity.user.NonExistentRoleException;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.InvalidUserIdentityFieldException;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityConverter;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
@@ -172,16 +172,16 @@ public class UserResource {
     public Response updateUserIdentity(@PathParam("uid") String uid, String userIdentityJson) {
         log.info("updateUserIdentity: uid={}, userIdentityJson={}", uid, userIdentityJson);
 
-        LDAPUserIdentity userIdentity;
+        LuceneUserIdentity userIdentity;
         try {
-            userIdentity = mapper.readValue(userIdentityJson, LDAPUserIdentity.class);
+            userIdentity = mapper.readValue(userIdentityJson, LuceneUserIdentity.class);
         } catch (IOException e) {
             log.error("updateUserIdentity failed for uid={}, invalid json. userIdentityJson={}", uid, userIdentityJson, e);
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
-        RDBMSUserIdentity rdbmsUserIdentity = userIdentityConverter.convertFromLDAPUserIdentity(userIdentity);
+        RDBMSUserIdentity rdbmsUserIdentity = userIdentityConverter.convertFromLuceneUserIdentity(userIdentity);
         try {
             userIdentityServiceV2.updateUserIdentity(uid, rdbmsUserIdentity);
         } catch (Exception e) {

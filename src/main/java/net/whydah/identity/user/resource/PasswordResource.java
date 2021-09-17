@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.config.PasswordBlacklist;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.LDAPUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.util.PasswordGenerator;
@@ -121,7 +120,7 @@ public class PasswordResource {
 
         try {
             Map<String, String> map = new HashMap<>();
-            map.put(LDAPUserIdentity.UID, user.getUid());
+            map.put(RDBMSUserIdentity.UID, user.getUid());
             map.put(EMAIL_KEY, user.getEmail());
             map.put(CELLPHONE_KEY, user.getCellPhone());
             map.put(CHANGE_PASSWORD_TOKEN, resetPasswordTokenV2);
@@ -143,7 +142,7 @@ public class PasswordResource {
         try {
             user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
-            log.warn(String.format("User=%s could not be found in LDAP", username), e);
+            log.warn(String.format("User=%s could not be found in DB", username), e);
         }
 
         if (user == null) {
@@ -224,7 +223,7 @@ public class PasswordResource {
         try {
             user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
-            log.warn(String.format("User=%s could not be found in LDAP", username), e);
+            log.warn(String.format("User=%s could not be found in DB", username), e);
         }
 
         if (user == null) {

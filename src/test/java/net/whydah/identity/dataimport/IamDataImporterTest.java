@@ -5,8 +5,8 @@ import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 
 public class IamDataImporterTest {
     private static final Logger log = LoggerFactory.getLogger(IamDataImporterTest.class);
-    private static final String ldapPath = "target/IamDataImporterTest/ldap";
 
     private static BasicDataSource dataSource;
     private static IamDataImporter dataImporter;
@@ -76,14 +75,12 @@ public class IamDataImporterTest {
         } catch (SQLException e) {
             log.error("", e);
         }
-
-        FileUtils.deleteDirectories(ldapPath);
     }
 
     @Test
     public void testDataIsImported() throws Exception {
         dataImporter.importIamData();
-        RDBMSLdapUserIdentityRepository userIdentityRepository = dataImporter.getUserIdentityRepository();
+        RDBMSUserIdentityRepository userIdentityRepository = dataImporter.getUserIdentityRepository();
 
         RDBMSUserIdentity erikdUserIdentity = userIdentityRepository.getUserIdentityWithUsername("erikd");
         assertEquals("Erik", erikdUserIdentity.getFirstName());

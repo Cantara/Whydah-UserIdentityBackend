@@ -13,9 +13,9 @@ import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
@@ -76,10 +76,9 @@ public class UserAuthenticationEndpointTest {
                 .getConfiguration();
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
-        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
         String luceneUserDir = configuration.evaluateToString("lucene.usersdirectory");
         String luceneAppDir = configuration.evaluateToString("lucene.applicationsdirectory");
-        FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneUserDir, luceneAppDir);
+        FileUtils.deleteDirectories(roleDBDirectory, luceneUserDir, luceneAppDir);
 
         main = new Main(6649);
 
@@ -111,8 +110,8 @@ public class UserAuthenticationEndpointTest {
 
         BCryptService bCryptService = new BCryptService("57hruioqe", 4);
 
-        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
-        RDBMSLdapUserIdentityRepository userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
+        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        RDBMSUserIdentityRepository userIdentityRepository = new RDBMSUserIdentityRepository(userIdentityDao, bCryptService, configuration);
         LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
         userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, luceneUserIndexer, searcher, bCryptService);
 
@@ -214,12 +213,6 @@ public class UserAuthenticationEndpointTest {
         String userXml = (String) response.getEntity();
         UserAggregate userAggregate = UserAggregateMapper.fromXML(userXml);
 
-        /*
-        Viewable entity = (Viewable) response.getEntity();
-        UIBUserAggregate model = (UIBUserAggregate) entity.getModel();
-        LDAPUserIdentity identity = model.getIdentity();
-        */
-        //LDAPUserIdentity identity = userAggregate.getIdentity();
         assertEquals(username, userAggregate.getUsername());
         assertTrue(PersonRef.isValid(userAggregate.getPersonRef()));
         assertEquals(email, userAggregate.getEmail());

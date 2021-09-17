@@ -7,8 +7,8 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.organization.OrganizationDao;
 import net.whydah.identity.organization.OrganizationRepository;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityRepository;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.role.UserApplicationRoleEntryRepository;
 import net.whydah.identity.util.FileUtils;
@@ -36,7 +36,7 @@ public class IamDataImporter {
 
     private final UserApplicationRoleEntryRepository userApplicationRoleEntryRepository;
     private final OrganizationRepository organizationRepository;
-    private final RDBMSLdapUserIdentityRepository userIdentityRepository;
+    private final RDBMSUserIdentityRepository userIdentityRepository;
     private final BCryptService bCryptService;
 
     private final String applicationsImportSource;
@@ -64,9 +64,9 @@ public class IamDataImporter {
         OrganizationDao organizationDao = new OrganizationDao(dataSource);
         this.organizationRepository = new OrganizationRepository(organizationDao);
 
-        RDBMSLdapUserIdentityDao userIdentityDao = new RDBMSLdapUserIdentityDao(dataSource);
+        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource);
         this.bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
-        this.userIdentityRepository = new RDBMSLdapUserIdentityRepository(userIdentityDao, bCryptService, configuration);
+        this.userIdentityRepository = new RDBMSUserIdentityRepository(userIdentityDao, bCryptService, configuration);
     }
 
 
@@ -169,7 +169,7 @@ public class IamDataImporter {
     }
 
     // expose for test
-    RDBMSLdapUserIdentityRepository getUserIdentityRepository() {
+    RDBMSUserIdentityRepository getUserIdentityRepository() {
         return userIdentityRepository;
     }
 

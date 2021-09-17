@@ -1,6 +1,6 @@
 package net.whydah.identity.user.search;
 
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
@@ -73,9 +73,9 @@ public class LuceneUserIndexerTest {
 		FileSystemUtils.deleteRecursively(path);
 	}
 
-	private static LDAPUserIdentity getRandomUser() {
+	private static LuceneUserIdentity getRandomUser() {
 		String uuid = UUID.randomUUID().toString();
-		LDAPUserIdentity user1 = new LDAPUserIdentity();
+		LuceneUserIdentity user1 = new LuceneUserIdentity();
 		user1.setUsername(uuid);
 		user1.setFirstName(randomIdentifier());
 		user1.setLastName(randomIdentifier());

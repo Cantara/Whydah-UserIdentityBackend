@@ -4,8 +4,8 @@ import net.whydah.identity.audit.ActionPerformed;
 import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.security.Authentication;
 import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.ddd.model.user.Email;
@@ -40,7 +40,7 @@ public class UserAdminHelper {
     private static final Logger logger = LoggerFactory.getLogger(UserAdminHelper.class);
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd hh:mm");
 
-    private final RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
+    private final RDBMSUserIdentityDao rdbmsUserIdentityDao;
     private final LuceneUserIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
@@ -61,7 +61,7 @@ public class UserAdminHelper {
     private String fbRoleName;
 
     @Autowired
-    public UserAdminHelper(RDBMSLdapUserIdentityDao rdbmsUserIdentityDao,
+    public UserAdminHelper(RDBMSUserIdentityDao rdbmsUserIdentityDao,
                            LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao,
                            UserApplicationRoleEntryDao userApplicationRoleEntryDao,
                            BCryptService bCryptService,

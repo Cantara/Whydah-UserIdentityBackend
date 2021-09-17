@@ -44,9 +44,8 @@ public class WadlAndWelcomePageTest {
 
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
-        String ldapPath = configuration.evaluateToString("ldap.embedded.directory");
         String luceneDir = configuration.evaluateToString("lucene.usersdirectory");
-        FileUtils.deleteDirectories(ldapPath, roleDBDirectory, luceneDir);
+        FileUtils.deleteDirectories(roleDBDirectory, luceneDir);
 
         main = new Main(6644);
 

@@ -215,7 +215,7 @@ public class UserAuthenticationEndpoint {
             DocumentBuilder builder = domFactory.newDocumentBuilder();
             userDoc = builder.parse(input);
         } catch (Exception e) {
-            log.error("Error when creating LDAPUserIdentity from incoming xml stream.", e);
+            log.error("Error when creating Document from incoming xml stream.", e);
             return null;
         }
         return userDoc;

@@ -30,7 +30,7 @@ public class HealthCheckService {
     boolean isOK_DB() {
         log.trace("Checking if uid={} can be found in DB and role database.", USERADMIN_UID);
         if (!userExistInDB(USERADMIN_UID)) {
-            USERADMIN_UID = "whydahadmin";  // Initiel support for future support of configurable LDAP admin UID
+            USERADMIN_UID = "whydahadmin";  // Initial support for future support of configurable DB admin UID
         }
         return userExistInDB(USERADMIN_UID) && atLeastOneRoleInDatabase();
     }

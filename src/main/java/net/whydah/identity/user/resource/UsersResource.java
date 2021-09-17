@@ -4,7 +4,6 @@ package net.whydah.identity.user.resource;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.whydah.identity.health.HealthResource;
 import net.whydah.identity.user.UserAggregateService;
 import net.whydah.identity.user.search.PaginatedUserAggregateDataList;
 import net.whydah.identity.user.search.PaginatedUserIdentityDataList;
@@ -21,10 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.naming.NamingException;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -51,7 +54,6 @@ public class UsersResource {
     public UsersResource(UserSearch userSearch, UserAggregateService userAggregateService) {
         this.userSearch = userSearch;
         this.userAggregateService = userAggregateService;
-        HealthResource.setNumberOfUsers(userSearch.getUserIndexSize());
     }
 
     /**

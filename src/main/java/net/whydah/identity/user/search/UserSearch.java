@@ -1,9 +1,8 @@
 package net.whydah.identity.user.search;
 
-import net.whydah.identity.user.identity.RDBMSLdapUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
+import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
 import net.whydah.sso.user.types.UserIdentity;
-import org.constretto.annotation.Configuration;
 import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,18 +18,16 @@ import java.util.List;
 @Service
 public class UserSearch {
 	private static final Logger log = LoggerFactory.getLogger(UserSearch.class);
-	private final RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
+	private final RDBMSUserIdentityDao rdbmsUserIdentityDao;
 	private final LuceneUserSearch luceneUserSearch;
 	private final LuceneUserIndexer luceneUserIndexer;
-	private final boolean alwayslookupinexternaldirectory;
 
 	@Autowired
 	@Configure
-	public UserSearch(RDBMSLdapUserIdentityDao rdbmsUserIdentityDao, LuceneUserSearch luceneSearch, LuceneUserIndexer luceneIndexer, @Configuration("ldap.primary.alwayslookupinexternaldirectory") boolean _alwayslookupinexternaldirectory) {
+	public UserSearch(RDBMSUserIdentityDao rdbmsUserIdentityDao, LuceneUserSearch luceneSearch, LuceneUserIndexer luceneIndexer) {
 		this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
 		this.luceneUserSearch = luceneSearch;
 		this.luceneUserIndexer = luceneIndexer;
-		this.alwayslookupinexternaldirectory = _alwayslookupinexternaldirectory;
 	}
 
 	private void importUsersIfEmpty() {
@@ -40,13 +37,13 @@ public class UserSearch {
 				@Override
 				public void run() {
 
-					log.debug("lucene index is empty. Trying to import from LDAP...");
+					log.debug("lucene index is empty. Trying to import from DB...");
 
 					List<RDBMSUserIdentity> list;
 					try {
 						list = rdbmsUserIdentityDao.allUsersList();
 						List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
-						log.debug("Found LDAP user list size: {}", list.size());
+						log.debug("Found DB user list size: {}", list.size());
 						luceneUserIndexer.addToIndex(clones);
 					} catch (Exception e) {
 						log.error("failed to import users, exception: " + e);
@@ -72,17 +69,9 @@ public class UserSearch {
 		return users;
 	}
 
-	public UserIdentity getUserIdentityIfExists(String username) {
-		UserIdentity user = luceneUserSearch.getUserIdentityIfExists(username);
-		if (user == null && alwayslookupinexternaldirectory) {
-			user = rdbmsUserIdentityDao.getWithUsername(username);
-		}
-		return user;
-	}
-	
 	public boolean isUserIdentityIfExists(String username) {
 		boolean existing = luceneUserSearch.usernameExists(username);
-		if (!existing && alwayslookupinexternaldirectory) {
+		if (!existing) {
 			return rdbmsUserIdentityDao.getWithUsername(username) != null;
 		}
 		return existing;

@@ -22,15 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * // TODO: 08/04/2021 kiversen
- * <p>
- * - remove all ldap operations and replce with db persistence
- * - avoid intrusion in existing UserIdentityService by using a "shadow" version
- * - service will replace UserIdentityService when ldap is retired.
- * - service will be added to UserResource when ready
- * - service will live and be used in parallell with UserIdentityService for an overlapping period
- */
 @Service
 public class UserIdentityServiceV2 {
     private static final Logger log = LoggerFactory.getLogger(UserIdentityServiceV2.class);
@@ -45,10 +36,10 @@ public class UserIdentityServiceV2 {
     private final BCryptService bCryptService;
     private final Map<String, String> temporaryPwdByUsername = new ConcurrentHashMap<>();
 
-    private final RDBMSLdapUserIdentityRepository userIdentityRepository;
+    private final RDBMSUserIdentityRepository userIdentityRepository;
 
     @Autowired
-    public UserIdentityServiceV2(RDBMSLdapUserIdentityRepository userIdentityRepository, AuditLogDao auditLogDao,
+    public UserIdentityServiceV2(RDBMSUserIdentityRepository userIdentityRepository, AuditLogDao auditLogDao,
                                  LuceneUserIndexer luceneIndexer, LuceneUserSearch searcher, BCryptService bCryptService) {
         this.userIdentityRepository = userIdentityRepository;
         this.auditLogDao = auditLogDao;
@@ -67,7 +58,6 @@ public class UserIdentityServiceV2 {
         temporaryPwdByUsername.put(username, newPassword);
         //HUY: disable saving a new password
         userIdentityRepository.setTempPassword(username, salt);
-        //ldapUserIdentityDao.setTempPassword(username, newPassword, salt);
         audit(uid, ActionPerformed.MODIFIED, "resetpassword", uid);
 
         byte[] saltAsBytes;
@@ -149,7 +139,7 @@ public class UserIdentityServiceV2 {
 
         }
 
-        // Must use already created uuid util we part from ldap
+        // Use already created uuid if one exists
         String tentativeUid = UUID.randomUUID().toString();
         String uid = dto.getUid() != null ? dto.getUid() : tentativeUid;
         String passwordPlaintext = dto.getPassword();
@@ -193,9 +183,9 @@ public class UserIdentityServiceV2 {
         return userIdentity;
     }
 
-    public void updateUserIdentityForUid(String uid, LDAPUserIdentity newUserIdentity) {
+    public void updateUserIdentityForUid(String uid, LuceneUserIdentity newUserIdentity) {
         UserIdentityConverter userIdentityConverter = new UserIdentityConverter(bCryptService);
-        RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLDAPUserIdentity(newUserIdentity);
+        RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLuceneUserIdentity(newUserIdentity);
 
         userIdentityRepository.updateUserIdentityForUid(uid, userIdentity);
         luceneIndexer.updateIndex(newUserIdentity);

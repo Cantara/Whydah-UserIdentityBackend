@@ -31,11 +31,8 @@ public class HealthResource {
     private static SecurityTokenServiceClient securityTokenServiceClient;
     private static String applicationInstanceName;
     private static boolean ok_db = true;
-    private static long numberOfUsers = 0;
     private static int numberOfUsers_DB = 0;
     private static long numberOfApplications = 0;
-
-    private final boolean usersRDBMSEnabled = false;
 
     @Autowired
     @Configure
@@ -85,7 +82,6 @@ public class HealthResource {
                     "  \"STS\": \"" + SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getSTS() + "\",\n" +
                     "  \"hasApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getActiveApplicationTokenId() != null) + "\",\n" +
                     // "  \"hasValidApplicationToken\": \"" + Boolean.toString(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().checkActiveSession()) + "\",\n" +
-                    "  \"users (LDAP)\": \"" + numberOfUsers + "\",\n" +
                     "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
                     "  \"applications\": \"" + numberOfApplications + "\",\n" +
                     "  \"now\": \"" + Instant.now() + "\",\n" +
@@ -103,7 +99,6 @@ public class HealthResource {
                 "  \"STS\": \"" + "N/A" + "\",\n" +
                 "  \"hasApplicationToken\": \"" + "false" + "\",\n" +
                 "  \"hasValidApplicationToken\": \"" + "false" + "\",\n" +
-                "  \"users (LDAP)\": \"" + numberOfUsers + "\",\n" +
                 "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
                 "  \"applications\": \"" + numberOfApplications + "\",\n" +
                 "  \"now\": \"" + Instant.now() + "\",\n" +
@@ -136,14 +131,6 @@ public class HealthResource {
             }
         }
         return "(DEV VERSION)" + " [" + applicationInstanceName + " - " + WhydahUtil.getMyIPAddresssesString() + "]";
-    }
-
-    public static long getNumberOfUsers() {
-        return numberOfUsers;
-    }
-
-    public static void setNumberOfUsers(long numberOfUsers) {
-        HealthResource.numberOfUsers = numberOfUsers;
     }
 
     public static void setNumberOfUsersDB(int numberOfUsers) {

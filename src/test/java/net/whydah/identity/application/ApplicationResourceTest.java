@@ -36,7 +36,6 @@ import static org.junit.Assert.assertNotNull;
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2015-02-01
  */
 
-//TODO Tests disabled due to strange test error when run by Jenkins. Perhaps shared ldap or db with other tests?
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ApplicationResourceTest {
     private static final Logger log = LoggerFactory.getLogger(ApplicationResourceTest.class);
@@ -46,7 +45,7 @@ public class ApplicationResourceTest {
     private static String appId1FromCreatedResponse;
     private static Application app;
     private static BasicDataSource dataSource;
-    
+
     @BeforeClass
     public static void startServer() {
         ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
@@ -89,14 +88,14 @@ public class ApplicationResourceTest {
         if (main != null) {
             main.stop();
         }
-        
+
         try {
-        	if(!dataSource.isClosed()) {
-        		dataSource.close();
-        	}
-		} catch (SQLException e) {
-			log.error("", e);
-		}
+            if (!dataSource.isClosed()) {
+                dataSource.close();
+            }
+        } catch (SQLException e) {
+            log.error("", e);
+        }
     }
 
     @Test
@@ -109,8 +108,8 @@ public class ApplicationResourceTest {
         app.addRole(new ApplicationAvailableRoleNames("roleId1", "roleName1"));
         app.addRole(new ApplicationAvailableRoleNames("roleId2", "roleName2"));
         app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid1", "orgname1"));
-        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid2","orgname2"));
-        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid3","orgname3"));
+        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid2", "orgname2"));
+        app.addOrganizationName(new ApplicationAvailableOrganizationNames("ordid3", "orgname3"));
 
         String json = ApplicationMapper.toJson(app);
 
@@ -201,6 +200,7 @@ public class ApplicationResourceTest {
                 .when()
                 .delete(path, appToken1, userTokenID1, appId1FromCreatedResponse);
     }
+
     @Test
     public void t25_testDeleteApplicationNotFound() throws Exception {
         String path = "/{applicationtokenid}/{userTokenId}/application/{applicationId}";

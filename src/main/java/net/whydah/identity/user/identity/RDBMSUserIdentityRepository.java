@@ -8,19 +8,16 @@ import org.springframework.stereotype.Repository;
 
 
 @Repository
-public class RDBMSLdapUserIdentityRepository {
-    private static final Logger log = LoggerFactory.getLogger(RDBMSLdapUserIdentityRepository.class);
+public class RDBMSUserIdentityRepository {
+    private static final Logger log = LoggerFactory.getLogger(RDBMSUserIdentityRepository.class);
 
-    private final RDBMSLdapUserIdentityDao rdbmsUserIdentityDao;
+    private final RDBMSUserIdentityDao rdbmsUserIdentityDao;
     private final BCryptService bCryptService;
-    private final boolean enableRDBMSResource;
 
     @Autowired
-    public RDBMSLdapUserIdentityRepository(RDBMSLdapUserIdentityDao rdbmsUserIdentityDao, BCryptService bCryptService, ConstrettoConfiguration config) {
+    public RDBMSUserIdentityRepository(RDBMSUserIdentityDao rdbmsUserIdentityDao, BCryptService bCryptService, ConstrettoConfiguration config) {
         this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
         this.bCryptService = bCryptService;
-        this.enableRDBMSResource = config.evaluateToBoolean("ldap.rdbms.enabled");
-        log.info("RDBMS for user identities enabled: " + enableRDBMSResource);
     }
 
     public boolean addUserIdentity(final RDBMSUserIdentity userIdentity) throws RuntimeException {

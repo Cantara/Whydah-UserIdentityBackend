@@ -1,6 +1,6 @@
 package net.whydah.identity.user.search;
 
-import net.whydah.identity.user.identity.LDAPUserIdentity;
+import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.identity.util.BaseLuceneReader;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.lucene.analysis.Analyzer;
@@ -9,7 +9,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.store.Directory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +104,7 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
             	 for (ScoreDoc hit : topDocs.scoreDocs) {
                      int docId = hit.doc;
                      Document d = searcher.doc(docId);
-                     LDAPUserIdentity user = new LDAPUserIdentity();
+                     LuceneUserIdentity user = new LuceneUserIdentity();
                      user.setFirstName(d.get(LuceneUserIndexer.FIELD_FIRSTNAME));
                      user.setLastName(d.get(LuceneUserIndexer.FIELD_LASTNAME));
                      user.setUid(d.get(LuceneUserIndexer.FIELD_UID));
@@ -162,7 +166,7 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
             for (ScoreDoc hit : topDocs.scoreDocs) {
                 int docId = hit.doc;
                 Document d = searcher.doc(docId);
-                LDAPUserIdentity user = new LDAPUserIdentity();
+                LuceneUserIdentity user = new LuceneUserIdentity();
                 user.setFirstName(d.get(LuceneUserIndexer.FIELD_FIRSTNAME));
                 user.setLastName(d.get(LuceneUserIndexer.FIELD_LASTNAME));
                 user.setUid(d.get(LuceneUserIndexer.FIELD_UID));
@@ -244,7 +248,7 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
 
                     Document d = searcher.doc(docId);
                     if (!foundUserIds.contains(d.get(LuceneUserIndexer.FIELD_UID))) {
-                        LDAPUserIdentity user = new LDAPUserIdentity();
+                        LuceneUserIdentity user = new LuceneUserIdentity();
                         user.setFirstName(d.get(LuceneUserIndexer.FIELD_FIRSTNAME));
                         user.setLastName(d.get(LuceneUserIndexer.FIELD_LASTNAME));
                         user.setUid(d.get(LuceneUserIndexer.FIELD_UID));

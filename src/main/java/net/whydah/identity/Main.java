@@ -34,9 +34,9 @@ public class Main {
     private Server server;
 
     /*
-     * 1a. Default:        External ldap and database
+     * 1a. Default:        External database
      * or
-     * 1b. Test scenario:  startJetty embedded Ldap and database
+     * 1b. Test scenario:  startJetty and database
      *
      * 2. run db migrations (should not share any objects with the web application)
      *
@@ -104,7 +104,7 @@ public class Main {
         BasicDataSource dataSource = initRoleDB(config);
 
         if (importEnabled) {
-            // Populate ldap, database and lucene index
+            // Populate database and lucene index
             new IamDataImporter(dataSource, config).importIamData();
         }
 
