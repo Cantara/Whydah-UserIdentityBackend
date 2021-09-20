@@ -3,8 +3,12 @@ package net.whydah.identity.dataimport;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Locale;
 
 /**
  * Ensure database has the necessary DDL and all migrations have been applied.
@@ -19,29 +23,31 @@ public class DatabaseMigrationHelper {
 
     public DatabaseMigrationHelper(BasicDataSource dataSource) {
         this.dbUrl = dataSource.getUrl();
-        flyway = new Flyway();
-        flyway.setDataSource(dataSource);
-        setMigrationScriptLocation(dataSource.getDriverClassName());
-    }
-
-    private void setMigrationScriptLocation(String driverClassName) {
-        if (driverClassName.contains("hsqldb")) {
-            flyway.setLocations("db/migration/hsqldb");
-        } else if(driverClassName.contains("mysql")) {
-            flyway.setLocations("db/migration/mysql");
-        } else if(driverClassName.contains("mariadb")) {
-            flyway.setLocations("db/migration/mariadb");
-        } else if(driverClassName.contains("postgresql")) {
-            flyway.setLocations("db/migration/postgresql");
+        Configuration flyWayConfiguration;
+        if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("hsqldb")) {
+            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/hsqldb");
+            flyway = new Flyway(flyWayConfiguration);
+        } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("mysql")) {
+            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/mysql");
+            flyway = new Flyway(flyWayConfiguration);
+        } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("mariadb")) {
+            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/mariadb");
+            flyway = new Flyway(flyWayConfiguration);
+        } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("postgresql")) {
+            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/postgresql");
+            org.hsqldb.jdbc.JDBCDriver jdbcDriver;
+            flyway = new Flyway(flyWayConfiguration);
         } else if (dbUrl.contains("sqlserver")) {
             log.info("Expecting the MS SQL database to be pre-initialized with the latest schema. Automatic database migration is not supported.");
         } else {
-            throw new RuntimeException("Unsupported database driver found in configuration - " + driverClassName);
+            throw new RuntimeException("Unsupported database driver found in configuration - " + dataSource.getDriverClassName().toLowerCase(Locale.ROOT));
         }
     }
 
+
+
     public void upgradeDatabase() {
-        log.info("Upgrading database with url={} using migration files from {}", dbUrl, flyway.getLocations());
+        log.info("Upgrading database with url={} using migration files from {}", dbUrl, flyway.getConfiguration().getLocations());
         try {
             flyway.migrate();
         } catch (FlywayException e) {
@@ -53,7 +59,11 @@ public class DatabaseMigrationHelper {
     //used by tests
     public void cleanDatabase() {
         try {
-            flyway.clean();
+            if (flyway != null) {
+                flyway.clean();
+            } else {
+                log.warn("Trying to clean an non-initialized database");
+            }
         } catch (Exception e) {
             throw new RuntimeException("Database cleaning failed.", e);
         }
