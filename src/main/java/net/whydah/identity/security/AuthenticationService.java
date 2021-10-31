@@ -31,10 +31,10 @@ public class AuthenticationService {
         ApplicationCredential uasApplicationCredential = appCredRepo.getUasAppCred();
         boolean isAuthenticated = false;
 
-        log.info("Comparing applicationCredential:{} - with uasCredential:{}", applicationCredential.toString(), uasApplicationCredential.toString());
-
+       
         if (applicationCredential != null && uasApplicationCredential != null) {
-            if (applicationCredential.getApplicationID().equals(uasApplicationCredential.getApplicationID()) &&
+        	 log.info("Comparing applicationCredential:{} - with uasCredential:{}", applicationCredential.toString(), uasApplicationCredential.toString());
+        	if (applicationCredential.getApplicationID().equals(uasApplicationCredential.getApplicationID()) &&
                     applicationCredential.getApplicationSecret().equals(uasApplicationCredential.getApplicationSecret())) {
                 isAuthenticated = true;
             }
