@@ -47,6 +47,10 @@ public class HealthResource {
     public Response isHealthy() {
         ok_db = healthCheckService.isOK_DB();
         try {
+        	if(securityTokenServiceClient.getWAS()==null) {//unhealthy
+        		log.trace("isHealthy={}, {status}", false, "App session failed to establish for UIB. securityTokenServiceClient.getWAS() = null");
+        		return Response.ok(getSimpleTextJson()).build();
+        	}
             String statusText = WhydahUtil.getPrintableStatus(securityTokenServiceClient.getWAS());
             log.trace("isHealthy={}, {status}", ok_db, statusText);
             if (ok_db) {

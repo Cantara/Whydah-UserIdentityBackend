@@ -7,6 +7,7 @@ import net.whydah.sso.application.mappers.ApplicationCredentialMapper;
 import net.whydah.sso.application.types.Application;
 import net.whydah.sso.application.types.ApplicationCredential;
 import net.whydah.sso.commands.threat.CommandSendThreatSignal;
+import net.whydah.sso.session.WhydahApplicationSession;
 import net.whydah.sso.util.WhydahUtil;
 import net.whydah.sso.whydah.ThreatSignal;
 import org.slf4j.Logger;
@@ -86,15 +87,19 @@ public class ApplicationAuthenticationEndpoint {
     }
 
     protected void notifyFailedAttempt(String text) {
-        String tokenServiceUri = SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getSTS();
-        String myApplicationTokenID = SecurityTokenServiceClient.getSecurityTokenServiceClient().getActiveUibApplicationTokenId();
-        new CommandSendThreatSignal(URI.create(tokenServiceUri), myApplicationTokenID, createThreat(text)).queue();
-        healthCheckService.addIntrusion();
+    	WhydahApplicationSession was = SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS();
+    	if(was!=null) {
+    		String tokenServiceUri = was.getSTS();
+    		String myApplicationTokenID = SecurityTokenServiceClient.getSecurityTokenServiceClient().getActiveUibApplicationTokenId();
+    		new CommandSendThreatSignal(URI.create(tokenServiceUri), myApplicationTokenID, createThreat(text)).queue();
+    		healthCheckService.addIntrusion();
+    	} else {
+    		log.error("WhydahApplicationSession failed to establish for UIB");
+    	}
     }
 
     private ThreatSignal createThreat(String text) {
         ThreatSignal threatSignal = new ThreatSignal();
-
         threatSignal.setSource("");
         threatSignal.setSignalEmitter(SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getActiveApplicationName() + " [ApplicationAuthenticationEndpoint:" + WhydahUtil.getMyIPAddresssesString() + "]");
         threatSignal.setAdditionalProperty("DEFCON", SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS().getDefcon());
