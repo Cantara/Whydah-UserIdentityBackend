@@ -5,6 +5,7 @@ import net.whydah.sso.application.types.Application;
 import net.whydah.sso.application.types.ApplicationCredential;
 import net.whydah.sso.commands.userauth.CommandGetUserTokenByUserTokenId;
 import net.whydah.sso.session.WhydahApplicationSession;
+import net.whydah.sso.session.WhydahApplicationSession2;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
 import org.constretto.annotation.Configuration;
@@ -24,7 +25,7 @@ public class SecurityTokenServiceClient {
 
 	private  String MY_APPLICATION_ID = "2210";
 	private  String securitytokenserviceurl;
-	private static WhydahApplicationSession was = null;
+	private static WhydahApplicationSession2 was = null;
 	private static SecurityTokenServiceClient securityTokenServiceClient;
 	private ApplicationCredential myApplicationCredential;
 	private ApplicationService applicationService;
@@ -75,12 +76,12 @@ public class SecurityTokenServiceClient {
 		return null;
 	}
 
-	public WhydahApplicationSession getWAS() {
+	public WhydahApplicationSession2 getWAS() {
 		if (was == null) {
 			try {
 				myApplicationCredential = getAppCredentialForApplicationId(MY_APPLICATION_ID);
 				if(myApplicationCredential!=null) {
-					was = WhydahApplicationSession.getInstance(securitytokenserviceurl,
+					was = WhydahApplicationSession2.getInstance(securitytokenserviceurl,
 							null,  // No UAS
 							myApplicationCredential);
 				} else {

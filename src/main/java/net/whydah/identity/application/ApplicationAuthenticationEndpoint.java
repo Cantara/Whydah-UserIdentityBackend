@@ -8,6 +8,7 @@ import net.whydah.sso.application.types.Application;
 import net.whydah.sso.application.types.ApplicationCredential;
 import net.whydah.sso.commands.threat.CommandSendThreatSignal;
 import net.whydah.sso.session.WhydahApplicationSession;
+import net.whydah.sso.session.WhydahApplicationSession2;
 import net.whydah.sso.util.WhydahUtil;
 import net.whydah.sso.whydah.ThreatSignal;
 import org.slf4j.Logger;
@@ -87,7 +88,7 @@ public class ApplicationAuthenticationEndpoint {
     }
 
     protected void notifyFailedAttempt(String text) {
-    	WhydahApplicationSession was = SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS();
+    	WhydahApplicationSession2 was = SecurityTokenServiceClient.getSecurityTokenServiceClient().getWAS();
     	if(was!=null) {
     		String tokenServiceUri = was.getSTS();
     		String myApplicationTokenID = SecurityTokenServiceClient.getSecurityTokenServiceClient().getActiveUibApplicationTokenId();

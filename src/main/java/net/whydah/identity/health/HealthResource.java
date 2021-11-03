@@ -1,6 +1,8 @@
 package net.whydah.identity.health;
 
 import net.whydah.identity.user.authentication.SecurityTokenServiceClient;
+import net.whydah.sso.session.WhydahApplicationSession;
+import net.whydah.sso.session.WhydahApplicationSession2;
 import net.whydah.sso.util.WhydahUtil;
 import org.apache.lucene.util.Version;
 import org.constretto.annotation.Configuration;
@@ -51,7 +53,7 @@ public class HealthResource {
         		log.trace("isHealthy={}, {status}", false, "App session failed to establish for UIB. securityTokenServiceClient.getWAS() = null");
         		return Response.ok(getSimpleTextJson()).build();
         	}
-            String statusText = WhydahUtil.getPrintableStatus(securityTokenServiceClient.getWAS());
+            String statusText = getPrintableStatus(securityTokenServiceClient.getWAS());
             log.trace("isHealthy={}, {status}", ok_db, statusText);
             if (ok_db) {
                 //return Response.status(Response.Status.NO_CONTENT).build();
@@ -65,6 +67,21 @@ public class HealthResource {
 
         }
     }
+    
+    public static String getPrintableStatus(WhydahApplicationSession2 was) {
+
+        String statusString = "Whydah session:\n" +
+                " DEFCON: " + was.getDefcon() + "\"\n" +
+                " - STS: " + was.getSTS() + "\"\n" +
+                " - UAS: " + was.getUAS() + "\"\n" +
+                " - running since: " + WhydahUtil.getRunningSince() + "\"\n" +
+                " - hasApplicationToken: " + Boolean.toString(was.getActiveApplicationTokenId() != null) + "\n" +
+                " - hasValidApplicationToken: " + Boolean.toString(was.hasActiveSession()) + "\n" +
+                " - hasApplicationsMetadata:" + Boolean.toString(was.getApplicationList().size() > 2) + "\n";
+        return statusString;
+
+    }
+
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
