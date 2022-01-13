@@ -18,7 +18,7 @@
     </scm>
     <properties>
         <service.name>Whydah-UserIdentityBackend</service.name>
-        <whydah.admin.sdk.version>2.10.0</whydah.admin.sdk.version>
+        <whydah.admin.sdk.version>2.10.2</whydah.admin.sdk.version>
         <lucene.version>8.11.1</lucene.version>
         <jersey.version>2.35</jersey.version>
         <jetty.version>9.4.44.v20210927</jetty.version>
