@@ -1,16 +1,15 @@
 package net.whydah.identity.user.search;
 
-import java.io.IOException;
-
+import net.whydah.identity.util.BaseLuceneIndexer;
+import net.whydah.sso.user.mappers.UserAggregateMapper;
+import net.whydah.sso.user.types.UserAggregate;
+import net.whydah.sso.user.types.UserIdentity;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 
-import net.whydah.identity.util.BaseLuceneIndexer;
-import net.whydah.sso.user.mappers.UserAggregateMapper;
-import net.whydah.sso.user.types.UserAggregate;
-import net.whydah.sso.user.types.UserIdentity;
+import java.io.IOException;
 
 public class LuceneUserIndexerImpl extends BaseLuceneIndexer<UserIdentity> {
 
@@ -54,7 +53,7 @@ public class LuceneUserIndexerImpl extends BaseLuceneIndexer<UserIdentity> {
 				doc.add(new Field(FIELD_LASTNAME, user.getLastName(), ftTokenized));
 			}
 			if (user.getPersonRef() != null) {
-				doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftNotIndexed));  //Field.Index.NO
+				doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftNotTokenized));  //Field.Index.NOT_ANALYZED
 			}
 
 			if (user.getCellPhone() != null) {
