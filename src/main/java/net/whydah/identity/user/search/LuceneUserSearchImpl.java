@@ -139,7 +139,9 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
                 LuceneUserIndexer.FIELD_LASTNAME,
                 LuceneUserIndexer.FIELD_EMAIL,
                 LuceneUserIndexer.FIELD_USERNAME,
-                LuceneUserIndexer.FIELD_MOBILE
+                LuceneUserIndexer.FIELD_MOBILE,
+                LuceneUserIndexer.FIELD_UID,
+                LuceneUserIndexer.FIELD_PERSONREF
         };
         HashMap<String, Float> boosts = new HashMap<>();
         boosts.put(LuceneUserIndexer.FIELD_FIRSTNAME, 2.5f);

@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -99,7 +100,21 @@ public class LuceneUserIndexerTest {
 	    return builder.toString();
 	}
 
-	//testing adding with multithreading
+    @Test
+    public void testSearchByUUIDField() throws Exception {
+        UserIdentity i = getRandomUser();
+        assertTrue(indexer.addToIndex(i));
+        if (type == DirectoryType.NIOF) {
+            File path = new File("lunceneUserIndexDirectoryTest");
+            dir = new NIOFSDirectory(Paths.get(path.getPath()));
+        }
+        LuceneUserSearchImpl searcher = new LuceneUserSearchImpl(dir);
+        String q = i.getPersonRef();
+        List<UserIdentity> searchResult = searcher.search(q);
+        assertEquals(1, searchResult.size());
+    }
+
+    //testing adding with multithreading
 	@Test
 	public void testAddingASingleUser() throws Exception {
 		List<Thread> ts = new ArrayList<>();
