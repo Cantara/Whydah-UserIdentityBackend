@@ -7,7 +7,6 @@ import net.whydah.identity.audit.AuditLogDao;
 import net.whydah.identity.health.HealthResource;
 import net.whydah.sso.application.types.Application;
 import net.whydah.sso.application.types.ApplicationCredential;
-import net.whydah.sso.util.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 @Service
@@ -50,7 +51,7 @@ public class ApplicationService {
     		if(getApplication(application.getId())!=null){
     			return null; //The id is already existing
     		} else {
-    			return create(application.getId(), application);		
+    			return create(application.getId(), application);
     		}
     	}
     }
@@ -75,9 +76,9 @@ public class ApplicationService {
     public Application getApplication(String applicationId) {
         return applicationDao.getApplication(applicationId);
     }
-    
-    Lock importLock = new Lock();
-    
+
+    final Lock importLock = new ReentrantLock();
+
     //TODO: this should only be called by internal applications
     public List<Application> getApplications() {
         //data is queried directly from DB instead of LUCENE index
@@ -120,9 +121,10 @@ public class ApplicationService {
     }
 
     private void importApplicationsIfEmpty(List<Application> applicationDBList) {
-    	if(!importLock.isLocked()){
-    		try {
-    			importLock.lock();
+    	if(!importLock.tryLock()){
+            return;
+        }
+        try {
     			if(luceneApplicationSearch.getApplicationIndexSize()==0){
     				new Thread(new Runnable() {
 
@@ -134,25 +136,21 @@ public class ApplicationService {
     							List<Application> clones = new ArrayList<Application>(applicationDBList);
     							log.debug("Found application list size: {}", applicationDBList.size());
     							luceneApplicationIndexer.addToIndex(clones);
-    							
+
     							HealthResource.setNumberOfApplications(luceneApplicationSearch.getApplicationIndexSize());
-    						
+
     						} catch (Exception e) {
     							log.error("failed to import applications, exception: " + e);
     						}
 
     					}
     				}).start();
-    			}    
-    		}
-    		catch (InterruptedException e) {
-
+    			}
     		} finally{
     			importLock.unlock();
     		}
-    	}
     }
-	
+
     ////// Authentication
 
     /**
