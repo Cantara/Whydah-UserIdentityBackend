@@ -60,6 +60,7 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
 
     protected transient Password password;
     protected transient String passwordBCrypt;
+    protected transient String passwordIdentityServer3;
 
     public String getPassword() {
         return password != null ? password.getInput() : null;
@@ -67,6 +68,10 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
 
     public String getPasswordBCrypt() {
         return passwordBCrypt;
+    }
+
+    public String getPasswordIdentityServer3() {
+        return passwordIdentityServer3;
     }
 
     public String getCellPhone() {
@@ -77,14 +82,19 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
         if (password == null) {
             this.password = null;
             this.passwordBCrypt = null;
+            this.passwordIdentityServer3 = null;
             return;
         }
         byte[] passwordBytes = Bytes.from(password, StandardCharsets.UTF_8).array();
         try {
-            BCrypt.HashData bcryptHashData = BCrypt.Version.VERSION_2A.parser.parse(passwordBytes);
+            BCrypt.HashData bcryptHashData = BCrypt.Version.VERSION_2A.parser.parse(passwordBytes); // verify whether bcrypt-string is well-formed
             this.passwordBCrypt = password;
         } catch (IllegalBCryptFormatException e) {
-            this.password = new Password(password);
+            if (PBKDF2WithHMACSha1PasswordAuthenticator.isIdentityServer3FormatCompatible(password)) {
+                this.passwordIdentityServer3 = password;
+            } else {
+                this.password = new Password(password); // assume password is in cleartext
+            }
         }
     }
 

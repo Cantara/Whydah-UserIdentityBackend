@@ -53,4 +53,15 @@ public class PBKDF2WithHMACSha1PasswordAuthenticator {
             throw new RuntimeException(e);
         }
     }
+
+    public static boolean isIdentityServer3FormatCompatible(String candidateBase64) {
+        byte[] salt = new byte[16];
+        byte[] hash = new byte[32];
+        try {
+            extractSaltAndSubkey(candidateBase64, salt, hash);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
 }

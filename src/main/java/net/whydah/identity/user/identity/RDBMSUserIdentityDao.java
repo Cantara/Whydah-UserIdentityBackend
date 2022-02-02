@@ -45,7 +45,10 @@ public class RDBMSUserIdentityDao {
         try {
             String password = userIdentity.getPasswordBCrypt();
             if (password == null) {
-                password = userIdentity.getPassword();
+                password = userIdentity.getPasswordIdentityServer3();
+                if (password == null) {
+                    password = userIdentity.getPassword();
+                }
             }
             int numRowsAffected = jdbcTemplate.update(sql,
                     userIdentity.getUid(),
