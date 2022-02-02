@@ -77,7 +77,7 @@ public class RDBMSUserIdentityRepository {
                 return null;
             }
         } else {
-            log.warn("User with username {} has stored the password as plaintext, replacing cleartext password with bcrypt hash");
+            log.warn("User with username {} has stored the password as plaintext, replacing cleartext password with bcrypt hash", username);
             String storedPassword = userIdentity.getPassword();
             if (storedPassword.equals(password)) {
                 String updatedHash = bCryptService.hash(password);
