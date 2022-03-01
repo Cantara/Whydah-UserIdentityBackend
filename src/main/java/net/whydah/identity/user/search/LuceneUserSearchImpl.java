@@ -140,13 +140,13 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
                 LuceneUserIndexer.FIELD_EMAIL,
                 LuceneUserIndexer.FIELD_USERNAME,
                 LuceneUserIndexer.FIELD_MOBILE,
-                LuceneUserIndexer.FIELD_UID,
                 LuceneUserIndexer.FIELD_PERSONREF
         };
         HashMap<String, Float> boosts = new HashMap<>();
         boosts.put(LuceneUserIndexer.FIELD_FIRSTNAME, 2.5f);
         boosts.put(LuceneUserIndexer.FIELD_LASTNAME, 2f);
         boosts.put(LuceneUserIndexer.FIELD_USERNAME, 1.5f);
+        boosts.put(LuceneUserIndexer.FIELD_PERSONREF, 1.5f);
       
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(fields, ANALYZER, boosts);
         multiFieldQueryParser.setAllowLeadingWildcard(true);
@@ -215,12 +215,14 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
                 LuceneUserIndexer.FIELD_LASTNAME,
                 LuceneUserIndexer.FIELD_EMAIL,
                 LuceneUserIndexer.FIELD_USERNAME,
-                LuceneUserIndexer.FIELD_MOBILE
+                LuceneUserIndexer.FIELD_MOBILE,
+                LuceneUserIndexer.FIELD_PERSONREF
         };
         HashMap<String, Float> boosts = new HashMap<>();
         boosts.put(LuceneUserIndexer.FIELD_FIRSTNAME, 2.5f);
         boosts.put(LuceneUserIndexer.FIELD_LASTNAME, 2f);
         boosts.put(LuceneUserIndexer.FIELD_USERNAME, 1.5f);
+        boosts.put(LuceneUserIndexer.FIELD_PERSONREF, 1.5f);
       
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(fields, ANALYZER, boosts);
         multiFieldQueryParser.setAllowLeadingWildcard(true);
