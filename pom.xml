@@ -335,7 +335,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>8.5.8</version>
+            <version>8.5.9</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
