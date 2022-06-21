@@ -3,6 +3,8 @@ package net.whydah.identity.user.authentication;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import net.whydah.sso.user.helpers.Base64Helper;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -40,6 +42,11 @@ public class UserAuthenticationCredentialDTO {
         String aadId = (String) xPath.evaluate("//aadId", dDoc, XPathConstants.STRING);
         String facebookId = (String) xPath.evaluate("//fbId", dDoc, XPathConstants.STRING);
         String netIQAccessToken = (String) xPath.evaluate("//netiqId", dDoc, XPathConstants.STRING);
+        
+        if(Base64Helper.isBase64(password)) {
+        	password = Base64Helper.convertStringFromBase64(password);
+        }
+        
         UserAuthenticationCredentialDTO dto = new UserAuthenticationCredentialDTO(username, password, aadId, facebookId, netIQAccessToken);
         return dto;
     }
