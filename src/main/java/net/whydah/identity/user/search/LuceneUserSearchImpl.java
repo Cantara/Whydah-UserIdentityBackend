@@ -56,6 +56,20 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
             IndexSearcher searcher = new IndexSearcher(directoryReader);
             TopDocs topDocs = searcher.search(q, 1);
             if (topDocs.totalHits.value>0){
+            	for (ScoreDoc hit : topDocs.scoreDocs) {
+                    int docId = hit.doc;
+                    Document d = searcher.doc(docId);
+                    LuceneUserIdentity user = new LuceneUserIdentity();
+                    user.setFirstName(d.get(LuceneUserIndexer.FIELD_FIRSTNAME));
+                    user.setLastName(d.get(LuceneUserIndexer.FIELD_LASTNAME));
+                    user.setUid(d.get(LuceneUserIndexer.FIELD_UID));
+                    user.setUsername(d.get(LuceneUserIndexer.FIELD_USERNAME));
+                    user.setPersonRef(d.get(LuceneUserIndexer.FIELD_PERSONREF));
+                    user.setCellPhone(d.get(LuceneUserIndexer.FIELD_MOBILE));
+                    user.setEmail(d.get(LuceneUserIndexer.FIELD_EMAIL));
+                    logger.debug("lucene search found user {}", user);
+                }
+            	
                 return true;
             }
         } catch (IOException e) {

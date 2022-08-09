@@ -64,13 +64,19 @@ public class UserSearch {
 		}
 		log.debug("lucene search with query={} returned {} users.", query, users.size());
 
+		if(getUserIndexSize() != rdbmsUserIdentityDao.countUsers()) {
+			log.warn("DB count and lucence size mismatched - lucene index size {} but DB count {}", getUserIndexSize(), rdbmsUserIdentityDao.countUsers() );
+		}
+		
 		importUsersIfEmpty();
+		
 		
 		return users;
 	}
 
 	public boolean isUserIdentityIfExists(String username) {
 		boolean existing = luceneUserSearch.usernameExists(username);
+		log.debug("Result from luceneUserSearch existing={}", existing);
 		if (!existing) {
 			return rdbmsUserIdentityDao.getWithUsername(username) != null;
 		}
@@ -88,6 +94,7 @@ public class UserSearch {
 		importUsersIfEmpty();
 		return paginatedDL;
 	}
+	
 
 	public int getUserIndexSize() {
 		return luceneUserSearch.getUserIndexSize();

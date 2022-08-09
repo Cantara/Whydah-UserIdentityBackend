@@ -155,7 +155,7 @@ public class UsersResource {
     @Path("/checkexist/{username}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response findUserName(@PathParam("username") String query) throws JsonProcessingException, IOException, NamingException {
-        log.trace("checkexist");
+        log.debug("checkexist for username {}", query);
          boolean exists = userSearch.isUserIdentityIfExists(query);
          JSONObject json=new JSONObject();
          json.put("result", exists);

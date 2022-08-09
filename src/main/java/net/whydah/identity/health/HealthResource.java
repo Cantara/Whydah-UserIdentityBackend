@@ -157,6 +157,10 @@ public class HealthResource {
     public static void setNumberOfUsersDB(int numberOfUsers) {
         HealthResource.numberOfUsers_DB = numberOfUsers;
     }
+    
+    public static int getNumberOfUsersDB() {
+        return HealthResource.numberOfUsers_DB;
+    }
 
     public static long getNumberOfApplications() {
         return numberOfApplications;
