@@ -75,7 +75,8 @@ public class UserSearch {
 	}
 
 	public boolean isUserIdentityIfExists(String username) {
-		boolean existing = luceneUserSearch.usernameExists(username);
+		//boolean existing = luceneUserSearch.usernameExists(username);
+		boolean existing = false;
 		log.debug("Result from luceneUserSearch existing={}", existing);
 		if (!existing) {
 			return rdbmsUserIdentityDao.getWithUsername(username) != null;
