@@ -2,6 +2,7 @@ package net.whydah.identity.user.search;
 
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
+import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.sso.user.types.UserIdentity;
 import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
@@ -21,13 +22,15 @@ public class UserSearch {
 	private final RDBMSUserIdentityDao rdbmsUserIdentityDao;
 	private final LuceneUserSearch luceneUserSearch;
 	private final LuceneUserIndexer luceneUserIndexer;
-
+	RDBMSUserIdentityRepository userIdentityRepository;
+	
 	@Autowired
 	@Configure
-	public UserSearch(RDBMSUserIdentityDao rdbmsUserIdentityDao, LuceneUserSearch luceneSearch, LuceneUserIndexer luceneIndexer) {
+	public UserSearch(RDBMSUserIdentityRepository userIdentityRepository, RDBMSUserIdentityDao rdbmsUserIdentityDao, LuceneUserSearch luceneSearch, LuceneUserIndexer luceneIndexer) {
 		this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
 		this.luceneUserSearch = luceneSearch;
 		this.luceneUserIndexer = luceneIndexer;
+		this.userIdentityRepository = userIdentityRepository;
 	}
 
 	private void importUsersIfEmpty() {
@@ -76,12 +79,13 @@ public class UserSearch {
 
 	public boolean isUserIdentityIfExists(String username) {
 		//boolean existing = luceneUserSearch.usernameExists(username);
-		boolean existing = false;
-		log.debug("Result from luceneUserSearch existing={}", existing);
-		if (!existing) {
-			return rdbmsUserIdentityDao.getWithUsername(username) != null;
-		}
-		return existing;
+//		boolean existing = false;
+//		log.debug("Result from luceneUserSearch existing={}", existing);
+//		if (!existing) {
+//			return rdbmsUserIdentityDao.getWithUsername(username) != null;
+//		}
+//		return existing;
+		return userIdentityRepository.usernameExist(username);
 
 	}
 
