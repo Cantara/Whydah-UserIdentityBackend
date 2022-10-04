@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.whydah.identity</groupId>
     <artifactId>UserIdentityBackend</artifactId>
-    <version>2.12.2-SNAPSHOT</version>
+    <version>2.14.2-SNAPSHOT</version>
     <name>UserIdentityBackend</name>
     <url>https://wiki.cantara.no/display/whydah/UserIdentityBackend+-+UIB</url>
     <parent>
@@ -20,7 +20,7 @@
         <service.name>Whydah-UserIdentityBackend</service.name>
         <whydah.admin.sdk.version>2.12.5</whydah.admin.sdk.version>
         <lucene.version>8.11.2</lucene.version>
-        <jersey.version>2.36</jersey.version>
+        <jersey.version>2.37</jersey.version>
         <jetty.version>9.4.48.v20220622</jetty.version>
         <spring.version>5.3.22</spring.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -221,7 +221,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.9.0</version>
+            <version>2.9.1</version>
         </dependency>
         <dependency>
             <groupId>org.freemarker</groupId>
@@ -305,7 +305,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.4.1</version>
+            <version>42.5.0</version>
         </dependency>
 
 
@@ -434,7 +434,7 @@
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.0.6</version>
+            <version>3.0.7</version>
         </dependency>
     </dependencies>
 
