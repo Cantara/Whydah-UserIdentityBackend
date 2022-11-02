@@ -8,7 +8,9 @@ import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Ensure database has the necessary DDL and all migrations have been applied.
@@ -21,11 +23,14 @@ public class DatabaseMigrationHelper {
     private Flyway flyway;
     private String dbUrl;
 
-    public DatabaseMigrationHelper(BasicDataSource dataSource) {
+    public DatabaseMigrationHelper(BasicDataSource dataSource, Map<String, String> flywayConfigMap) {
         this.dbUrl = dataSource.getUrl();
         Configuration flyWayConfiguration;
         if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("hsqldb")) {
-            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/hsqldb");
+            flyWayConfiguration = new FluentConfiguration()
+                    .configuration(flywayConfigMap)
+                    .dataSource(dataSource)
+                    .locations("db/migration/hsqldb");
             flyway = new Flyway(flyWayConfiguration);
         } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("mysql")) {
             flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/mysql");
@@ -42,6 +47,10 @@ public class DatabaseMigrationHelper {
         } else {
             throw new RuntimeException("Unsupported database driver found in configuration - " + dataSource.getDriverClassName().toLowerCase(Locale.ROOT));
         }
+    }
+
+    public DatabaseMigrationHelper(BasicDataSource dataSource) {
+        this(dataSource, Collections.emptyMap());
     }
 
 

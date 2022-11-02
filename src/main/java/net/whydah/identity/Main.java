@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 
 public class Main {
     public static final String CONTEXT_PATH = "/uib";
@@ -139,7 +140,10 @@ public class Main {
             FileUtils.deleteDirectories(roleDBDirectory);
         }
         BasicDataSource dataSource = initBasicDataSource(config);
-        new DatabaseMigrationHelper(dataSource).upgradeDatabase();
+        Map<String, String> flywayConfigMap = config.asMap().entrySet().stream()
+                .filter(entry -> entry.getKey().startsWith("flyway."))
+                .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
+        new DatabaseMigrationHelper(dataSource, flywayConfigMap).upgradeDatabase();
         return dataSource;
     }
 
