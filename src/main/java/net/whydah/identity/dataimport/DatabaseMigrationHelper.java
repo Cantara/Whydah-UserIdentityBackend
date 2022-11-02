@@ -26,20 +26,30 @@ public class DatabaseMigrationHelper {
     public DatabaseMigrationHelper(BasicDataSource dataSource, Map<String, String> flywayConfigMap) {
         this.dbUrl = dataSource.getUrl();
         Configuration flyWayConfiguration;
+        FluentConfiguration fluentConfiguration = new FluentConfiguration();
         if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("hsqldb")) {
-            flyWayConfiguration = new FluentConfiguration()
-                    .configuration(flywayConfigMap)
+            flyWayConfiguration = fluentConfiguration
                     .dataSource(dataSource)
-                    .locations("db/migration/hsqldb");
+                    .locations("db/migration/hsqldb")
+                    .configuration(flywayConfigMap);
             flyway = new Flyway(flyWayConfiguration);
         } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("mysql")) {
-            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/mysql");
+            flyWayConfiguration = fluentConfiguration
+                    .dataSource(dataSource)
+                    .locations("db/migration/mysql")
+                    .configuration(flywayConfigMap);
             flyway = new Flyway(flyWayConfiguration);
         } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("mariadb")) {
-            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/mariadb");
+            flyWayConfiguration = fluentConfiguration
+                    .dataSource(dataSource)
+                    .locations("db/migration/mariadb")
+                    .configuration(flywayConfigMap);
             flyway = new Flyway(flyWayConfiguration);
         } else if (dataSource.getDriverClassName().toLowerCase(Locale.ROOT).contains("postgresql")) {
-            flyWayConfiguration = new FluentConfiguration().dataSource(dataSource).locations("db/migration/postgresql");
+            flyWayConfiguration = fluentConfiguration
+                    .dataSource(dataSource)
+                    .locations("db/migration/postgresql")
+                    .configuration(flywayConfigMap);
             org.hsqldb.jdbc.JDBCDriver jdbcDriver;
             flyway = new Flyway(flyWayConfiguration);
         } else if (dbUrl.contains("sqlserver")) {
