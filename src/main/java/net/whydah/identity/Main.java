@@ -142,7 +142,7 @@ public class Main {
         BasicDataSource dataSource = initBasicDataSource(config);
         Map<String, String> flywayConfigMap = config.asMap().entrySet().stream()
                 .filter(entry -> entry.getKey().startsWith("flyway."))
-                .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         new DatabaseMigrationHelper(dataSource, flywayConfigMap).upgradeDatabase();
         return dataSource;
     }
