@@ -82,7 +82,7 @@ public class ApplicationDao {
 
     Application getApplication(String applicationId) {
         log.debug("Get Application for applicationId [{}]", applicationId);
-        List<Application> applications = jdbcTemplate.query(APPLICATION_SQL, new String[]{applicationId.trim()}, new ApplicationMapper2());
+        List<Application> applications = jdbcTemplate.query(APPLICATION_SQL, new ApplicationMapper2(), applicationId.trim());
         if (applications.isEmpty()) {
             log.info("No Application found for applicationId [{}]", applicationId);
             return null;
