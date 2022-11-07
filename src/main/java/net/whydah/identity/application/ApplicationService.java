@@ -117,6 +117,7 @@ public class ApplicationService {
 
     private void importApplicationsIfEmpty() {
     	List<Application> applicationDBList = applicationDao.getApplications();
+    	HealthResource.setNumberOfApplications(applicationDBList.size());
     	importApplicationsIfEmpty(applicationDBList);
     }
 
@@ -137,7 +138,7 @@ public class ApplicationService {
     							log.debug("Found application list size: {}", applicationDBList.size());
     							luceneApplicationIndexer.addToIndex(clones);
 
-    							HealthResource.setNumberOfApplications(luceneApplicationSearch.getApplicationIndexSize());
+    							
 
     						} catch (Exception e) {
     							log.error("failed to import applications, exception: " + e);
