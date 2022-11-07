@@ -117,7 +117,7 @@ public class ApplicationService {
 
     private void importApplicationsIfEmpty() {
     	List<Application> applicationDBList = applicationDao.getApplications();
-    	HealthResource.setNumberOfApplications(applicationDBList.size());
+    	
     	importApplicationsIfEmpty(applicationDBList);
     }
 

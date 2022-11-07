@@ -2,6 +2,7 @@ package net.whydah.identity.dataimport;
 
 import net.whydah.identity.application.ApplicationService;
 import net.whydah.identity.application.search.LuceneApplicationIndexer;
+import net.whydah.identity.health.HealthResource;
 import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.types.Application;
 import org.apache.lucene.store.NIOFSDirectory;
@@ -63,6 +64,8 @@ public class ApplicationJsonImporter {
         }
 
         saveApplications(applications);
+        
+        HealthResource.setNumberOfApplications(applications.size());
     }
 
 
