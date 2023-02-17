@@ -4,6 +4,7 @@ import net.whydah.identity.user.identity.LuceneUserIdentity;
 import net.whydah.identity.util.BaseLuceneReader;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -23,10 +24,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class LuceneUserSearchImpl extends BaseLuceneReader {
     private static final Logger logger = LoggerFactory.getLogger(LuceneUserSearchImpl.class);
     protected static final Analyzer ANALYZER = new StandardAnalyzer();  //use LuceneUserIndexer.ANALYZER?
+    private static final Pattern uuidPattern = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+    protected static final Analyzer uuidAnalyzer = new WhitespaceAnalyzer();
+
     public static final int MAX_HITS = 250;
 
 
@@ -147,28 +152,48 @@ public class LuceneUserSearchImpl extends BaseLuceneReader {
 
     
     public synchronized List<UserIdentity> search(String queryString) {
-        String wildCardQuery = buildWildCardQuery(queryString);
-        String[] fields = {
-                LuceneUserIndexer.FIELD_FIRSTNAME,
-                LuceneUserIndexer.FIELD_LASTNAME,
-                LuceneUserIndexer.FIELD_EMAIL,
-                LuceneUserIndexer.FIELD_USERNAME,
-                LuceneUserIndexer.FIELD_MOBILE,
-                LuceneUserIndexer.FIELD_PERSONREF
-        };
+        String[] fields;
         HashMap<String, Float> boosts = new HashMap<>();
-        boosts.put(LuceneUserIndexer.FIELD_FIRSTNAME, 2.5f);
-        boosts.put(LuceneUserIndexer.FIELD_LASTNAME, 2f);
-        boosts.put(LuceneUserIndexer.FIELD_USERNAME, 1.5f);
-        boosts.put(LuceneUserIndexer.FIELD_PERSONREF, 1.5f);
-      
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(fields, ANALYZER, boosts);
+        Analyzer analyzer;
+        String effectiveQuery;
+
+        if (uuidPattern.matcher(queryString.trim()).matches()) {
+            // search query is an uuid, simplify search to be a case-insensitive exact-match search against personref field
+            analyzer = uuidAnalyzer;
+            effectiveQuery = queryString.trim().toLowerCase();
+            fields = new String[]{
+                    LuceneUserIndexer.FIELD_PERSONREF_LC
+            };
+        }
+
+        else {
+            // normal wide query
+            analyzer = ANALYZER;
+            effectiveQuery = buildWildCardQuery(queryString);
+            fields = new String[]{
+                    LuceneUserIndexer.FIELD_FIRSTNAME,
+                    LuceneUserIndexer.FIELD_LASTNAME,
+                    LuceneUserIndexer.FIELD_EMAIL,
+                    LuceneUserIndexer.FIELD_USERNAME,
+                    LuceneUserIndexer.FIELD_MOBILE,
+                    LuceneUserIndexer.FIELD_PERSONREF,
+                    LuceneUserIndexer.FIELD_PERSONREF_LC
+            };
+            boosts = new HashMap<>();
+            boosts.put(LuceneUserIndexer.FIELD_FIRSTNAME, 2.5f);
+            boosts.put(LuceneUserIndexer.FIELD_LASTNAME, 2f);
+            boosts.put(LuceneUserIndexer.FIELD_USERNAME, 1.5f);
+            boosts.put(LuceneUserIndexer.FIELD_PERSONREF, 1.5f);
+            boosts.put(LuceneUserIndexer.FIELD_PERSONREF_LC, 1.5f);
+        }
+
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(fields, analyzer, boosts);
         multiFieldQueryParser.setAllowLeadingWildcard(true);
         Query q;
         try {
-            q = multiFieldQueryParser.parse(wildCardQuery);
+            q = multiFieldQueryParser.parse(effectiveQuery);
         } catch (ParseException e) {
-            logger.error("Could not parse wildCardQuery={}. Returning empty search result.", wildCardQuery, e);
+            logger.error("Could not parse wildCardQuery={}. Returning empty search result.", effectiveQuery, e);
             return new ArrayList<>();
         }
 

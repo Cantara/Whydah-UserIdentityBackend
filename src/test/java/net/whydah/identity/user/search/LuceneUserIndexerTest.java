@@ -116,18 +116,27 @@ public class LuceneUserIndexerTest {
 
     @Test
     public void testSearchByPersonrefUppercasedField() throws Exception {
+        for (int x = 0; x < 10; x++) {
+            UserIdentity i2 = getRandomUser();
+            assertTrue(indexer.addToIndex(i2));
+        }
+
         UserIdentity i = getRandomUser();
-        UserIdentity i2 = getRandomUser();
-		i.setPersonRef(UUID.randomUUID().toString().toUpperCase());
+        i.setPersonRef(UUID.randomUUID().toString().toUpperCase()); // uppercase UUID
         assertTrue(indexer.addToIndex(i));
-        assertTrue(indexer.addToIndex(i2));
+
+        for (int x = 0; x < 10; x++) {
+            UserIdentity i2 = getRandomUser();
+            assertTrue(indexer.addToIndex(i2));
+        }
+
         if (type == DirectoryType.NIOF) {
             File path = new File("lunceneUserIndexDirectoryTest");
             dir = new NIOFSDirectory(Paths.get(path.getPath()));
         }
         LuceneUserSearchImpl searcher = new LuceneUserSearchImpl(dir);
-        String q = i.getPersonRef().toLowerCase().substring(0, 10);
-        //List<UserIdentity> searchResult = searcher.search(q);
+		// use both upper- and lowercase in search, to very case insensitivity.
+        String q = i.getPersonRef().substring(0, 18).toUpperCase() + i.getPersonRef().substring(18).toLowerCase();
         List<UserIdentity> searchResult = searcher.search(q);
         assertEquals(1, searchResult.size());
     }

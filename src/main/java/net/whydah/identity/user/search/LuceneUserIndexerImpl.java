@@ -20,6 +20,7 @@ public class LuceneUserIndexerImpl extends BaseLuceneIndexer<UserIdentity> {
 	public static final String FIELD_USERNAME = "username";
 	public static final String FIELD_EMAIL = "email";
 	public static final String FIELD_PERSONREF = "personref";
+	public static final String FIELD_PERSONREF_LC = "personreflc";
 	public static final String FIELD_MOBILE = "mobile";
 	public static final String FIELD_FULLJSON = "fulljson";
 	
@@ -53,7 +54,10 @@ public class LuceneUserIndexerImpl extends BaseLuceneIndexer<UserIdentity> {
 				doc.add(new Field(FIELD_LASTNAME, user.getLastName(), ftTokenized));
 			}
 			if (user.getPersonRef() != null) {
-				doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftTokenized));  //Field.Index.NOT_ANALYZED
+				doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftNotTokenized));
+			}
+			if (user.getPersonRef() != null) {
+				doc.add(new Field(FIELD_PERSONREF_LC, user.getPersonRef().toLowerCase(), ftNotTokenized));
 			}
 
 			if (user.getCellPhone() != null) {
