@@ -114,6 +114,24 @@ public class LuceneUserIndexerTest {
         assertEquals(1, searchResult.size());
     }
 
+    @Test
+    public void testSearchByPersonrefUppercasedField() throws Exception {
+        UserIdentity i = getRandomUser();
+        UserIdentity i2 = getRandomUser();
+		i.setPersonRef(UUID.randomUUID().toString().toUpperCase());
+        assertTrue(indexer.addToIndex(i));
+        assertTrue(indexer.addToIndex(i2));
+        if (type == DirectoryType.NIOF) {
+            File path = new File("lunceneUserIndexDirectoryTest");
+            dir = new NIOFSDirectory(Paths.get(path.getPath()));
+        }
+        LuceneUserSearchImpl searcher = new LuceneUserSearchImpl(dir);
+        String q = i.getPersonRef().toLowerCase().substring(0, 10);
+        //List<UserIdentity> searchResult = searcher.search(q);
+        List<UserIdentity> searchResult = searcher.search(q);
+        assertEquals(1, searchResult.size());
+    }
+
     //testing adding with multithreading
 	@Test
 	public void testAddingASingleUser() throws Exception {

@@ -53,7 +53,7 @@ public class LuceneUserIndexerImpl extends BaseLuceneIndexer<UserIdentity> {
 				doc.add(new Field(FIELD_LASTNAME, user.getLastName(), ftTokenized));
 			}
 			if (user.getPersonRef() != null) {
-				doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftNotTokenized));  //Field.Index.NOT_ANALYZED
+				doc.add(new Field(FIELD_PERSONREF, user.getPersonRef(), ftTokenized));  //Field.Index.NOT_ANALYZED
 			}
 
 			if (user.getCellPhone() != null) {

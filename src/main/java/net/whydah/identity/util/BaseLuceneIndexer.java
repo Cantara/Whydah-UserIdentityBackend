@@ -50,6 +50,7 @@ public abstract class BaseLuceneIndexer<T> {
 		ftNotTokenized.setTokenized(false);
 		ftNotTokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 		ftTokenized.setTokenized(true);
+		ftTokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 		ftNotIndexed.setIndexOptions(IndexOptions.NONE);
 	}
 
