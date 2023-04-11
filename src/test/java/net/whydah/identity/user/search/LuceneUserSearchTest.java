@@ -104,7 +104,7 @@ public class LuceneUserSearchTest {
             add(createUser("medel.svenson@example.com", "Medel", "Svenson", "medel.svenson@example.com", "medel.svenson@example.com"));
             add(createUser("test@tull.no", "first", "last", emailWithUnderScore, UUID.randomUUID().toString()));
         }};
-        luceneIndexer.addToIndex(users);
+        luceneIndexer.updateIndex(users);
         return luceneIndexer;
     }
 
