@@ -1,7 +1,7 @@
 UserIdentityBackend
 ===================
 
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/Cantara/Whydah-UserIdentityBackend) ![Build Status](https://jenkins.quadim.ai/buildStatus/icon?job=Whydah-UserIdentityBackend) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/Cantara/Whydah-UserIdentityBackend) [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)  [![Known Vulnerabilities](https://snyk.io/test/github/Cantara/Whydah-UserIdentityBackend/badge.svg)](https://snyk.io/test/github/Cantara/Whydah-UserIdentityBackend)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/Cantara/Whydah-UserIdentityBackend) ![Build Status](https://jenkins.cantara.no/buildStatus/icon?job=Whydah-UserIdentityBackend) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/Cantara/Whydah-UserIdentityBackend) [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)  [![Known Vulnerabilities](https://snyk.io/test/github/Cantara/Whydah-UserIdentityBackend/badge.svg)](https://snyk.io/test/github/Cantara/Whydah-UserIdentityBackend)
 
 
 
