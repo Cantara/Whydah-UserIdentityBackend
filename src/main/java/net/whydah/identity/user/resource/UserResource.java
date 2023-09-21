@@ -5,13 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.whydah.identity.user.InvalidRoleModificationException;
 import net.whydah.identity.user.NonExistentRoleException;
 import net.whydah.identity.user.UserAggregateService;
-import net.whydah.identity.user.identity.BCryptService;
-import net.whydah.identity.user.identity.InvalidUserIdentityFieldException;
-import net.whydah.identity.user.identity.LuceneUserIdentity;
-import net.whydah.identity.user.identity.RDBMSUserIdentity;
-import net.whydah.identity.user.identity.UserIdentityConverter;
-import net.whydah.identity.user.identity.UserIdentityServiceV2;
-import net.whydah.identity.user.identity.UserIdentityWithAutomaticPasswordGeneration;
+import net.whydah.identity.user.identity.*;
 import net.whydah.sso.user.mappers.UserRoleMapper;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserIdentity;
@@ -20,15 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -265,6 +251,10 @@ public class UserResource {
             return Response.status(Response.Status.CREATED).entity(json).build();
         } catch (WebApplicationException ce) {
             log.error("addRole-Conflict. {}", roleJson, ce);
+            if (ce.getMessage().contains("already has this role")) {
+                String json = roleJson; //UserRoleMapper.toJson(updatedRole);
+                return Response.status(Response.Status.CREATED).entity(json).build();
+            }
             //return Response.status(Response.Status.CONFLICT).build();
             return ce.getResponse();
         } catch (RuntimeException e) {
