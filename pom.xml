@@ -22,7 +22,7 @@
         <lucene.version>8.11.2</lucene.version>
         <jersey.version>2.41</jersey.version>
         <jetty.version>9.4.53.v20231009</jetty.version>
-        <spring.version>5.3.31</spring.version>
+        <spring.version>6.1.1</spring.version>
         <slf4j.version>1.7.36</slf4j.version>
         <hystrix.version>1.5.18</hystrix.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -487,7 +487,7 @@
                                         <Main-Class>net.whydah.identity.Main</Main-Class>
                                     </manifestEntries>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/spring.handlers</resource>
