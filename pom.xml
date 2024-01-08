@@ -23,7 +23,7 @@
         <jersey.version>2.41</jersey.version>
         <jetty.version>9.4.53.v20231009</jetty.version>
         <spring.version>5.3.31</spring.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.10</slf4j.version>
         <hystrix.version>1.5.18</hystrix.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
@@ -372,6 +372,22 @@
             <artifactId>logback-classic</artifactId>
             <version>1.4.14</version>
         </dependency>
+
+        <!-- SLF4J API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- SLF4J Log4j Implementation -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
+
         <!-- javax.mail and javax.activation is used by logback SmtpAppender -->
         <dependency>
             <groupId>javax.activation</groupId>
