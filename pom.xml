@@ -21,9 +21,9 @@
         <whydah.admin.sdk.version>2.22.0</whydah.admin.sdk.version>
         <lucene.version>8.11.2</lucene.version>
         <jersey.version>2.41</jersey.version>
-        <jetty.version>9.4.53.v20231009</jetty.version>
-        <spring.version>5.3.31</spring.version>
-        <slf4j.version>2.0.11</slf4j.version>
+        <jetty.version>9.4.54.v20240208</jetty.version>
+        <spring.version>5.3.32</spring.version>
+        <slf4j.version>2.0.12</slf4j.version>
         <hystrix.version>1.5.18</hystrix.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
