@@ -8,6 +8,8 @@ import net.whydah.sso.application.types.ApplicationCredential;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserToken;
 import net.whydah.sso.util.WhydahUtil;
+
+import org.apache.commons.codec.net.URLCodec;
 import org.eclipse.jetty.server.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.regex.Pattern;
+import java.net.URL;
 
 /**
  * Sjekker om request path krever autentisering, og i såfall sjekkes authentication.
@@ -37,6 +40,7 @@ public class SecurityFilter implements Filter {
 	//    public static final String pwPattern2 = "/password/(.*)/reset/username/(.*)";
 	public static final String pwPattern2 = "(.*)/reset/username/(.*)";
 	public static final String pwPattern3 = "/user/.+/password_login_enabled";
+	public static final String pwPattern4 = "/user/.+/.+/thirdparty_login_enabled";
 	public static final String userAuthPattern = "/authenticate/user(|/.*)";
 	public static final String applicationAuthPatten = "/application/auth";
 	public static final String applicationListPatten = "/applications";
@@ -45,7 +49,7 @@ public class SecurityFilter implements Filter {
 	public static final String applicationSearchPatten2 = "/find/applications/(.*?)";
 	public static final String applicationSearchPatten2_ = "/find/applications";
 	public static final String userSignupPattern = "/signup/user";
-	public static final String[] patternsWithoutUserTokenId = {applicationAuthPatten, pwPattern, pwPattern2, pwPattern3, userAuthPattern, userSignupPattern, applicationListPatten, applicationSearchPatten, applicationSearchPatten2, applicationSearchPatten_, applicationSearchPatten2_};
+	public static final String[] patternsWithoutUserTokenId = {applicationAuthPatten, pwPattern, pwPattern2, pwPattern3, pwPattern4, userAuthPattern, userSignupPattern, applicationListPatten, applicationSearchPatten, applicationSearchPatten2, applicationSearchPatten_, applicationSearchPatten2_};
 	public static final String HEALH_PATH = "/health";
 
 	private final SecurityTokenServiceClient securityTokenHelper;
@@ -313,9 +317,9 @@ public class SecurityFilter implements Filter {
 		if (applicationCredentialXml != null && !applicationCredentialXml.isEmpty()) {
 			String realData = null;
 			try {
-				realData = java.net.URLDecoder.decode(applicationCredentialXml, "UTF-8");
+				realData =  new URLCodec().decode(applicationCredentialXml);
 				applicationCredentialXml = realData;
-			} catch (UnsupportedEncodingException e) {
+			} catch (Exception e) {
 				// Nothing to do, it should not happen as you supplied a standard one
 			}
 

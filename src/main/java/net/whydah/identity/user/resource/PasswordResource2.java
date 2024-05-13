@@ -209,17 +209,17 @@ public class PasswordResource2 {
     @GET
     @Path("/user/{username}/password_login_enabled")
     public Response hasUserNameSetPassword(@PathParam("username") String username) {
-        log.info("password_login_enabled for uid={}", username);
+        log.info("password_login_enabled for username={}", username);
 
         RDBMSUserIdentity user = null;
         try {
             user = userIdentityServiceV2.getUserIdentity(username);
         } catch (Exception e) {
-            log.warn("password_login_enabled false for uid={} in DB", username);
+            log.warn("password_login_enabled false for username={} in DB", username);
         }
 
         if (user == null) {
-            log.info("password_login_enabled false for uid={}", username);
+            log.info("password_login_enabled false for username={}", username);
             return Response.ok().entity(Boolean.toString(false)).build();
         }
 
@@ -234,10 +234,46 @@ public class PasswordResource2 {
                     }
                 }
             }
-            log.info("password_login_enabled false for uid={}", username);
+            log.info("password_login_enabled false for username={}", username);
             return Response.ok().entity(Boolean.toString(false)).build();
         } catch (Exception e) {
             log.error("hasUserNameSetPassword failed", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GET
+    @Path("/user/{username}/{provider}/thirdparty_login_enabled")
+    public Response hasThirdpartyLoginEnabled(
+    		@PathParam("username") String username, 
+    		@PathParam("provider") String provider) {
+        log.info("thirdparty_login_enabled for username={} provider={}", username, provider);
+
+        RDBMSUserIdentity user = null;
+        try {
+            user = userIdentityServiceV2.getUserIdentity(username);
+        } catch (Exception e) {
+            log.warn("thirdparty_login_enabled false for uid={} in DB", username);
+        }
+
+        if (user == null) {
+            log.info("thirdparty_login_enabled false for uid={}", username);
+            return Response.ok().entity(Boolean.toString(false)).build();
+        }
+
+        try {
+            List<UserApplicationRoleEntry> roles = userAggregateService.getUserApplicationRoleEntries(user.getUid());
+            for (UserApplicationRoleEntry role : roles) {
+                log.info("Checking role: getApplicationId():{}, getApplicationName(){}, getApplicationRoleName(){}, getApplicationRoleValue(){} against 2212, UserAdminService, PW_SET, true ", role.getApplicationId(), role.getApplicationName(), role.getRoleName(), role.getRoleValue());
+                if (role.getOrgName().equalsIgnoreCase(provider)) {
+                	 log.info("thirdparty_login_enabled true for username={}", username);
+                     return Response.ok().entity(Boolean.toString(true)).build();
+                }
+            }
+            log.info("thirdparty_login_enabled false for username={}", username);
+            return Response.ok().entity(Boolean.toString(false)).build();
+        } catch (Exception e) {
+            log.error("hasThirdpartyLoginEnabled failed", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
