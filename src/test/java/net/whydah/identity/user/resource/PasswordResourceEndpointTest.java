@@ -156,7 +156,7 @@ public class PasswordResourceEndpointTest {
     public void test_resetPassword_post_ok() throws Exception {
         ApplicationMode.setTags(ApplicationMode.NO_SECURITY_FILTER);
         addTestUser();
-        postResetPassword("appTokenTestId", "test.me@example.com");
+        postResetPassword("appTokenTestId", "test.me.username");
     }
 
     private String postResetPassword(String appTokenId, String username) {
