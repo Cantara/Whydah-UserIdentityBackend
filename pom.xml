@@ -20,7 +20,7 @@
         <service.name>Whydah-UserIdentityBackend</service.name>
         <whydah.admin.sdk.version>2.24.0</whydah.admin.sdk.version>
         <lucene.version>8.11.3</lucene.version>
-        <jersey.version>2.42</jersey.version>
+        <jersey.version>2.43</jersey.version>
         <jetty.version>9.4.54.v20240208</jetty.version>
         <spring.version>5.3.33</spring.version>
         <slf4j.version>2.0.13</slf4j.version>
@@ -532,7 +532,7 @@
                                         <Main-Class>net.whydah.identity.Main</Main-Class>
                                     </manifestEntries>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/spring.handlers</resource>
