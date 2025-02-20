@@ -35,36 +35,46 @@ public class UserSearch {
 		this.luceneUserSearch = luceneSearch;
 		this.luceneUserIndexer = luceneIndexer;
 		this.userIdentityRepository = userIdentityRepository;
+		
 	}
 
 	private void importUsers() {
 		
-		new Thread(new Runnable() {
+		
+		//if(luceneUserSearch.getUserIndexSize() == 0){
 
-			@Override
-			public void run() {
+			new Thread(new Runnable() {
 
-				if(!importLock.tryLock()){
-					return;
+				@Override
+				public void run() {
+
+					if(!importLock.tryLock()){
+						return;
+					}
+
+					log.debug("Trying to import users from DB...");
+					List<RDBMSUserIdentity> list;
+					try {					
+						
+						try {
+							luceneUserIndexer.closeDirectory();
+							luceneUserIndexer.deleteAll();
+						} catch(Exception ex) {
+							log.error("unexpected error clearing the Lucene user index", ex);
+						}
+						list = rdbmsUserIdentityDao.allUsersList();
+						List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
+						log.debug("Found DB user list size: {}", list.size());
+						luceneUserIndexer.addToIndex(clones);
+					} catch (Exception e) {
+						log.error("failed to import users, exception: " + e);
+					} finally {
+						importLock.unlock();
+					}
+
 				}
-
-				log.debug("Trying to import users from DB...");
-				List<RDBMSUserIdentity> list;
-				try {					
-					luceneUserIndexer.closeDirectory();
-					luceneUserIndexer.deleteAll();
-					list = rdbmsUserIdentityDao.allUsersList();
-					List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
-					log.debug("Found DB user list size: {}", list.size());
-					luceneUserIndexer.addToIndex(clones);
-				} catch (Exception e) {
-					log.error("failed to import users, exception: " + e);
-				} finally {
-					importLock.unlock();
-				}
-
-			}
-		}).start();
+			}).start();
+		//}
 
 		
 	}
@@ -75,7 +85,7 @@ public class UserSearch {
 			users = new ArrayList<>();
 		}
 		log.debug("lucene search with query={} returned {} users.", query, users.size());
-		importUsers();
+		
 		if(getUserIndexSize() != rdbmsUserIdentityDao.countUsers()) {
 			log.warn("DB count and lucence size mismatched - lucene index size {} but DB count {}", getUserIndexSize(), rdbmsUserIdentityDao.countUsers() );
 			importUsers();
