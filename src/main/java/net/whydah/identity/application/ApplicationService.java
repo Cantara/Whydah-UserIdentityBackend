@@ -67,10 +67,25 @@ public class ApplicationService {
     }
 
     public List<Application> search(String applicationQuery) {
-    	List<Application> list = luceneApplicationSearch.search(applicationQuery);
-    	log.debug("lucene search with query={} returned {} apps.", applicationQuery, list.size());
-		importApplicationsIfEmpty();
-    	return list;
+    	
+    	try {
+    		List<Application> list = luceneApplicationSearch.search(applicationQuery);
+    		log.debug("lucene search with query={} returned {} apps.", applicationQuery, list.size());
+    		if(list == null || list.size() == 0) {
+    			List<Application> applicationDBList = applicationDao.getApplications();
+    			importApplicationsIfEmpty(applicationDBList);
+    			return applicationDBList;
+    		}
+    		return list;
+    	} 
+    	catch(Exception e) {
+    		log.error("unexpected error", e);
+    		//import error may be
+    		return applicationDao.getApplications();
+    	}
+    	
+    	
+    	
     }
 
     public Application getApplication(String applicationId) {
@@ -88,9 +103,17 @@ public class ApplicationService {
             uniqueueApplications.put(a.getId(), a);
         }
         List<Application> uniqueApplicationDBList = new ArrayList<Application>(uniqueueApplications.values());
-        importApplicationsIfEmpty(uniqueApplicationDBList);
+        if(getApplicationIndexSize() != applicationDBList.size()) {
+			log.warn("App DB count and lucence size mismatched - lucene index size {} but DB count {}", getApplicationIndexSize(), applicationDBList.size() );
+			importApplicationsIfEmpty(applicationDBList);
+		}
+      
         return uniqueApplicationDBList;
     }
+    
+    public int getApplicationIndexSize() {
+		return luceneApplicationSearch.getApplicationIndexSize();
+	}
 
     public int update(Application application) {
         if (application.getId() == null) {
@@ -115,18 +138,18 @@ public class ApplicationService {
         auditLogDao.store(actionPerformed);
     }
 
-    private void importApplicationsIfEmpty() {
-    	List<Application> applicationDBList = applicationDao.getApplications();
-    	
-    	importApplicationsIfEmpty(applicationDBList);
-    }
+//    private void importApplicationsIfEmpty() {
+//    	List<Application> applicationDBList = applicationDao.getApplications();
+//    	
+//    	importApplicationsIfEmpty(applicationDBList);
+//    }
 
     private void importApplicationsIfEmpty(List<Application> applicationDBList) {
     	if(!importLock.tryLock()){
             return;
         }
         try {
-    			if(luceneApplicationSearch.getApplicationIndexSize()==0){
+    			//if(luceneApplicationSearch.getApplicationIndexSize()==0){
     				new Thread(new Runnable() {
 
     					@Override
@@ -146,7 +169,7 @@ public class ApplicationService {
 
     					}
     				}).start();
-    			}
+    			//}
     		} finally{
     			importLock.unlock();
     		}

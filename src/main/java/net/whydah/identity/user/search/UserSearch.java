@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author <a href="bard.lind@gmail.com">Bard Lind</a>
@@ -23,6 +25,7 @@ public class UserSearch {
 	private final LuceneUserSearch luceneUserSearch;
 	private final LuceneUserIndexer luceneUserIndexer;
 	RDBMSUserIdentityRepository userIdentityRepository;
+	final Lock importLock = new ReentrantLock();
 	
 	@Autowired
 	@Configure
@@ -33,17 +36,22 @@ public class UserSearch {
 		this.userIdentityRepository = userIdentityRepository;
 	}
 
-	private void importUsersIfEmpty() {
-		if(getUserIndexSize()==0){
+	private void importUsers() {
+		if(!importLock.tryLock()){
+            return;
+        }
+		try {
+		//if(getUserIndexSize()==0){
 			new Thread(new Runnable() {
 
 				@Override
 				public void run() {
 
-					log.debug("lucene index is empty. Trying to import from DB...");
+					log.debug("Trying to import from DB...");
 
 					List<RDBMSUserIdentity> list;
 					try {
+						luceneUserIndexer.deleteAll();
 						list = rdbmsUserIdentityDao.allUsersList();
 						List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
 						log.debug("Found DB user list size: {}", list.size());
@@ -56,7 +64,12 @@ public class UserSearch {
 
 				}
 			}).start();
-		}        	
+		//}        	
+		} 
+		finally{
+			importLock.unlock();
+		}
+
 
 	}
 
@@ -69,9 +82,8 @@ public class UserSearch {
 
 		if(getUserIndexSize() != rdbmsUserIdentityDao.countUsers()) {
 			log.warn("DB count and lucence size mismatched - lucene index size {} but DB count {}", getUserIndexSize(), rdbmsUserIdentityDao.countUsers() );
+			importUsers();
 		}
-		
-		importUsersIfEmpty();
 		
 		
 		return users;
@@ -96,7 +108,7 @@ public class UserSearch {
 			users = new ArrayList<>();
 		}
 		log.debug("lucene search with query={} returned {} users.", query, users.size());
-		importUsersIfEmpty();
+		importUsers();
 		return paginatedDL;
 	}
 	
