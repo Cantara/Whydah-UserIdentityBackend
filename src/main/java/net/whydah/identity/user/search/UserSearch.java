@@ -108,7 +108,10 @@ public class UserSearch {
 			users = new ArrayList<>();
 		}
 		log.debug("lucene search with query={} returned {} users.", query, users.size());
-		importUsers();
+		if(getUserIndexSize() != rdbmsUserIdentityDao.countUsers()) {
+			log.warn("DB count and lucence size mismatched - lucene index size {} but DB count {}", getUserIndexSize(), rdbmsUserIdentityDao.countUsers() );
+			importUsers();
+		}
 		return paginatedDL;
 	}
 	
