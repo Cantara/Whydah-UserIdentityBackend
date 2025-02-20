@@ -114,9 +114,15 @@ public class UserIdentityServiceV2 {
             throw new IllegalStateException(msg);
         }
 
+        /*
         if (!searcher.usernameExists(username) && userIdentityRepository.usernameExist(username)) {
             userIdentityRepository.deleteUserIdentity(username);
         } else if (userIdentityRepository.usernameExist(username)) {
+            String msg = "User already exists, could not create user with username=" + dto.getUsername();
+            throw new IllegalStateException(msg);
+        }*/
+        
+        if(userIdentityRepository.usernameExist(username)) {
             String msg = "User already exists, could not create user with username=" + dto.getUsername();
             throw new IllegalStateException(msg);
         }
