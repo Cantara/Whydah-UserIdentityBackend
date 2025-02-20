@@ -108,16 +108,27 @@ public abstract class BaseLuceneIndexer<T> {
 	}
 
 
-	public void deleteAll() throws Exception {
-
+	public synchronized void deleteAll() throws Exception {
+		IndexWriter w = null;
 		try {
-			IndexWriter w = getIndexWriter();
+			w = getIndexWriter();
 			w.deleteAll();
 			w.commit();
 
 		}catch (Exception ex) {
 			ex.printStackTrace();
 			log.error("unexpected error delete Lucene indexes", ex);
+		} finally {
+			
+			if(w!=null) {
+				try {
+					w.close();
+					closeDirectory();
+				} catch (IOException e) {
+					log.error("", e);
+				}
+				
+			}
 		}
 	}
 	

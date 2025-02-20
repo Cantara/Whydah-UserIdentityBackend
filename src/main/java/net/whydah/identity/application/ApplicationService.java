@@ -157,6 +157,7 @@ public class ApplicationService {
 
     						log.debug("lucene index is empty. Trying to import from DB...");
     						try {
+    							
     							List<Application> clones = new ArrayList<Application>(applicationDBList);
     							log.debug("Found application list size: {}", applicationDBList.size());
     							luceneApplicationIndexer.addToIndex(clones);
