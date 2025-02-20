@@ -25,7 +25,8 @@ public class UserSearch {
 	private final LuceneUserSearch luceneUserSearch;
 	private final LuceneUserIndexer luceneUserIndexer;
 	RDBMSUserIdentityRepository userIdentityRepository;
-	final Lock importLock = new ReentrantLock();
+	//final Lock importLock = new ReentrantLock();
+	private boolean importingUsers = false;
 	
 	@Autowired
 	@Configure
@@ -37,21 +38,16 @@ public class UserSearch {
 	}
 
 	private void importUsers() {
-		if(!importLock.tryLock()){
-            return;
-        }
-		try {
-		//if(getUserIndexSize()==0){
-			new Thread(new Runnable() {
+		if(!importingUsers){
+            importingUsers = true;
+            new Thread(new Runnable() {
 
 				@Override
 				public void run() {
 
-					log.debug("Trying to import from DB...");
-
+					log.debug("Trying to import users from DB...");
 					List<RDBMSUserIdentity> list;
-					try {
-						
+					try {					
 						luceneUserIndexer.closeDirectory();
 						luceneUserIndexer.deleteAll();
 						list = rdbmsUserIdentityDao.allUsersList();
@@ -60,19 +56,14 @@ public class UserSearch {
 						luceneUserIndexer.addToIndex(clones);
 					} catch (Exception e) {
 						log.error("failed to import users, exception: " + e);
+					} finally {
+						importingUsers = false;
 					}
-
-
 
 				}
 			}).start();
-		//}        	
-		} 
-		finally{
-			importLock.unlock();
-		}
-
-
+        }
+		
 	}
 
 	public List<UserIdentity> search(String query) {
