@@ -25,8 +25,8 @@ public class UserSearch {
 	private final LuceneUserSearch luceneUserSearch;
 	private final LuceneUserIndexer luceneUserIndexer;
 	RDBMSUserIdentityRepository userIdentityRepository;
-	//final Lock importLock = new ReentrantLock();
-	private boolean importingUsers = false;
+	final Lock importLock = new ReentrantLock();
+	
 	
 	@Autowired
 	@Configure
@@ -38,31 +38,34 @@ public class UserSearch {
 	}
 
 	private void importUsers() {
-		if(!importingUsers){
-            importingUsers = true;
-            new Thread(new Runnable() {
+		
+		new Thread(new Runnable() {
 
-				@Override
-				public void run() {
+			@Override
+			public void run() {
 
-					log.debug("Trying to import users from DB...");
-					List<RDBMSUserIdentity> list;
-					try {					
-						luceneUserIndexer.closeDirectory();
-						luceneUserIndexer.deleteAll();
-						list = rdbmsUserIdentityDao.allUsersList();
-						List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
-						log.debug("Found DB user list size: {}", list.size());
-						luceneUserIndexer.addToIndex(clones);
-					} catch (Exception e) {
-						log.error("failed to import users, exception: " + e);
-					} finally {
-						importingUsers = false;
-					}
-
+				if(!importLock.tryLock()){
+					return;
 				}
-			}).start();
-        }
+
+				log.debug("Trying to import users from DB...");
+				List<RDBMSUserIdentity> list;
+				try {					
+					luceneUserIndexer.closeDirectory();
+					luceneUserIndexer.deleteAll();
+					list = rdbmsUserIdentityDao.allUsersList();
+					List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
+					log.debug("Found DB user list size: {}", list.size());
+					luceneUserIndexer.addToIndex(clones);
+				} catch (Exception e) {
+					log.error("failed to import users, exception: " + e);
+				} finally {
+					importLock.unlock();
+				}
+
+			}
+		}).start();
+
 		
 	}
 
