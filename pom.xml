@@ -25,6 +25,9 @@
         <spring.version>5.3.39</spring.version>
         <slf4j.version>2.0.17</slf4j.version>
         <hystrix.version>1.5.18</hystrix.version>
+         <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
     <developers>
