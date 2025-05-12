@@ -28,6 +28,8 @@ public class ChangePasswordToken {
             String user1 = outerTokenelems[0];
             String timeout1 = outerTokenelems[1];
             String encodedInnerToken = Base64.decodeAsString(outerTokenelems[2]);
+            log.debug("decode outerTokenstring {} to user {}, timeout {}, encoded-inner-token {}", outerTokenstring, user1, timeout1, outerTokenelems[2]);
+            
             byte[] innerTokenbytes = null;
 			try {
 				innerTokenbytes = encodedInnerToken.getBytes("UTF-8");
@@ -41,9 +43,15 @@ public class ChangePasswordToken {
             String decodedInnerToken = new String(Base64.decode(innerTokenbytes));
             String[] innerTokenElems = decodedInnerToken.split(":");
             String user2 = innerTokenElems[0];
-            String timeout2 = innerTokenElems[2];
             String password = innerTokenElems[1];
+            String timeout2 = innerTokenElems[2];
+           
+           
+            log.debug("finally solved and decoded as user {}, password {}, timeout {}", user2, password, timeout2);
+            
             if (!user1.equals(user2) || !timeout1.equals(timeout2)) {
+            	log.debug("invalid: user 1 {} user 2 {}", user1, user2 );
+            	log.debug("invalid: timeout1 {} timeout2 {}", timeout1, timeout2);
                 throw new IllegalArgumentException("Invalid token");
             }
             if (Long.parseLong(timeout1) < System.currentTimeMillis()) {
@@ -51,6 +59,7 @@ public class ChangePasswordToken {
             }
             return new ChangePasswordToken(user2, password);
         } catch (ArrayIndexOutOfBoundsException re) {
+        	log.error("Unexpected error", re);
             throw new IllegalArgumentException("Invalid token");
         }
     }
