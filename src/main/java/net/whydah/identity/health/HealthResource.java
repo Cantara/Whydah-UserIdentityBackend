@@ -50,11 +50,11 @@ public class HealthResource {
         ok_db = healthCheckService.isOK_DB();
         try {
         	if(securityTokenServiceClient.getWAS()==null) {//unhealthy
-        		log.trace("isHealthy={}, {status}", false, "App session failed to establish for UIB. securityTokenServiceClient.getWAS() = null");
+        		log.debug("isHealthy={}, {}", false, "App session failed to establish for UIB. securityTokenServiceClient.getWAS() = null");
         		return Response.ok(getSimpleTextJson()).build();
         	}
             String statusText = getPrintableStatus(securityTokenServiceClient.getWAS());
-            log.trace("isHealthy={}, {status}", ok_db, statusText);
+            log.debug("isHealthy={}, {}", ok_db, statusText);
             if (ok_db) {
                 //return Response.status(Response.Status.NO_CONTENT).build();
                 return Response.ok(getHealthTextJson()).build();
@@ -133,6 +133,7 @@ public class HealthResource {
     public String getSimpleTextJson() {
         return "{\n" +
                 "  \"Status\": \"" + ok_db + "\",\n" +
+                "  \"users (DB)\": \"" + numberOfUsers_DB + "\",\n" +
                 "  \"Version\": \"" + getVersion() + "\",\n" +
                 "  \"now\": \"" + Instant.now() + "\",\n" +
                 "  \"running since\": \"" + WhydahUtil.getRunningSince() + "\"\n" +
