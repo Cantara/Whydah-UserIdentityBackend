@@ -22,7 +22,7 @@
         <lucene.version>8.11.4</lucene.version>
         <jersey.version>2.47</jersey.version>
         <jetty.version>9.4.57.v20241219</jetty.version>
-        <spring.version>5.3.39</spring.version>
+        <spring.version>6.2.10</spring.version>
         <slf4j.version>2.0.17</slf4j.version>
         <hystrix.version>1.5.18</hystrix.version>
         <maven.compiler.source>21</maven.compiler.source>
@@ -191,7 +191,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
-            <version>5.3.39</version>
+            <version>6.2.10</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework</groupId>
@@ -202,7 +202,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>5.3.38</version>
+            <version>6.2.10</version>
         </dependency>
 
         <dependency>
@@ -564,7 +564,7 @@
                                         <Main-Class>net.whydah.identity.Main</Main-Class>
                                     </manifestEntries>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/spring.handlers</resource>
