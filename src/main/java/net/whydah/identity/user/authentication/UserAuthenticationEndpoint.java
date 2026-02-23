@@ -25,6 +25,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -212,6 +213,9 @@ public class UserAuthenticationEndpoint {
         Document userDoc;
         try {
             DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+            domFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            domFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            domFactory.setExpandEntityReferences(false);
             DocumentBuilder builder = domFactory.newDocumentBuilder();
             userDoc = builder.parse(input);
         } catch (Exception e) {

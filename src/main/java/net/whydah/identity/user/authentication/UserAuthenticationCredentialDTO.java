@@ -5,6 +5,7 @@ import org.xml.sax.SAXException;
 
 import net.whydah.sso.user.helpers.Base64Helper;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -34,7 +35,11 @@ public class UserAuthenticationCredentialDTO {
     }
 
     static UserAuthenticationCredentialDTO fromXml(InputStream input) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
-        DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        dbf.setExpandEntityReferences(false);
+        DocumentBuilder builder = dbf.newDocumentBuilder();
         Document dDoc = builder.parse(input);
         XPath xPath = XPathFactory.newInstance().newXPath();
         String username = (String) xPath.evaluate("//username", dDoc, XPathConstants.STRING);
