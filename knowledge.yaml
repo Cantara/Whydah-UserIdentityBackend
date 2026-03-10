@@ -1,0 +1,25 @@
+id: UserIdentityBackend
+name: Whydah User Identity Backend
+version: 2.30.6-SNAPSHOT
+description: |
+  User identity storage service for the Whydah platform. Manages user accounts,
+  roles, and attributes in an LDAP or database backend. Acts as the authoritative
+  source for user identity data.
+units:
+  - id: user-repository
+    name: User Repository
+    type: component
+    description: LDAP/DB user storage — reads, writes, and queries user identity records.
+    path: src/main/java/net/whydah/identity
+  - id: role-management
+    name: Role Management
+    type: component
+    description: User role assignment, lookup, and lifecycle management.
+  - id: indexing
+    name: Indexing
+    type: component
+    description: Search and indexing of users for fast lookup by attribute or role.
+  - id: health
+    name: Health Endpoint
+    type: component
+    description: Service health check endpoint for monitoring and orchestration.
