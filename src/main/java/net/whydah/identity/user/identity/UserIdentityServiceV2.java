@@ -181,7 +181,7 @@ public class UserIdentityServiceV2 {
 
 
     public RDBMSUserIdentity getUserIdentityForUid(String uid) throws RuntimeException {
-        RDBMSUserIdentity userIdentity = userIdentityRepository.getUserIdentityWithId(uid);
+        RDBMSUserIdentity userIdentity = getUserIdentity(uid);
         if (userIdentity == null) {
             log.warn("Trying to access non-existing UID, removing from index: " + uid);
             luceneIndexer.removeFromIndex(uid);

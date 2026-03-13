@@ -41,6 +41,8 @@ public class SecurityFilter implements Filter {
 	public static final String pwPattern2 = "(.*)/reset/username/(.*)";
 	public static final String pwPattern3 = "/user/.+/password_login_enabled";
 	public static final String pwPattern4 = "/user/.+/.+/thirdparty_login_enabled";
+	public static final String checkExists = "/[^/]+/users/checkexist/[^/]+";
+	
 	public static final String userAuthPattern = "/authenticate/user(|/.*)";
 	public static final String applicationAuthPatten = "/application/auth";
 	public static final String applicationListPatten = "/applications";
@@ -49,7 +51,7 @@ public class SecurityFilter implements Filter {
 	public static final String applicationSearchPatten2 = "/find/applications/(.*?)";
 	public static final String applicationSearchPatten2_ = "/find/applications";
 	public static final String userSignupPattern = "/signup/user";
-	public static final String[] patternsWithoutUserTokenId = {applicationAuthPatten, pwPattern, pwPattern2, pwPattern3, pwPattern4, userAuthPattern, userSignupPattern, applicationListPatten, applicationSearchPatten, applicationSearchPatten2, applicationSearchPatten_, applicationSearchPatten2_};
+	public static final String[] patternsWithoutUserTokenId = {applicationAuthPatten, pwPattern, pwPattern2, pwPattern3, pwPattern4, checkExists, userAuthPattern, userSignupPattern, applicationListPatten, applicationSearchPatten, applicationSearchPatten2, applicationSearchPatten_, applicationSearchPatten2_};
 	public static final String HEALH_PATH = "/health";
 
 	private final SecurityTokenServiceClient securityTokenHelper;
@@ -126,10 +128,11 @@ public class SecurityFilter implements Filter {
         /{applicationTokenId}/signup/user                   //UserSignupEndpoint
 		 */
 		for (String pattern : patternsWithoutUserTokenId) {
+			
 			if (Pattern.compile(pattern).matcher(path).matches()) {
-				log.debug("{} was matched to {}. SecurityFilter passed.", path, pattern);
-				return null;
-			}
+                log.debug("{} was matched to {}. SecurityFilter passed.", path, pattern);
+                return null;
+            }
 		}
 
 
