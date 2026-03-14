@@ -1,0 +1,233 @@
+name: whydah-core-backend
+description: Whydah core backend services — UIB (User Identity Backend), UAS (User Admin Service), Admin-SDK, and TypeLib
+version: "1.0.0"
+content: |
+  # Whydah Core Backend
+
+  Covers four tightly coupled repos that form the server-side spine of the Whydah IAM platform.
+  All four share the net.whydah.sso package namespace and the Whydah-TypeLib as a common type vocabulary.
+
+  ## Repo Overview
+
+  | Repo | Artifact | Version | Role |
+  |------|----------|---------|------|
+  | Whydah-UserIdentityBackend | net.whydah.identity:UserIdentityBackend | 2.30.6-SNAPSHOT | Authoritative user store — RDBMS + Lucene |
+  | Whydah-UserAdminService | net.whydah.admin:UserAdminService | 2.30.8-SNAPSHOT | Admin REST façade over UIB |
+  | Whydah-Admin-SDK | net.whydah.sso:Whydah-Admin-SDK | 2.30.7-SNAPSHOT | Java SDK for programmatic admin ops |
+  | Whydah-TypeLib | net.whydah.sso:Whydah-TypeLib | 2.30.6-SNAPSHOT | Shared DTOs, mappers, helpers |
+
+  ---
+
+  ## UserIdentityBackend (UIB)
+
+  ### Purpose
+  The authoritative store for all user identities in Whydah. It is NOT directly exposed to
+  end-users — it is called by the STS (Security Token Service) for authentication and by UAS
+  for user management. UIB uses RDBMS (primary) with a Lucene index for full-text search.
+
+  ### Storage
+  - Primary: RDBMS via Spring JdbcTemplate (`RDBMSUserIdentityDao`, `RDBMSUserIdentityRepository`)
+  - Password hashing: BCrypt (primary) and PBKDF2WithHMACSha1 (legacy)
+  - Search index: Lucene (`LuceneUserIndexer`, `LuceneUserSearchImpl`) for fast user lookups
+  - Role storage: `UserApplicationRoleEntryDao` — per-user, per-application role assignments
+
+  ### Key REST endpoints (Jersey, Spring wiring)
+  All paths are prefixed with `/{applicationTokenId}`.
+
+  | Method | Path | Description |
+  |--------|------|-------------|
+  | POST | `/{appTokenId}/authenticate/user` | Authenticate user (XML in/out); returns full UserAggregate XML |
+  | POST | `/{appTokenId}/authenticate/user/createandlogon` | Create user + authenticate in one call |
+  | POST | `/{appTokenId}/{userTokenId}/user` | Add user identity (JSON) |
+  | GET  | `/{appTokenId}/{userTokenId}/user/{uid}` | Get user identity by UID |
+  | PUT  | `/{appTokenId}/{userTokenId}/user/{uid}` | Update user identity |
+  | DELETE | `/{appTokenId}/{userTokenId}/user/{uid}` | Delete user and all roles |
+  | POST | `/{appTokenId}/{userTokenId}/user/{uid}/role/` | Add role to user |
+  | GET  | `/{appTokenId}/{userTokenId}/user/{uid}/roles` | Get all roles for user |
+  | PUT  | `/{appTokenId}/{userTokenId}/user/{uid}/role/{roleId}` | Update role |
+  | DELETE | `/{appTokenId}/{userTokenId}/user/{uid}/role/{roleId}` | Remove role |
+  | GET  | `/{appTokenId}/{userTokenId}/useraggregate/{uid}` | Get full user aggregate (identity + roles) |
+  | GET  | `/password/{appTokenId}/reset/username/{username}` | Initiate password reset |
+  | POST | `/password/{appTokenId}/reset/username/{username}/newpassword/{token}` | Set new password with token |
+  | POST | `/{appTokenId}/user/{uid}/reset_password` | Admin-triggered password reset |
+  | POST | `/{appTokenId}/user/{uid}/change_password` | Change password with token |
+  | GET  | `/{appTokenId}/user/{username}/password_login_enabled` | Check if user has password auth |
+  | GET  | `/health` | Health check |
+
+  ### Key classes
+  - `UserIdentityServiceV2` — core service: authenticate, getUserIdentity, updateUserIdentity, changePassword
+  - `UserAggregateService` — assembles UserAggregate (identity + role list) for a given UID
+  - `RDBMSUserIdentityRepository` — CRUD against RDBMS
+  - `LuceneUserIndexer` / `LuceneUserSearchImpl` — index maintenance and search
+  - `BCryptService` — password hashing/verification
+  - `UserAuthenticationEndpoint` — authenticates and returns XML UserAggregate to STS
+
+  ---
+
+  ## UserAdminService (UAS)
+
+  ### Purpose
+  The public-facing admin REST API for user, application, and role management. UAS sits between
+  admin clients (UserAdminWebApp, Admin-SDK) and UIB — it validates tokens via STS, then
+  proxies or orchestrates calls to UIB. UAS also handles email sending (SMTP or MS Graph).
+
+  ### Key REST endpoints
+
+  | Method | Path | Description |
+  |--------|------|-------------|
+  | GET/POST | `/{appTokenId}/{userTokenId}/users/find/{q}` | Find users by query string |
+  | GET | `/{appTokenId}/{userTokenId}/users/search/{q}` | Search users |
+  | GET | `/{appTokenId}/{userTokenId}/users/query/{page}/{q}` | Paginated user search |
+  | GET | `/{appTokenId}/{userTokenId}/users/export/{page}` | Export users (paginated) |
+  | POST | `/{appTokenId}/{userTokenId}/users/checkduplicates` | Check for duplicate users |
+  | GET | `/{appTokenId}/{userTokenId}/users/checkexist/{username}` | Check if user exists |
+  | POST | `/{appTokenId}/auth/logon/user` | Log on user (returns user token) |
+  | POST | `/{appTokenId}/auth/password/reset/username/{username}` | Initiate password reset |
+  | POST | `/{appTokenId}/auth/password/reset/username/{username}/newpassword/{token}` | Complete password reset |
+  | POST | `/{appTokenId}/send_scheduled_email` | Send templated email |
+  | GET  | `/health` | Health check |
+  | GET  | `/diag` | Diagnostic info |
+
+  Applications and roles managed via ApplicationResource / ApplicationsAdminResource
+  under `/{appTokenId}/{userTokenId}/application/` and `/{appTokenId}/{userTokenId}/applications/`.
+
+  ### Email subsystem
+  - Supports SMTP (`MailSender`) and MS Graph (`MsGraphMailSender`) — configurable
+  - `EmailBodyGenerator` renders templates; `PasswordSender` handles reset flow
+  - `SignupService` / `CreateLogonUserController` handle self-service registration
+
+  ### Key classes
+  - `CredentialStore` — holds and refreshes application token against STS
+  - `ApplicationCacheStorage` — in-memory cache of application registrations
+  - `WhydahRoleCheckUtil` — validates userTokenId has required role before serving request
+  - `UibAuthConnection` / `UibApplicationConnection` — HTTP command objects to UIB
+
+  ---
+
+  ## Whydah-Admin-SDK
+
+  ### Purpose
+  Java SDK that wraps UAS REST calls as type-safe Command objects (Hystrix-style).
+  Use when you need admin operations from application code, rather than calling UAS HTTP directly.
+  Manages `WhydahAdminUserSession` and keeps it alive via background scheduler (auto-renew every 60s).
+
+  ### Entry points
+  - `WhydahAdminUserSession` — manages admin user token lifecycle
+  - `BaseAdminWhydahServiceClient` — base class; holds WAS + admin session
+
+  ### Command catalog
+
+  **User commands** (`net.whydah.sso.commands.adminapi.user`):
+  - `CommandAddUser` / `CommandAddUserAggregate` / `CommandUpdateUser` / `CommandUpdateUserAggregate`
+  - `CommandDeleteUser` / `CommandGetUser` / `CommandGetUserAggregate`
+  - `CommandListUsers` / `CommandListUsersWithPagination` / `CommandCheckDuplicateUsers`
+  - `CommandUserExists` / `CommandResetUserPassword` / `CommandExportUsers`
+  - `CommandSendSMSToUser` / `CommandSendSMSToUserTarget365`
+  - `CommandUserPasswordLoginEnabled` / `CommandUserThirdPartyLoginEnabled`
+  - `CommandCreatePinVerifiedUser` / `CommandGetLastSeenForUserByUserEmail`
+
+  **Role commands** (`net.whydah.sso.commands.adminapi.user.role`):
+  - `CommandAddUserRole` / `CommandDeleteUserRole` / `CommandUpdateUserRole` / `CommandGetUserRoles`
+
+  **Application commands** (`net.whydah.sso.commands.adminapi.application`):
+  - `CommandAddApplication` / `CommandDeleteApplication` / `CommandUpdateApplication`
+  - `CommandGetApplication` / `CommandGetApplicationById` / `CommandAdminSearchForApplications`
+
+  ### Admin-SDK vs Whydah-Java-SDK
+  - **Whydah-Java-SDK**: application-level ops — get user token, validate token, get user info. Used by regular apps for SSO integration.
+  - **Whydah-Admin-SDK**: admin-level ops — create/delete users, assign roles, manage applications. Requires admin user credential (not just app credentials).
+  - Both depend on Whydah-TypeLib for shared types.
+
+  ---
+
+  ## Whydah-TypeLib
+
+  ### Purpose
+  Shared type library pulled in by every Whydah service and SDK. Contains all DTOs, mappers,
+  helpers, and DDD value objects. No business logic — pure data representation and serialisation.
+
+  ### Package structure
+
+  ```
+  net.whydah.sso
+  ├── application/
+  │   ├── types/          Application, ApplicationCredential, ApplicationToken, ApplicationACL,
+  │   │                   ApplicationSecurity, Tag
+  │   ├── helpers/        ApplicationTokenHelper, ApplicationTokenXpathHelper, ApplicationXpathHelper,
+  │   │                   ApplicationCredentialHelper, ApplicationJsonpathHelper
+  │   └── mappers/        ApplicationMapper, ApplicationTokenMapper, ApplicationCredentialMapper,
+  │                       ApplicationTagMapper
+  ├── user/
+  │   ├── types/          UserToken, UserAggregate, UserIdentity, UserApplicationRoleEntry,
+  │   │                   UserCredential
+  │   ├── helpers/        UserTokenXpathHelper, UserXpathHelper, UserAggregateXpathHelper,
+  │   │                   UserRoleXpathHelper, UserRoleJsonPathHelper, Base64Helper
+  │   └── mappers/        UserTokenMapper, UserAggregateMapper, UserIdentityMapper,
+  │                       UserCredentialMapper, UserRoleMapper
+  ├── extensions/
+  │   ├── crmcustomer/    Customer, DeliveryAddress, EmailAddress, PhoneNumber + mapper
+  │   └── useractivity/   UserActivityHelper
+  ├── basehelpers/        XpathHelper, JsonPathHelper, EscapeHelper, Sanitizers, Validator
+  └── ddd/model/
+      ├── application/    ApplicationId, ApplicationName, ApplicationToken value objects
+      ├── customer/       FirstName, LastName, Email, Gender, PostalCode, NorwayCellPhone, etc.
+      ├── user/           UserTokenId, UID, UserName, Email, SecurityLevel, etc.
+      ├── sso/            UserTokenLifespan, DEFCON
+      └── base/           AbstractId, AbstractName, AbstractUrl, ValueObject, AssertionConcern
+  ```
+
+  ### Key types
+
+  **UserToken** — the central SSO artifact issued by STS after successful authentication:
+  - Fields: `usertokenid`, `uid`, `userName`, `firstName`, `lastName`, `email`, `cellPhone`,
+    `timestamp`, `lastSeen`, `securityLevel`, `lifespan`, `defcon`, `roleList`, `encryptedSignature`
+  - DEFCON levels: DEFCON1 (highest security) through DEFCON5 (normal operations)
+  - Serialisation: XML (primary, via Viewable/FreeMarker templates) and JSON
+
+  **UserAggregate** — user identity + all role assignments; used inside UIB and passed to STS
+
+  **UserIdentity** — raw identity record (uid, userName, firstName, lastName, email, cellPhone,
+  personRef, password hash pointer)
+
+  **UserApplicationRoleEntry** — a single role assignment:
+  fields: `applicationId`, `applicationName`, `organizationName`, `roleName`, `roleValue`, `id`
+
+  **ApplicationToken** — proof of application authentication; contains `applicationTokenId`,
+  `applicationId`, `applicationName`, `expires`, `applicationUrl`
+
+  **ApplicationCredential** — `applicationId` + `applicationSecret` used to obtain ApplicationToken
+
+  ### Serialisation pattern
+  - XML: XPath helpers (`*XpathHelper`) parse XML strings — no JAXB, raw XPath queries
+  - JSON: JSONPath helpers (`*JsonpathHelper`) + Jackson for JSON ↔ type mapping
+  - Mappers (`*Mapper`) convert between XML/JSON strings and type instances
+  - All services pass tokens as XML strings internally; mappers convert at boundaries
+
+  ---
+
+  ## Service interaction diagram
+
+  ```
+  Client app
+      │
+      ▼
+  STS (SecurityTokenService)   ←→   UIB (UserIdentityBackend)
+      │                                  ↑
+      │                              UAS (UserAdminService)
+      │                                  ↑
+      │                          Admin-SDK / UserAdminWebApp
+      │
+  UserToken (from TypeLib)
+  ```
+
+  - STS authenticates apps (ApplicationToken) and users (UserToken), calling UIB for credential verification
+  - UAS is the admin path — used by dashboard UIs and Admin-SDK, never by end-user flows
+  - UIB is never called directly from application code — always via STS or UAS
+
+  ---
+
+  ## Cross-references
+  - whydah-sts-development — SecurityTokenService, token issuance, DEFCON management
+  - whydah-sdk-development — Whydah-Java-SDK for application-level SSO integration
+  - whydah-frontend-development — UserAdminWebApp, SSOLoginWebApp (use UAS + STS)
+  - cantara-infrastructure — Java-Auto-Update used for rolling deploys of UIB/UAS
