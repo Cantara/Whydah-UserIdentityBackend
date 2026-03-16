@@ -195,8 +195,8 @@ public class PasswordResource {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Mapping issues").build();
             }
         } else {
-            log.error("newpassword failed. DB update={}", ok_DB);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+            log.warn("setPassword - token auth failed for username={}, token={}", username, changePasswordTokenAsString);
+            return Response.status(Response.Status.UNAUTHORIZED).build();
         }
     }
 
