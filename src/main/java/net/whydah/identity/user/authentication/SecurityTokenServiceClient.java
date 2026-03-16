@@ -63,6 +63,10 @@ public class SecurityTokenServiceClient {
 	}
 
 	public UserToken getUserToken(String usertokenid){
+		if (usertokenid == null || usertokenid.isEmpty()) {
+			log.warn("getUserToken called with null/empty usertokenid");
+			return null;
+		}
 		if (was == null) {
 			getWAS();
 		}
