@@ -53,22 +53,12 @@ public class UserAggregateService {
 
 
     public UserAggregate getUserAggregateByUsernameOrUid(String usernameOrUid) {
-        UserIdentity userIdentity = null;
-        try {
-            RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(usernameOrUid);
-            if (rdbmsUserIdentity != null) {
-                userIdentity = rdbmsUserIdentity;
-            } else {
-                log.warn("getUserAggregateByUsernameOrUid user={} not found in DB", usernameOrUid);
-            }
-        } catch (Exception e) {
-            log.error(String.format("getUserAggregateByUsernameOrUid for uid=%s failed", usernameOrUid), e);
-        }
-
-        if (userIdentity == null) {
-            log.trace("getUserAggregateByUsernameOrUid could not find user with usernameOrUid={}", usernameOrUid);
+        RDBMSUserIdentity rdbmsUserIdentity = userIdentityServiceV2.getUserIdentity(usernameOrUid);
+        if (rdbmsUserIdentity == null) {
+            log.warn("getUserAggregateByUsernameOrUid user={} not found in DB", usernameOrUid);
             return null;
         }
+        UserIdentity userIdentity = rdbmsUserIdentity;
         UserAggregate userAggregate = UserAggregateMapper.fromUserIdentityJson(UserIdentityMapper.toJson(userIdentity));
         List<UserApplicationRoleEntry> userApplicationRoleEntries = userApplicationRoleEntryDao.getUserApplicationRoleEntries(userIdentity.getUid());
         userAggregate.setRoleList(userApplicationRoleEntries);
