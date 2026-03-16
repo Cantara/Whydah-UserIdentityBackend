@@ -26,11 +26,7 @@ class RDBMSUserIdentityRowMapper implements RowMapper<RDBMSUserIdentity> {
                 String personRef = rs.getString("personref");
 
                 userIdentity = new RDBMSUserIdentity(uid, username, firstname, lastname, email, password, cellphone, personRef);
-                try {
-                    userIdentity.setResetSalt(rs.getString("reset_salt"));
-                } catch (Exception e) {
-                    // reset_salt column not yet added (migration pending) - safe to ignore
-                }
+                userIdentity.setResetSalt(rs.getString("reset_salt"));
             }
         } catch (Exception e) {
             throw new SQLException("Failed to map result from db", e);

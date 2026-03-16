@@ -16,9 +16,9 @@ import java.util.List;
 public class RDBMSUserIdentityDao {
     private static final Logger log = LoggerFactory.getLogger(RDBMSUserIdentityDao.class);
 
-    private static String UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE id=?";
-    private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=?";
-    private static String LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password FROM UserIdentity";
+    private static String UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password, reset_salt from UserIdentity WHERE id=?";
+    private static String USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password, reset_salt from UserIdentity WHERE username=?";
+    private static String LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password, reset_salt FROM UserIdentity";
     private static String COUNT_SQL = "SELECT COUNT(id) FROM UserIdentity";
 
     private final JdbcTemplate jdbcTemplate;
@@ -33,9 +33,9 @@ public class RDBMSUserIdentityDao {
         String jdbcDriverString = dataSource.getDriverClassName();
         if (jdbcDriverString.contains("mysql")) {
             log.warn("TODO update sql migration script");
-            UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE Id=? GROUP BY Id";
-            USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password from UserIdentity WHERE username=? GROUP BY username";
-            LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password FROM UserIdentity GROUP BY Id";
+            UID_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password, reset_salt from UserIdentity WHERE Id=? GROUP BY Id";
+            USERNAME_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password, reset_salt from UserIdentity WHERE username=? GROUP BY username";
+            LIST_SQL = "SELECT id, username, firstname, lastname, personref, email, cellphone, password, reset_salt FROM UserIdentity GROUP BY Id";
         }
     }
 
