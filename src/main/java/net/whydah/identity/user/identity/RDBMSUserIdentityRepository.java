@@ -89,6 +89,39 @@ public class RDBMSUserIdentityRepository {
         }
     }
 
+    public void setResetSalt(final String username, final String salt) {
+        if (username != null && salt != null) {
+            try {
+                rdbmsUserIdentityDao.updateResetSalt(username, salt);
+                log.info("UserIdentity {} reset_salt updated", username);
+            } catch (Exception e) {
+                log.warn("UserIdentity {} reset_salt update failed (migration pending?): {}", username, e.getMessage());
+            }
+        }
+    }
+
+    public String getResetSalt(final String username) {
+        try {
+            RDBMSUserIdentity userIdentity = getUserIdentityWithUsername(username);
+            if (userIdentity != null) {
+                return userIdentity.getResetSalt();
+            }
+        } catch (Exception e) {
+            log.warn("getResetSalt failed for username={}: {}", username, e.getMessage());
+        }
+        return null;
+    }
+
+    public void clearResetSalt(final String username) {
+        if (username != null) {
+            try {
+                rdbmsUserIdentityDao.updateResetSalt(username, null);
+            } catch (Exception e) {
+                log.warn("clearResetSalt failed for username={}: {}", username, e.getMessage());
+            }
+        }
+    }
+
     public void setTempPassword(final String username, final String saltedPassword) throws RuntimeException {
         if (username != null && saltedPassword != null) {
             boolean success = rdbmsUserIdentityDao.updatePassword(username, saltedPassword);

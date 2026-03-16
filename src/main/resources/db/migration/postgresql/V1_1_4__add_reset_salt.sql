@@ -1,0 +1,1 @@
+ALTER TABLE UserIdentity ADD COLUMN reset_salt VARCHAR(255) NULL;

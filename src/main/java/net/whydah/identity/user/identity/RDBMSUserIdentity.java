@@ -61,6 +61,7 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
     protected transient Password password;
     protected transient String passwordBCrypt;
     protected transient String passwordIdentityServer3;
+    protected transient String resetSalt;
 
     public String getPassword() {
         return password != null ? password.getInput() : null;
@@ -72,6 +73,14 @@ public class RDBMSUserIdentity extends UserIdentity implements Serializable {
 
     public String getPasswordIdentityServer3() {
         return passwordIdentityServer3;
+    }
+
+    public String getResetSalt() {
+        return resetSalt;
+    }
+
+    public void setResetSalt(String resetSalt) {
+        this.resetSalt = resetSalt;
     }
 
     public String getCellPhone() {

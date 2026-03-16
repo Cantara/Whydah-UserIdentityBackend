@@ -123,6 +123,16 @@ public class RDBMSUserIdentityDao {
         }
     }
 
+    public boolean updateResetSalt(String username, String resetSalt) {
+        String sql = "UPDATE UserIdentity SET reset_salt=? WHERE username=?";
+        try {
+            int numRowsAffected = jdbcTemplate.update(sql, resetSalt, username);
+            return numRowsAffected > 0;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("updateResetSalt in DB failed!", e);
+        }
+    }
+
     public boolean updatePassword(String username, String password) {
         boolean executionOk = false;
         String sql = "UPDATE UserIdentity SET password=? WHERE username=?";

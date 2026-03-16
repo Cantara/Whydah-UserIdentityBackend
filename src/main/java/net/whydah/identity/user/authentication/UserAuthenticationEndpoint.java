@@ -248,8 +248,12 @@ public class UserAuthenticationEndpoint {
             if (reuse) {
                 log.info("createAndAuthenticateUser - update useridentity from 3party token ");
                 userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
-                log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
-                userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
+                if (userIdentityServiceV2.hasPendingPasswordReset(userIdentity.getUsername())) {
+                    log.warn("createAndAuthenticateUser - pending password reset detected, skipping 3party password update for username={}", userIdentity.getUsername());
+                } else {
+                    log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
+                    userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
+                }
             }
 
             log.trace("createAndAuthenticateUser - authenticateUser:{}", userIdentity.getUsername());
@@ -257,8 +261,12 @@ public class UserAuthenticationEndpoint {
 
         } catch (Exception e) {
             if (reuse) {
-                log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
-                userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
+                if (userIdentityServiceV2.hasPendingPasswordReset(userIdentity.getUsername())) {
+                    log.warn("createAndAuthenticateUser - pending password reset detected, skipping 3party password update for username={}", userIdentity.getUsername());
+                } else {
+                    log.info("createAndAuthenticateUser - updating password for  useridentity from 3party token, userName: {} uid: {} ", userIdentity.getUsername(), userIdentity.getUid());
+                    userIdentityServiceV2.changePassword(userIdentity.getUsername(), userIdentity.getUid(), userIdentity.getPassword());
+                }
                 log.info("createAndAuthenticateUser - update useridentity from 3party token ");
                 userIdentityServiceV2.updateUserIdentity(userIdentity.getUsername(), userIdentity);
                 userAdminHelper.addDefaultRoles(userIdentity, roleValue);

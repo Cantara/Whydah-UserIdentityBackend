@@ -1,8 +1,8 @@
 package net.whydah.identity.application;
 
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.response.Response;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import net.whydah.identity.Main;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 
-import static com.jayway.restassured.RestAssured.given;
+import static io.restassured.RestAssured.given;
 
 /**
  * @author <a href="mailto:erik-dev@fjas.no">Erik Drolshammer</a> 2015-11-21.

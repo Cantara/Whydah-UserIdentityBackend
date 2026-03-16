@@ -1,7 +1,7 @@
 package net.whydah.identity.user.authentication;
 
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.http.ContentType;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import net.whydah.identity.Main;
 import net.whydah.identity.application.ApplicationDao;
 import net.whydah.identity.application.ApplicationService;
@@ -46,7 +46,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Paths;
 
-import static com.jayway.restassured.RestAssured.given;
+import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -142,7 +142,7 @@ public class UserAuthenticationEndpointTest {
                 "</usercredential>";
 
         String path = "/{applicationtokenid}/authenticate/user";
-        com.jayway.restassured.response.Response response = given()
+        io.restassured.response.Response response = given()
                 .body(xml)
                 .contentType(ContentType.XML)
                 .log().everything()

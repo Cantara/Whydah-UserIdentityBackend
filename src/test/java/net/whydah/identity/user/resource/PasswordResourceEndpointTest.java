@@ -2,7 +2,7 @@ package net.whydah.identity.user.resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.restassured.RestAssured;
+import io.restassured.RestAssured;
 import net.whydah.identity.Main;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
@@ -30,7 +30,7 @@ import java.io.File;
 import java.net.URI;
 import java.sql.SQLException;
 
-import static com.jayway.restassured.RestAssured.given;
+import static io.restassured.RestAssured.given;
 
 public class PasswordResourceEndpointTest {
     private static final Logger log = LoggerFactory.getLogger(PasswordResourceEndpointTest.class);
@@ -116,7 +116,7 @@ public class PasswordResourceEndpointTest {
 
         try {
             String json = new ObjectMapper().writeValueAsString(userIdentity);
-            com.jayway.restassured.response.Response response = given()
+            io.restassured.response.Response response = given()
                     .request().body(json)
                     .request().contentType(MediaType.APPLICATION_JSON)
                     .log().everything()
@@ -142,7 +142,7 @@ public class PasswordResourceEndpointTest {
         String path = "/password/{applicationtokenid}/reset/username/{username}";
 
 
-        com.jayway.restassured.response.Response response =
+        io.restassured.response.Response response =
                 given()
                 .log().everything()
                 .expect()
@@ -162,7 +162,7 @@ public class PasswordResourceEndpointTest {
     private String postResetPassword(String appTokenId, String username) {
         String path = "/password/{applicationtokenid}/reset/username/{username}";
 
-        com.jayway.restassured.response.Response response = given()
+        io.restassured.response.Response response = given()
                 .log().everything()
                 .expect()
                 .statusCode(Response.Status.OK.getStatusCode())
@@ -189,7 +189,7 @@ public class PasswordResourceEndpointTest {
         requestParams.put(PasswordResource2.NEW_PASSWORD_KEY, generatedPwd);
 
 
-        com.jayway.restassured.response.Response response = given()
+        io.restassured.response.Response response = given()
                 .request().body(requestParams.toString())
                 .log().everything()
                 .expect()
@@ -217,7 +217,7 @@ public class PasswordResourceEndpointTest {
 
         String newPassword = new PasswordGenerator().generate();
 
-        com.jayway.restassured.response.Response response = given()
+        io.restassured.response.Response response = given()
                 .request().body(newPassword)
                 .log().everything()
                 .expect()

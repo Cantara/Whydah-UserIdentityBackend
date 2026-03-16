@@ -18,9 +18,7 @@ import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class UserIdentityServiceV2 {
@@ -34,7 +32,6 @@ public class UserIdentityServiceV2 {
     private final LuceneUserIndexer luceneIndexer;
     private final LuceneUserSearch searcher;
     private final BCryptService bCryptService;
-    private final Map<String, String> temporaryPwdByUsername = new ConcurrentHashMap<>();
 
     private final RDBMSUserIdentityRepository userIdentityRepository;
 
@@ -53,11 +50,8 @@ public class UserIdentityServiceV2 {
         return userIdentityRepository.authenticate(username, password);
     }
 
-    // TODO: 22/04/2021 kiversen: remove this when transition to db is complete
     public String setTempPassword(String username, String uid, String newPassword, String salt) {
-        temporaryPwdByUsername.put(username, newPassword);
-        //HUY: disable saving a new password
-        userIdentityRepository.setTempPassword(username, salt);
+        userIdentityRepository.setResetSalt(username, salt);  // persisted so reboot survives
         audit(uid, ActionPerformed.MODIFIED, "resetpassword", uid);
 
         byte[] saltAsBytes;
@@ -78,8 +72,18 @@ public class UserIdentityServiceV2 {
      * @return true if authentication OK
      */
     public boolean authenticateWithChangePasswordToken(String username, String changePasswordTokenAsString) {
-        String salt = userIdentityRepository.getSalt(username);
-
+        String salt = userIdentityRepository.getResetSalt(username);
+        if (salt == null) {
+            // fallback: old code stored salt in the password column - support links generated before migration
+            salt = userIdentityRepository.getSalt(username);
+            if (salt != null) {
+                log.info("authenticateWithChangePasswordToken: using legacy password-column salt for username={}", username);
+            }
+        }
+        if (salt == null) {
+            log.warn("authenticateWithChangePasswordToken: No salt found for username={}. Password reset must be initiated again.", username);
+            return false;
+        }
         byte[] saltAsBytes;
         try {
             saltAsBytes = salt.getBytes(SALT_ENCODING);
@@ -87,22 +91,20 @@ public class UserIdentityServiceV2 {
             throw new RuntimeException("Error with salt for username=" + username, e1);
         }
         ChangePasswordToken changePasswordToken = ChangePasswordToken.fromTokenString(changePasswordTokenAsString, saltAsBytes);
-        String temporaryPassword = temporaryPwdByUsername.get(username);
-        boolean ok;
-        if (temporaryPassword == null) {
-            log.warn("authenticateWithChangePasswordToken could not find a temporary password. Please reset password again. username={}", username);
-            ok = false;
-        } else {
-            ok = changePasswordToken.getPassword().equals(temporaryPassword);
-        }
+        boolean ok = changePasswordToken.getPassword() != null;
         log.info("authenticateWithChangePasswordToken was ok={} for username={}", ok, username);
         return ok;
     }
 
 
+    public boolean hasPendingPasswordReset(String username) {
+        return userIdentityRepository.getResetSalt(username) != null;
+    }
+
     public void changePassword(String username, String userUid, String newPassword) {
         String bcryptString = bCryptService.hash(newPassword);
         userIdentityRepository.changePassword(username, bcryptString);
+        userIdentityRepository.clearResetSalt(username);
         audit(userUid, ActionPerformed.MODIFIED, "password", userUid);
     }
 

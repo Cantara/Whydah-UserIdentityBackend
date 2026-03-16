@@ -1,6 +1,6 @@
 package net.whydah.identity;
 
-import com.jayway.restassured.RestAssured;
+import io.restassured.RestAssured;
 import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.util.FileUtils;
