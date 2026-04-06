@@ -3,10 +3,8 @@ package net.whydah.identity.dataimport;
 import net.whydah.identity.user.identity.*;
 import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.user.types.UserIdentity;
-import org.apache.lucene.store.Directory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -34,11 +32,10 @@ public class WhydahUserIdentityImporter {
     public LuceneUserIndexer luceneIndexer;
     private final BCryptService bCryptService;
 
-    @Autowired
-    public WhydahUserIdentityImporter(RDBMSUserIdentityRepository
-            userIdentityRepository, Directory index, BCryptService bCryptService) throws IOException {
+    public WhydahUserIdentityImporter(RDBMSUserIdentityRepository userIdentityRepository,
+            LuceneUserIndexer luceneUserIndexer, BCryptService bCryptService) {
         this.userIdentityRepository = userIdentityRepository;
-        this.luceneIndexer = new LuceneUserIndexer(index);
+        this.luceneIndexer = luceneUserIndexer;
         this.bCryptService = bCryptService;
     }
     

@@ -9,6 +9,7 @@ import net.whydah.identity.organization.OrganizationRepository;
 import net.whydah.identity.user.identity.BCryptService;
 import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
+import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
 import net.whydah.identity.user.role.UserApplicationRoleEntryRepository;
 import net.whydah.identity.util.FileUtils;
@@ -38,6 +39,7 @@ public class IamDataImporter {
     private final OrganizationRepository organizationRepository;
     private final RDBMSUserIdentityRepository userIdentityRepository;
     private final BCryptService bCryptService;
+    private final LuceneUserIndexer luceneUserIndexer;
 
     private final String applicationsImportSource;
     private final String organizationsImportSource;
@@ -64,7 +66,12 @@ public class IamDataImporter {
         OrganizationDao organizationDao = new OrganizationDao(dataSource);
         this.organizationRepository = new OrganizationRepository(organizationDao);
 
-        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        try {
+            this.luceneUserIndexer = new LuceneUserIndexer(createDirectory(luceneUsersDir));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create LuceneUserIndexer for import", e);
+        }
+        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource, luceneUserIndexer);
         this.bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
         this.userIdentityRepository = new RDBMSUserIdentityRepository(userIdentityDao, bCryptService, configuration);
     }
@@ -95,8 +102,7 @@ public class IamDataImporter {
         InputStream uis = null;
         try {
             uis = openInputStream("Users", userImportSource);
-            NIOFSDirectory usersIndex = createDirectory(luceneUsersDir);
-            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(userIdentityRepository, usersIndex, bCryptService);
+            WhydahUserIdentityImporter userIdentityImporter = new WhydahUserIdentityImporter(userIdentityRepository, luceneUserIndexer, bCryptService);
             userIdentityImporter.importUsers(uis);
         } catch (Exception e) {
             log.error("Error in importing users", e);
