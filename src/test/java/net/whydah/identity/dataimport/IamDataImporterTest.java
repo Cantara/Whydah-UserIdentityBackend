@@ -96,7 +96,7 @@ public class IamDataImporterTest {
 
         ApplicationService applicationService = new ApplicationService(new ApplicationDao(dataSource), null, null, null);
         UserAggregateService userAggregateService = new UserAggregateService(userIdentityServiceV2, dataImporter.getUserApplicationRoleEntryDao(),
-                applicationService, null, null);
+                applicationService, null);
 
 
         UserAggregate userAggregate2 = UserAggregateMapper.fromUserIdentityJson(UserIdentityMapper.toJson(erikdUserIdentity));
