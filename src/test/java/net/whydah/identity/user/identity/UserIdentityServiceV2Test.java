@@ -91,7 +91,7 @@ public class UserIdentityServiceV2Test {
         FileUtils.deleteDirectories(luceneUsersDir);
         LuceneUserIndexer luceneUserIndexer= new LuceneUserIndexer(index);
 
-        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource, luceneUserIndexer);
 
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
         rdbmsUserIdentityRepository = new RDBMSUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, configuration);

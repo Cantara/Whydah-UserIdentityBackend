@@ -84,7 +84,7 @@ public class UserSearch {
 		if (indexSize != dbCount) {
 			log.warn("DB count and lucene size mismatched - lucene index size {} but DB count {}", indexSize, dbCount);
 		}
-		if (indexSize == 0 && dbCount > 0) {
+		if (dbCount > 0 && (indexSize == 0 || (double) Math.abs(dbCount - indexSize) / dbCount > 0.01)) {
 			importUsers();
 		}
 		
@@ -116,7 +116,7 @@ public class UserSearch {
 		if (indexSize != dbCount) {
 			log.warn("DB count and lucene size mismatched - lucene index size {} but DB count {}", indexSize, dbCount);
 		}
-		if (indexSize == 0 && dbCount > 0) {
+		if (dbCount > 0 && (indexSize == 0 || (double) Math.abs(dbCount - indexSize) / dbCount > 0.01)) {
 			importUsers();
 		}
 		return paginatedDL;

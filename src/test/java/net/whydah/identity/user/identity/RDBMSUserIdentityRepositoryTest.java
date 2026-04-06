@@ -1,12 +1,15 @@
 package net.whydah.identity.user.identity;
 
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
+import net.whydah.identity.user.search.LuceneUserIndexer;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.lucene.store.RAMDirectory;
 import org.constretto.ConstrettoBuilder;
 import org.constretto.ConstrettoConfiguration;
 import org.constretto.model.Resource;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -19,7 +22,7 @@ import static org.junit.Assert.assertNull;
 public class RDBMSUserIdentityRepositoryTest {
 
     @Test
-    public void testAuthenticate() {
+    public void testAuthenticate() throws IOException {
 
         /*
          * Given
@@ -37,7 +40,8 @@ public class RDBMSUserIdentityRepositoryTest {
         dbHelper.cleanDatabase();
         dbHelper.upgradeDatabase();
 
-        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        LuceneUserIndexer luceneUserIndexer = new LuceneUserIndexer(new RAMDirectory());
+        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource, luceneUserIndexer);
         BCryptService bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
         RDBMSUserIdentityRepository rdbmsUserIdentityRepository = new RDBMSUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, configuration);
 

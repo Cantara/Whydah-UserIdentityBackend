@@ -110,7 +110,7 @@ public class UserAuthenticationEndpointTest {
 
         BCryptService bCryptService = new BCryptService("57hruioqe", 4);
 
-        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        RDBMSUserIdentityDao userIdentityDao = new RDBMSUserIdentityDao(dataSource, luceneUserIndexer);
         RDBMSUserIdentityRepository userIdentityRepository = new RDBMSUserIdentityRepository(userIdentityDao, bCryptService, configuration);
         LuceneUserSearch searcher = new LuceneUserSearch(userIndex);
         userIdentityServiceV2 = new UserIdentityServiceV2(userIdentityRepository, auditLogDao, luceneUserIndexer, searcher, bCryptService);
@@ -201,7 +201,7 @@ public class UserAuthenticationEndpointTest {
         newIdentity.setEmail(email);
 
         UserAggregateService userAggregateService = new UserAggregateService(userIdentityServiceV2, userApplicationRoleEntryDao,
-                applicationService, null, null);
+                applicationService, null);
         UserAuthenticationEndpoint resource = new UserAuthenticationEndpoint(userAggregateService, userAdminHelper, userIdentityServiceV2, new BCryptService("iHI458at4", 4));
 
         String roleValue = "roleValue";

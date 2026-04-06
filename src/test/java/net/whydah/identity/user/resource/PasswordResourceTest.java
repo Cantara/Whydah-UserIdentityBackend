@@ -91,14 +91,14 @@ public class PasswordResourceTest {
 
         bCryptService = new BCryptService(configuration.evaluateToString("userdb.password.pepper"), configuration.evaluateToInt("userdb.password.bcrypt.preferredcost"));
 
-        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource);
+        RDBMSUserIdentityDao rdbmsUserIdentityDao = new RDBMSUserIdentityDao(dataSource, luceneIndexer);
         RDBMSUserIdentityRepository rdbmsUserIdentityRepository = new RDBMSUserIdentityRepository(rdbmsUserIdentityDao, bCryptService, configuration);
         userIdentityServiceV2 = new UserIdentityServiceV2(rdbmsUserIdentityRepository, auditLogDao, luceneIndexer, luceneUserSearch, bCryptService);
 
         UserApplicationRoleEntryDao userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         ApplicationService applicationService = new ApplicationService(null, auditLogDao, luceneApplicationIndexer, luceneApplicationSearcher);
 
-        userAggregateService = new UserAggregateService(userIdentityServiceV2, userApplicationRoleEntryDao, applicationService, luceneIndexer, auditLogDao);
+        userAggregateService = new UserAggregateService(userIdentityServiceV2, userApplicationRoleEntryDao, applicationService, auditLogDao);
 
     }
 
