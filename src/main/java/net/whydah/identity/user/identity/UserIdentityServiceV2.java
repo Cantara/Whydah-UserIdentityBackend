@@ -136,15 +136,15 @@ public class UserIdentityServiceV2 {
         } else {
             email = dto.getEmail();
         }
-        if (email != null) {
-            InternetAddress internetAddress = new InternetAddress();
-            internetAddress.setAddress(email);
-            try {
-                internetAddress.validate();
-            } catch (AddressException e) {
-                throw new IllegalArgumentException(String.format("E-mail: %s is of wrong format.", email));
-            }
-
+        if (email == null || email.isEmpty()) {
+            throw new IllegalArgumentException("E-mail is required.");
+        }
+        InternetAddress internetAddress = new InternetAddress();
+        internetAddress.setAddress(email);
+        try {
+            internetAddress.validate();
+        } catch (AddressException e) {
+            throw new IllegalArgumentException(String.format("E-mail: %s is of wrong format.", email));
         }
 
         // Use already created uuid if one exists
