@@ -54,18 +54,11 @@ public class UserSearch {
 
 					log.debug("Trying to import users from DB...");
 					List<RDBMSUserIdentity> list;
-					try {					
-						
-						try {
-							luceneUserIndexer.closeDirectory();
-							luceneUserIndexer.deleteAll();
-						} catch(Exception ex) {
-							log.error("unexpected error clearing the Lucene user index", ex);
-						}
+					try {
 						list = rdbmsUserIdentityDao.allUsersList();
 						List<UserIdentity> clones = new ArrayList<UserIdentity>(list);
 						log.debug("Found DB user list size: {}", list.size());
-						luceneUserIndexer.addToIndex(clones);
+						luceneUserIndexer.updateIndex(clones);
 					} catch (Exception e) {
 						log.error("failed to import users, exception: " + e);
 					} finally {
@@ -86,8 +79,12 @@ public class UserSearch {
 		}
 		log.debug("lucene search with query={} returned {} users.", query, users.size());
 		
-		if(getUserIndexSize() != rdbmsUserIdentityDao.countUsers()) {
-			log.warn("DB count and lucence size mismatched - lucene index size {} but DB count {}", getUserIndexSize(), rdbmsUserIdentityDao.countUsers() );
+		int indexSize = getUserIndexSize();
+		int dbCount = rdbmsUserIdentityDao.countUsers();
+		if (indexSize != dbCount) {
+			log.warn("DB count and lucene size mismatched - lucene index size {} but DB count {}", indexSize, dbCount);
+		}
+		if (indexSize == 0 && dbCount > 0) {
 			importUsers();
 		}
 		
@@ -114,8 +111,12 @@ public class UserSearch {
 			users = new ArrayList<>();
 		}
 		log.debug("lucene search with query={} returned {} users.", query, users.size());
-		if(getUserIndexSize() != rdbmsUserIdentityDao.countUsers()) {
-			log.warn("DB count and lucence size mismatched - lucene index size {} but DB count {}", getUserIndexSize(), rdbmsUserIdentityDao.countUsers() );
+		int indexSize = getUserIndexSize();
+		int dbCount = rdbmsUserIdentityDao.countUsers();
+		if (indexSize != dbCount) {
+			log.warn("DB count and lucene size mismatched - lucene index size {} but DB count {}", indexSize, dbCount);
+		}
+		if (indexSize == 0 && dbCount > 0) {
 			importUsers();
 		}
 		return paginatedDL;

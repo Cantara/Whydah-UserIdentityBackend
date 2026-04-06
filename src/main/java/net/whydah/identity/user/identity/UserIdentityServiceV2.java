@@ -155,13 +155,7 @@ public class UserIdentityServiceV2 {
                 email, passwordPlaintext, dto.getCellPhone(), dto.getPersonRef());
         try {
             userIdentityRepository.addUserIdentity(userIdentity);
-            if (luceneIndexer.addToIndex(userIdentity)) {
-                int usersInDb = userIdentityRepository.countUsers();
-                HealthResource.setNumberOfUsersDB(usersInDb);
-            } else {
-                throw new IllegalArgumentException("addUserIdentity to DB failed for " + userIdentity.toString());
-            }
-
+            HealthResource.setNumberOfUsersDB(userIdentityRepository.countUsers());
         } catch (RuntimeException e) {
             throw new RuntimeException("addUserIdentity to DB failed for " + userIdentity.toString(), e);
         }
@@ -196,7 +190,6 @@ public class UserIdentityServiceV2 {
         RDBMSUserIdentity userIdentity = userIdentityConverter.convertFromLuceneUserIdentity(newUserIdentity);
 
         userIdentityRepository.updateUserIdentityForUid(uid, userIdentity);
-        luceneIndexer.updateIndex(newUserIdentity);
         audit(uid, ActionPerformed.MODIFIED, "user", newUserIdentity.toString());
     }
 
@@ -215,12 +208,9 @@ public class UserIdentityServiceV2 {
         log.info("update with {} and {}", uid, json);
         userIdentityRepository.updateUserIdentityForUid(uid, update);
         log.info("Updated useridentity in DB: uid={}, values={}", uid, update);
-
-        luceneIndexer.updateIndex(update);
     }
 
     public void deleteUserIdentity(String username) throws RuntimeException {
-        luceneIndexer.removeFromIndex(getUserIdentity(username).getUid());
         userIdentityRepository.deleteUserIdentity(username);
         HealthResource.setNumberOfUsersDB(userIdentityRepository.countUsers());
     }

@@ -7,7 +7,6 @@ import net.whydah.identity.security.Authentication;
 import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.UserIdentityServiceV2;
 import net.whydah.identity.user.role.UserApplicationRoleEntryDao;
-import net.whydah.identity.user.search.LuceneUserIndexer;
 import net.whydah.sso.application.types.Application;
 import net.whydah.sso.user.mappers.UserAggregateMapper;
 import net.whydah.sso.user.mappers.UserIdentityMapper;
@@ -38,13 +37,11 @@ public class UserAggregateService {
     private final UserIdentityServiceV2 userIdentityServiceV2;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
     private final ApplicationService applicationDao;
-    private final LuceneUserIndexer luceneIndexer;
     private final AuditLogDao auditLogDao;
 
     @Autowired
     public UserAggregateService(UserIdentityServiceV2 userIdentityServiceV2, UserApplicationRoleEntryDao userApplicationRoleEntryDao,
-                                ApplicationService applicationDao, LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao) {
-        this.luceneIndexer = luceneIndexer;
+                                ApplicationService applicationDao, AuditLogDao auditLogDao) {
         this.auditLogDao = auditLogDao;
         this.userApplicationRoleEntryDao = userApplicationRoleEntryDao;
         this.applicationDao = applicationDao;
@@ -81,7 +78,6 @@ public class UserAggregateService {
         }
 
         if (userIdentity != null) {
-            luceneIndexer.removeFromIndex(uid);
             userApplicationRoleEntryDao.deleteAllRolesForUser(uid);
             audit(ActionPerformed.DELETED, "user", "uid=" + uid + ", username=" + userIdentity.getUsername());
         }

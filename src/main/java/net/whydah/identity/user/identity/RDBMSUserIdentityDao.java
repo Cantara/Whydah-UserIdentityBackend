@@ -2,6 +2,7 @@ package net.whydah.identity.user.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.whydah.identity.user.search.LuceneUserIndexer;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,13 +23,14 @@ public class RDBMSUserIdentityDao {
     private static String COUNT_SQL = "SELECT COUNT(id) FROM UserIdentity";
 
     private final JdbcTemplate jdbcTemplate;
-
     private final ObjectMapper mapper;
+    private final LuceneUserIndexer luceneUserIndexer;
 
     @Autowired
-    public RDBMSUserIdentityDao(BasicDataSource dataSource) {
+    public RDBMSUserIdentityDao(BasicDataSource dataSource, LuceneUserIndexer luceneUserIndexer) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.mapper = new ObjectMapper();
+        this.luceneUserIndexer = luceneUserIndexer;
 
         String jdbcDriverString = dataSource.getDriverClassName();
         if (jdbcDriverString.contains("mysql")) {
@@ -62,6 +64,7 @@ public class RDBMSUserIdentityDao {
             );
             if (numRowsAffected > 0) {
                 executionOk = true;
+                luceneUserIndexer.addToIndex(userIdentity);
             }
             return executionOk;
         } catch (DataAccessException e) {
@@ -84,6 +87,7 @@ public class RDBMSUserIdentityDao {
 
             if (numRowsAffected > 0) {
                 executionOk = true;
+                luceneUserIndexer.removeFromIndex(uuid);
             }
             return executionOk;
         } catch (DataAccessException e) {
@@ -162,6 +166,7 @@ public class RDBMSUserIdentityDao {
 
             if (numRowsAffected > 0) {
                 executionOk = true;
+                luceneUserIndexer.updateIndex(userIdentity);
             }
             return executionOk;
         } catch (DataAccessException e) {
