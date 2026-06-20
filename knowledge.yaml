@@ -2,6 +2,10 @@ kcp_version: "0.21"
 project: whydah-user-identity-backend
 version: 2.30.6-SNAPSHOT
 updated: "2026-06-20"
+language: en
+license: "Apache-2.0"
+indexing: private
+not_for: []
 temporal:
   valid_from: "2026-03-19"
 signing:
@@ -9,106 +13,112 @@ signing:
   scope: this-manifest
   public_key: "MCowBQYDK2VwAyEAuipgusnqU9vjf3p2yPVLD/DmERT6tBbLOqEETdxAhMU="
   signature: "https://raw.githubusercontent.com/Cantara/Whydah-UserIdentityBackend/master/knowledge.yaml.sig"
-language: en
-license: "Apache-2.0"
-indexing: private
-not_for: []
-
 units:
-
-  - id: user-store
-    path: src/main/java/net/whydah/identity/user/identity
-    intent: "How are user identities stored and managed? LDAP/DB user identity records — reads, writes, and queries for user accounts including attribute management and lifecycle (create, update, delete)."
-    scope: global
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [user store, user identity, LDAP, user account, user record, identity storage, user CRUD, user attribute]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: application-store
-    path: src/main/java/net/whydah/identity/application
-    intent: "How are application registrations stored in UIB? Application identity records and their associated ACL/permission sets — the UIB side of application management used by the STS for credential lookup."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [application store, application identity, ACL, application registration, app credentials, application search]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: role-management
-    path: src/main/java/net/whydah/identity/user/role
-    intent: "How are user roles assigned and managed? Role assignment, lookup, and lifecycle management — the RBAC layer that the STS reads when constructing user tokens with role claims."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    depends_on: [user-store]
-    triggers: [role, RBAC, role assignment, role management, user role, role claims, permissions]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: user-search
-    path: src/main/java/net/whydah/identity/user/search
-    intent: "How are users searched and looked up by attribute? Lucene-backed user indexing for fast lookup by username, email, or role — supports admin user management and token validation workflows."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    depends_on: [user-store]
-    triggers: [user search, search, indexing, lookup, Lucene, username, email, attribute search]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: user-resource
-    path: src/main/java/net/whydah/identity/user/resource
-    intent: "What REST endpoints does UIB expose for user identity operations? REST resources for user CRUD, role management, and user search — consumed by the STS and admin tooling."
-    scope: global
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    depends_on: [user-store, role-management, user-search]
-    triggers: [REST, endpoints, user API, user resource, UIB API, user CRUD endpoint]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: health
-    path: src/main/java/net/whydah/identity/health
-    intent: "How does UIB report its health? Health check endpoint for liveness and readiness probing — signals whether the LDAP/DB backend is reachable."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [health, liveness, readiness, health check, probe, monitoring, backend reachable]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
-  - id: security
-    path: src/main/java/net/whydah/identity/security
-    intent: "How does UIB secure its REST endpoints? Security filter that validates STS application tokens before allowing UIB API access — only trusted applications (STS itself) can call UIB directly."
-    scope: module
-    audience: [developer, agent]
-    validated: "2026-03-15"
-    triggers: [security, application token, access control, UIB security, trusted application, filter]
-      content_hash:
-        algorithm: sha256
-        value: ""
-
+- id: user-store
+  path: src/main/java/net/whydah/identity/user/identity
+  intent: "How are user identities stored and managed? LDAP/DB user identity records\
+    \ — reads, writes, and queries for user accounts including attribute management\
+    \ and lifecycle (create, update, delete)."
+  scope: global
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [user store, user identity, LDAP, user account, user record, identity
+      storage, user CRUD, user attribute]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: application-store
+  path: src/main/java/net/whydah/identity/application
+  intent: "How are application registrations stored in UIB? Application identity records\
+    \ and their associated ACL/permission sets — the UIB side of application management\
+    \ used by the STS for credential lookup."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [application store, application identity, ACL, application registration,
+    app credentials, application search]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: role-management
+  path: src/main/java/net/whydah/identity/user/role
+  intent: "How are user roles assigned and managed? Role assignment, lookup, and lifecycle\
+    \ management — the RBAC layer that the STS reads when constructing user tokens\
+    \ with role claims."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  depends_on: [user-store]
+  triggers: [role, RBAC, role assignment, role management, user role, role claims,
+    permissions]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: user-search
+  path: src/main/java/net/whydah/identity/user/search
+  intent: "How are users searched and looked up by attribute? Lucene-backed user indexing\
+    \ for fast lookup by username, email, or role — supports admin user management\
+    \ and token validation workflows."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  depends_on: [user-store]
+  triggers: [user search, search, indexing, lookup, Lucene, username, email, attribute
+      search]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: user-resource
+  path: src/main/java/net/whydah/identity/user/resource
+  intent: "What REST endpoints does UIB expose for user identity operations? REST\
+    \ resources for user CRUD, role management, and user search — consumed by the\
+    \ STS and admin tooling."
+  scope: global
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  depends_on: [user-store, role-management, user-search]
+  triggers: [REST, endpoints, user API, user resource, UIB API, user CRUD endpoint]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: health
+  path: src/main/java/net/whydah/identity/health
+  intent: "How does UIB report its health? Health check endpoint for liveness and\
+    \ readiness probing — signals whether the LDAP/DB backend is reachable."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [health, liveness, readiness, health check, probe, monitoring, backend
+      reachable]
+  content_hash:
+    algorithm: sha256
+    value: ""
+- id: security
+  path: src/main/java/net/whydah/identity/security
+  intent: "How does UIB secure its REST endpoints? Security filter that validates\
+    \ STS application tokens before allowing UIB API access — only trusted applications\
+    \ (STS itself) can call UIB directly."
+  scope: module
+  audience: [developer, agent]
+  validated: "2026-03-15"
+  triggers: [security, application token, access control, UIB security, trusted application,
+    filter]
+  content_hash:
+    algorithm: sha256
+    value: ""
 relationships:
-  - from: user-resource
-    to: user-store
-    type: depends_on
-  - from: user-resource
-    to: role-management
-    type: depends_on
-  - from: user-resource
-    to: user-search
-    type: depends_on
-  - from: role-management
-    to: user-store
-    type: depends_on
-  - from: user-search
-    to: user-store
-    type: depends_on
+- from: user-resource
+  to: user-store
+  type: depends_on
+- from: user-resource
+  to: role-management
+  type: depends_on
+- from: user-resource
+  to: user-search
+  type: depends_on
+- from: role-management
+  to: user-store
+  type: depends_on
+- from: user-search
+  to: user-store
+  type: depends_on
