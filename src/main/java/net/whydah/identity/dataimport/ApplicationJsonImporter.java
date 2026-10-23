@@ -6,7 +6,7 @@ import net.whydah.identity.health.HealthResource;
 import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.types.Application;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoConfiguration;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +25,7 @@ public class ApplicationJsonImporter {
 
 
 
-    public ApplicationJsonImporter(ApplicationService applicationService, ConstrettoConfiguration configuration) throws IOException {
+    public ApplicationJsonImporter(ApplicationService applicationService, ApplicationConfiguration configuration) throws IOException {
         this.applicationService = applicationService;
         this.luceneApplicationDir = configuration.evaluateToString("lucene.applicationsdirectory");
         NIOFSDirectory index = createDirectory(luceneApplicationDir);

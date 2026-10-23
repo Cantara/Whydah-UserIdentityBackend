@@ -31,9 +31,10 @@
         -->
         <whydah.admin.sdk.version>3.1.8</whydah.admin.sdk.version>
         <lucene.version>8.11.4</lucene.version>
-        <jersey.version>2.47</jersey.version>
-        <jetty.version>9.4.57.v20241219</jetty.version>
-        <spring.version>5.3.39</spring.version>
+        <jersey.version>3.1.12</jersey.version>
+        <jetty.version>12.1.13</jetty.version>
+        <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
+        <spring.version>6.2.19</spring.version>
         <slf4j.version>2.0.17</slf4j.version>
         <hystrix.version>1.5.18</hystrix.version>
         <maven.compiler.source>21</maven.compiler.source>
@@ -104,48 +105,21 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-            <version>2.0.1.Final</version>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>
             <version>${jersey.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- https://jersey.java.net/documentation/latest/spring.html, allows Spring to inject into Jersey managed components -->
         <dependency>
             <groupId>org.glassfish.jersey.ext</groupId>
-            <artifactId>jersey-spring4</artifactId>
+            <artifactId>jersey-spring6</artifactId>
             <version>${jersey.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.inject</groupId>
-                    <artifactId>javax.inject</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jvnet</groupId>
-                    <artifactId>tiger-types</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- used by UserAuthenticationEndpoint, UsersResource, FreemarkerViewProcessor-->
         <dependency>
             <groupId>org.glassfish.jersey.ext</groupId>
             <artifactId>jersey-mvc</artifactId>
             <version>${jersey.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- support for Freemarker templates -->
         <dependency>
@@ -175,6 +149,24 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- The two family members this pom never named. Both resolve to
+             ${spring.version} from spring-context today, measured: taking these two
+             declarations back out and re-resolving still gives 6.2.19, because every
+             spring row in jersey-spring6's own pom is <scope>provided</scope> and so
+             is not transitive. They are declared because an undeclared family member
+             is at the mercy of the next carrier that appears - which is how
+             jersey-spring4 used to put spring-aop 4.3.30.RELEASE on this classpath
+             under a 5.3.39 family. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
@@ -202,7 +194,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
-            <version>5.3.39</version>
+            <version>${spring.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework</groupId>
@@ -213,40 +205,18 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>5.3.38</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-webapp</artifactId>
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.constretto</groupId>
-            <artifactId>constretto-spring</artifactId>
-            <version>2.2.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.annotation</groupId>
-                    <artifactId>jsr250-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.thoughtworks.paranamer</groupId>
-                    <artifactId>paranamer</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.annotation</groupId>
-                    <artifactId>jsr250-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.code.gson</groupId>
-                    <artifactId>gson</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>${jakarta.servlet.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thoughtworks.paranamer</groupId>
@@ -298,9 +268,9 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>mail</artifactId>
-            <version>1.4.7</version>
+            <groupId>jakarta.mail</groupId>
+            <artifactId>jakarta.mail-api</artifactId>
+            <version>2.1.3</version>
         </dependency>
         <!--
         Upgrading to Lucene 5 requires existing indexes to be migrated or deleted
@@ -417,13 +387,6 @@
         </dependency>
 
 
-        <!-- javax.mail and javax.activation is used by logback SmtpAppender -->
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <version>1.1.1</version>
-            <scope>runtime</scope>
-        </dependency>
 
 
         <!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on -->
@@ -505,11 +468,6 @@
         <version>8.0.0</version>
         <scope>test</scope>
     </dependency>
-    <dependency>
-  <groupId>javax.xml.bind</groupId>
-  <artifactId>jaxb-api</artifactId>
-  <version>2.3.1</version>
-</dependency>
     </dependencies>
 
     <build>

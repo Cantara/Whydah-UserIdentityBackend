@@ -12,9 +12,7 @@ import net.whydah.sso.user.types.UserIdentity;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -43,7 +41,7 @@ public class UserIdentityServiceV2Test {
     private static PasswordGenerator passwordGenerator;
     private static DatabaseMigrationHelper dbHelper;
     private static RDBMSUserIdentityRepository rdbmsUserIdentityRepository;
-    private static ConstrettoConfiguration configuration;
+    private static ApplicationConfiguration configuration;
 
     private static LuceneUserSearch luceneUserSearch;
     private static String luceneApplicationDirectory;
@@ -59,12 +57,7 @@ public class UserIdentityServiceV2Test {
 
     @BeforeClass
     public static void init() throws Exception {
-        configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
-                .done()
-                .getConfiguration();
+        configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test-override.properties");
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         dbHelper = new DatabaseMigrationHelper(dataSource);
@@ -121,7 +114,7 @@ public class UserIdentityServiceV2Test {
         testDataDirectories.stream().forEach(dir -> FileUtils.deleteDirectory(dir));
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");

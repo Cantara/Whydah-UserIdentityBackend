@@ -8,11 +8,10 @@ import net.whydah.sso.session.WhydahApplicationSession;
 import net.whydah.sso.session.WhydahApplicationSession2;
 import net.whydah.sso.user.mappers.UserTokenMapper;
 import net.whydah.sso.user.types.UserToken;
-import org.constretto.annotation.Configuration;
-import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -31,8 +30,7 @@ public class SecurityTokenServiceClient {
 	private ApplicationService applicationService;
 
 	@Autowired
-	@Configure
-	public SecurityTokenServiceClient(@Configuration("securitytokenservice") String securitytokenserviceurl, @Configuration("my_applicationid") String MY_APPLICATION_ID, ApplicationService applicationService) {
+	public SecurityTokenServiceClient(@Value("${securitytokenservice}") String securitytokenserviceurl, @Value("${my_applicationid}") String MY_APPLICATION_ID, ApplicationService applicationService) {
 		this.MY_APPLICATION_ID = MY_APPLICATION_ID;
 		this.securitytokenserviceurl = securitytokenserviceurl;
 		securityTokenServiceClient = this;

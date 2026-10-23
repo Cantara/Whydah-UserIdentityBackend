@@ -21,9 +21,7 @@ import net.whydah.sso.user.types.UserIdentity;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,7 +31,7 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -61,18 +59,12 @@ public class UserResourceTest {
 
     private static LuceneUserSearch luceneUserSearch;
 
-    private static ConstrettoConfiguration configuration;
+    private static ApplicationConfiguration configuration;
     private static BCryptService bCryptService;
 
     @BeforeClass
     public static void init() throws Exception {
-        configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
-                .done()
-                .getConfiguration();
+        configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test.properties", "classpath:useridentitybackend-test-override.properties");
 
         BasicDataSource dataSource = initBasicDataSource(configuration);
         dbHelper = new DatabaseMigrationHelper(dataSource);
@@ -116,7 +108,7 @@ public class UserResourceTest {
         deleteTestDataDirectories();
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
@@ -137,7 +129,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
         UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
-        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
+        jakarta.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
         RDBMSUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), RDBMSUserIdentity.class);
@@ -150,7 +142,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
         UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
-        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
+        jakarta.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
         RDBMSUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), RDBMSUserIdentity.class);
@@ -171,7 +163,7 @@ public class UserResourceTest {
 
         /** create useridentity */
         UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
-        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
+        jakarta.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
         /* get useridentity - useridentity exists in db  */
@@ -189,7 +181,7 @@ public class UserResourceTest {
 
         /** create useridentity */
         UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
-        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
+        jakarta.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
         /** get useridentity - useridentity exists in db  */
@@ -209,7 +201,7 @@ public class UserResourceTest {
         String json = new ObjectMapper().writeValueAsString(rdbmsUserIdentity);
 
         UserResource userResource = new UserResource(userIdentityServiceV2, userAggregateService, new ObjectMapper(), bCryptService);
-        javax.ws.rs.core.Response response = userResource.addUserIdentity(json);
+        jakarta.ws.rs.core.Response response = userResource.addUserIdentity(json);
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
 
         RDBMSUserIdentity userIdentity = new ObjectMapper().readValue(response.getEntity().toString(), RDBMSUserIdentity.class);

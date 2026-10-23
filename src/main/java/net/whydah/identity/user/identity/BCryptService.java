@@ -4,9 +4,8 @@ import at.favre.lib.bytes.Bytes;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import at.favre.lib.crypto.bcrypt.IllegalBCryptFormatException;
 import at.favre.lib.crypto.bcrypt.LongPasswordStrategies;
-import org.constretto.annotation.Configuration;
-import org.constretto.annotation.Configure;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -27,9 +26,8 @@ public class BCryptService {
     private final String pepper;
 
     @Autowired
-    @Configure
-    public BCryptService(@Configuration("userdb.password.pepper") String pepper,
-                         @Configuration("userdb.password.bcrypt.preferredcost") int preferredBcryptCost) {
+    public BCryptService(@Value("${userdb.password.pepper}") String pepper,
+                         @Value("${userdb.password.bcrypt.preferredcost}") int preferredBcryptCost) {
         this.pepper = pepper;
         this.preferredBcryptCost = preferredBcryptCost;
     }

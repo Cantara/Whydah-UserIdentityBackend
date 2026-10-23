@@ -16,7 +16,7 @@ import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoConfiguration;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ public class IamDataImporter {
     private final String luceneUsersDir;
     private final String luceneApplicationsDir;
     private final UserApplicationRoleEntryDao userApplicationRoleEntryDao;
-    private final ConstrettoConfiguration config;
+    private final ApplicationConfiguration config;
 
     private final UserApplicationRoleEntryRepository userApplicationRoleEntryRepository;
     private final OrganizationRepository organizationRepository;
@@ -47,7 +47,7 @@ public class IamDataImporter {
     private final String roleMappingImportSource;
 
 
-    public IamDataImporter(BasicDataSource dataSource, ConstrettoConfiguration configuration) {
+    public IamDataImporter(BasicDataSource dataSource, ApplicationConfiguration configuration) {
         this.dataSource = dataSource;
         this.userApplicationRoleEntryDao = new UserApplicationRoleEntryDao(dataSource);
         this.userApplicationRoleEntryRepository = new UserApplicationRoleEntryRepository(userApplicationRoleEntryDao);
