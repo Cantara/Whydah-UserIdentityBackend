@@ -545,6 +545,15 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>net.whydah.identity.Main</Main-Class>
+                                        <!-- Load-bearing from jersey-spring6 onwards. The shaded jar
+                                             already CONTAINED META-INF/versions/N classes from nine
+                                             dependencies and the JVM ignored all of them, because a
+                                             jar without this header is not a multi-release jar.
+                                             jersey-spring6 3.1.12 ships a root SpringComponentProvider
+                                             whose bind() returns false and the real one under
+                                             versions/17, so without this the shipped jar quietly
+                                             stops handing JAX-RS resources to Spring. -->
+                                        <Multi-Release>true</Multi-Release>
                                     </manifestEntries>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
