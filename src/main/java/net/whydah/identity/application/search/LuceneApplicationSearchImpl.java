@@ -24,7 +24,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

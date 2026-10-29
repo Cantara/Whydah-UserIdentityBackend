@@ -27,15 +27,13 @@ import net.whydah.sso.user.types.UserAggregate;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Document;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
@@ -68,12 +66,7 @@ public class UserAuthenticationEndpointTest {
     public static void setUp() throws Exception {
         //ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
         ApplicationMode.setCIMode();
-        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test-override.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test-override.properties");
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
         String luceneUserDir = configuration.evaluateToString("lucene.usersdirectory");

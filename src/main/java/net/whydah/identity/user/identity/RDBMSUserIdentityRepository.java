@@ -1,6 +1,6 @@
 package net.whydah.identity.user.identity;
 
-import org.constretto.ConstrettoConfiguration;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,7 @@ public class RDBMSUserIdentityRepository {
     private final BCryptService bCryptService;
 
     @Autowired
-    public RDBMSUserIdentityRepository(RDBMSUserIdentityDao rdbmsUserIdentityDao, BCryptService bCryptService, ConstrettoConfiguration config) {
+    public RDBMSUserIdentityRepository(RDBMSUserIdentityDao rdbmsUserIdentityDao, BCryptService bCryptService, ApplicationConfiguration config) {
         this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
         this.bCryptService = bCryptService;
     }

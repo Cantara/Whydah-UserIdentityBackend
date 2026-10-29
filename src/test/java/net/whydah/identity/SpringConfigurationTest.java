@@ -2,9 +2,7 @@ package net.whydah.identity;
 
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -14,12 +12,7 @@ public class SpringConfigurationTest {
 
     @Test
     public void verifyConfigurationTest() {
-        ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-                .done()
-                .getConfiguration();
+        ApplicationConfiguration configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "file:./useridentitybackend_override.properties");
         BasicDataSource dataSource = initBasicDataSource(configuration);
         DatabaseMigrationHelper dbHelper = new DatabaseMigrationHelper(dataSource);
         dbHelper.cleanDatabase();
@@ -31,7 +24,7 @@ public class SpringConfigurationTest {
         assertNotNull(classPathXmlApplicationContext.getBean("objectMapper"));
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");

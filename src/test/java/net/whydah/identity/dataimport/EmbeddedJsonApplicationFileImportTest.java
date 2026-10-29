@@ -9,9 +9,7 @@ import net.whydah.identity.config.ApplicationMode;
 import net.whydah.identity.util.FileUtils;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,12 +34,7 @@ public class EmbeddedJsonApplicationFileImportTest {
     @BeforeClass
     public static void startServer() {
         ApplicationMode.setCIMode();
-        final ConstrettoConfiguration config = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration config = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test.properties");
 
 
         String roleDBDirectory = config.evaluateToString("roledb.directory");
@@ -74,12 +67,7 @@ public class EmbeddedJsonApplicationFileImportTest {
 
     @Test
     public void testEmbeddedJsonApplicationsFile() throws IOException {
-        final ConstrettoConfiguration config = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration config = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test.properties");
 
         InputStream ais = null;
         try {

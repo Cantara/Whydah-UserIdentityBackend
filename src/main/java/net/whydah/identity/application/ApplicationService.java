@@ -10,7 +10,6 @@ import net.whydah.sso.application.types.ApplicationCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
@@ -35,7 +34,7 @@ public class ApplicationService {
 	private final LuceneApplicationSearch luceneApplicationSearch;
 
 	@Autowired
-	public ApplicationService(ApplicationDao applicationDao, AuditLogDao auditLogDao, @Qualifier("luceneApplicationsDirectory") LuceneApplicationIndexer luceneApplicationIndexer, LuceneApplicationSearch luceneApplicationSearch) {
+	public ApplicationService(ApplicationDao applicationDao, AuditLogDao auditLogDao, LuceneApplicationIndexer luceneApplicationIndexer, LuceneApplicationSearch luceneApplicationSearch) {
 		this.applicationDao = applicationDao;
 		this.auditLogDao = auditLogDao;
 		this.luceneApplicationIndexer = luceneApplicationIndexer;

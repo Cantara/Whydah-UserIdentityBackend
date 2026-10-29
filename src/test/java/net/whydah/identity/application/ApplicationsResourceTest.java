@@ -10,9 +10,7 @@ import net.whydah.identity.util.FileUtils;
 import net.whydah.sso.application.mappers.ApplicationMapper;
 import net.whydah.sso.application.types.Application;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -37,23 +35,13 @@ public class ApplicationsResourceTest {
     private final String userToken1 = "userToken1";
     private static Main main;
     
-    static ConstrettoConfiguration configuration = new ConstrettoBuilder()
-            .createPropertiesStore()
-            .addResource(Resource.create("classpath:useridentitybackend.properties"))
-            .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-            .done()
-            .getConfiguration();
+    static ApplicationConfiguration configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "file:./useridentitybackend_override.properties");
     static BasicDataSource dataSource;
 
     @BeforeClass
     public static void startServer() {
     	 ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
-         final ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                 .createPropertiesStore()
-                 .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                 .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-                 .done()
-                 .getConfiguration();
+         final ApplicationConfiguration configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "file:./useridentitybackend_override.properties");
 
          removeLuceneAppData();
          
@@ -70,7 +58,7 @@ public class ApplicationsResourceTest {
          RestAssured.basePath = Main.CONTEXT_PATH;
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");

@@ -4,7 +4,6 @@ import net.whydah.identity.user.identity.RDBMSUserIdentity;
 import net.whydah.identity.user.identity.RDBMSUserIdentityDao;
 import net.whydah.identity.user.identity.RDBMSUserIdentityRepository;
 import net.whydah.sso.user.types.UserIdentity;
-import org.constretto.annotation.Configure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,6 @@ public class UserSearch {
 	
 	
 	@Autowired
-	@Configure
 	public UserSearch(RDBMSUserIdentityRepository userIdentityRepository, RDBMSUserIdentityDao rdbmsUserIdentityDao, LuceneUserSearch luceneSearch, LuceneUserIndexer luceneIndexer) {
 		this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
 		this.luceneUserSearch = luceneSearch;

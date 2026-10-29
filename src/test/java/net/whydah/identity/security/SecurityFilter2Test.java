@@ -7,10 +7,10 @@ import net.whydah.sso.user.mappers.UserTokenMapper;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertNotNull;

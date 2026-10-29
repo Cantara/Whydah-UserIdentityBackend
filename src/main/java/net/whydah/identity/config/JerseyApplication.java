@@ -8,7 +8,7 @@ import org.glassfish.jersey.server.mvc.freemarker.FreemarkerMvcFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.ApplicationPath;
+import jakarta.ws.rs.ApplicationPath;
 
 @ApplicationPath("overriddenByWebXml")
 public class JerseyApplication extends ResourceConfig {

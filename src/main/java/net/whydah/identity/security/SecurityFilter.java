@@ -10,15 +10,14 @@ import net.whydah.sso.user.types.UserToken;
 import net.whydah.sso.util.WhydahUtil;
 
 import org.apache.commons.codec.net.URLCodec;
-import org.eclipse.jetty.server.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
@@ -255,7 +254,7 @@ public class SecurityFilter implements Filter {
 			} else {
 				notifyFailedAnonymousAttempt(servletRequest);
 				log.warn("FORBIDDEN b/c isUas={}, pathInfo={}", String.valueOf(isUas), pathInfo);
-				((HttpServletResponse) response).setStatus(Response.SC_FORBIDDEN);
+				((HttpServletResponse) response).setStatus(HttpServletResponse.SC_FORBIDDEN);
 			}
 		}
 	}

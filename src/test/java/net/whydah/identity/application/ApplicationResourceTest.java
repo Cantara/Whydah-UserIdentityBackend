@@ -12,9 +12,7 @@ import net.whydah.sso.application.types.Application;
 import net.whydah.sso.application.types.ApplicationAvailableOrganizationNames;
 import net.whydah.sso.application.types.ApplicationAvailableRoleNames;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -49,12 +47,7 @@ public class ApplicationResourceTest {
     @BeforeClass
     public static void startServer() {
         ApplicationMode.setTags(ApplicationMode.CI_MODE, ApplicationMode.NO_SECURITY_FILTER);
-        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "file:./useridentitybackend_override.properties");
 
         String roleDBDirectory = configuration.evaluateToString("roledb.directory");
         FileUtils.deleteDirectory(roleDBDirectory);
@@ -69,7 +62,7 @@ public class ApplicationResourceTest {
         RestAssured.basePath = Main.CONTEXT_PATH;
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
@@ -119,7 +112,7 @@ public class ApplicationResourceTest {
                 .contentType(ContentType.JSON)
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.OK.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.OK.getStatusCode())
                 .log().ifError()
                 .when()
                 .post(path, appToken1, userTokenID1);
@@ -141,7 +134,7 @@ public class ApplicationResourceTest {
         Response response = given()
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.OK.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.OK.getStatusCode())
                 .log().ifError()
                 .when()
                 .get(path, appToken1, userTokenID1, appId1FromCreatedResponse);
@@ -164,7 +157,7 @@ public class ApplicationResourceTest {
                 .contentType(ContentType.JSON)
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode())
                 .log().ifError()
                 .when()
                 .put(path, appToken1, userTokenID1, appId1FromCreatedResponse);
@@ -182,7 +175,7 @@ public class ApplicationResourceTest {
                 .contentType(ContentType.JSON)
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode())
                 .log().ifError()
                 .when()
                 .put(path, appToken1, userTokenID1, appId1FromCreatedResponse);
@@ -195,7 +188,7 @@ public class ApplicationResourceTest {
         given()
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode())
                 .log().ifError()
                 .when()
                 .delete(path, appToken1, userTokenID1, appId1FromCreatedResponse);
@@ -207,7 +200,7 @@ public class ApplicationResourceTest {
         given()
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode())
                 .log().ifError()
                 .when()
                 .delete(path, appToken1, userTokenID1, appId1FromCreatedResponse);
@@ -219,7 +212,7 @@ public class ApplicationResourceTest {
         given()
                 .log().everything()
                 .expect()
-                .statusCode(javax.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode())
+                .statusCode(jakarta.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode())
                 .log().ifError()
                 .when()
                 .get(path, appToken1, userTokenID1, appId1FromCreatedResponse);

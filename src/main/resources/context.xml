@@ -2,22 +2,37 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:constretto="http://constretto.org/schema/constretto"
 
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
-               http://constretto.org/schema/constretto http://constretto.org/schema/constretto/constretto-1.2.xsd">
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
+    <!--
+        Replaces <constretto:configuration>, which registered three things: the
+        injectable ApplicationConfiguration bean, a property placeholder configurer
+        for the ${...} below, and the @Configure/@Configuration post-processor. The
+        first two are the two beans here; the third is gone because the three
+        constructors that used it now take @Value.
 
+        The SAME instance is injected into UserAdminHelper and
+        RDBMSUserIdentityRepository and feeds the placeholder configurer, as the
+        single ApplicationConfiguration did. The resource list is unchanged, and
+        ApplicationConfiguration reproduces Constretto's resolution order,
+        including the @CI. / @DEV. / @IDE. tagged keys.
+    -->
+    <bean id="configuration" class="net.whydah.identity.config.ApplicationConfiguration">
+        <constructor-arg>
+            <array>
+                <value>classpath:useridentitybackend.properties</value>
+                <value>file:./useridentitybackend_override.properties</value>
+            </array>
+        </constructor-arg>
+    </bean>
 
-    <constretto:configuration>
-        <constretto:stores>
-            <constretto:properties-store>
-                <constretto:resource location="classpath:useridentitybackend.properties"/>
-                <constretto:resource location="file:./useridentitybackend_override.properties"/>
-            </constretto:properties-store>
-        </constretto:stores>
-    </constretto:configuration>
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="properties">
+            <bean factory-bean="configuration" factory-method="asProperties"/>
+        </property>
+    </bean>
 
     <context:component-scan base-package="net.whydah.identity">
         <!--<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>-->

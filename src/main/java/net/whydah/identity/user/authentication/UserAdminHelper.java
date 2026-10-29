@@ -12,14 +12,14 @@ import net.whydah.sso.ddd.model.user.Email;
 import net.whydah.sso.ddd.model.user.UserName;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserToken;
-import org.constretto.ConstrettoConfiguration;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -65,7 +65,7 @@ public class UserAdminHelper {
                            LuceneUserIndexer luceneIndexer, AuditLogDao auditLogDao,
                            UserApplicationRoleEntryDao userApplicationRoleEntryDao,
                            BCryptService bCryptService,
-                           ConstrettoConfiguration configuration) {
+                           ApplicationConfiguration configuration) {
         this.rdbmsUserIdentityDao = rdbmsUserIdentityDao;
         this.luceneIndexer = luceneIndexer;
         this.auditLogDao = auditLogDao;
@@ -76,7 +76,7 @@ public class UserAdminHelper {
         initAddUserDefaults(configuration);
     }
 
-    private void initAddUserDefaults(ConstrettoConfiguration configuration) {
+    private void initAddUserDefaults(ApplicationConfiguration configuration) {
         this.defaultApplicationId = configuration.evaluateToString("adduser.defaultapplication.id");
         this.defaultApplicationName = configuration.evaluateToString("adduser.defaultapplication.name");
         this.defaultOrganizationName = configuration.evaluateToString("adduser.defaultorganization.name");

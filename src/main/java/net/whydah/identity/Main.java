@@ -1,21 +1,19 @@
 package net.whydah.identity;
 
+import net.whydah.identity.config.ApplicationConfiguration;
 import net.whydah.identity.dataimport.DatabaseMigrationHelper;
 import net.whydah.identity.dataimport.IamDataImporter;
 import net.whydah.identity.util.FileUtils;
 import net.whydah.sso.util.SSLTool;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -54,12 +52,7 @@ public class Main {
         copyConfigExamples();
         copyConfig();
 
-        final ConstrettoConfiguration config = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("file:./useridentitybackend_override.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration config = new ApplicationConfiguration("classpath:useridentitybackend.properties", "file:./useridentitybackend_override.properties");
 
         printConfiguration(config);
 
@@ -87,7 +80,7 @@ public class Main {
         this.webappPort = webappPort;
     }
 
-    private void start(ConstrettoConfiguration config) {
+    private void start(ApplicationConfiguration config) {
         // Property-overwrite of SSL verification to support weak ssl certificates
         String sslVerification = config.evaluateToString("sslverification");
         if ("disabled".equalsIgnoreCase(sslVerification)) {
@@ -115,7 +108,7 @@ public class Main {
         log.info("Health: http://localhost:{}/{}/{}/", webappPort, CONTEXT_PATH, "health");
     }
 
-    private void initLucene(ConstrettoConfiguration config) {
+    private void initLucene(ApplicationConfiguration config) {
         String luceneUsersDirectory = config.evaluateToString("lucene.usersdirectory");
         String luceneApplicationDirectory = config.evaluateToString("lucene.applicationsdirectory");
 
@@ -133,7 +126,7 @@ public class Main {
     }
 
 
-    private BasicDataSource initRoleDB(ConstrettoConfiguration config) {
+    private BasicDataSource initRoleDB(ApplicationConfiguration config) {
         boolean importEnabled = config.evaluateToBoolean("import.enabled");
         if (importEnabled) {
             String roleDBDirectory = config.evaluateToString("roledb.directory");
@@ -147,7 +140,7 @@ public class Main {
         return dataSource;
     }
 
-    public static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    public static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
@@ -179,14 +172,12 @@ public class Main {
         WebAppContext webAppContext = new WebAppContext();
         log.debug("Start Jetty using resourcebase={}", resourceBase);
         webAppContext.setDescriptor(resourceBase + "/WEB-INF/web.xml");
-        webAppContext.setResourceBase(resourceBase);
+        webAppContext.setBaseResource(
+                ResourceFactory.of(webAppContext).newResource(resourceBase));
         webAppContext.setContextPath(CONTEXT_PATH);
         webAppContext.setParentLoaderPriority(true);
 
-        HandlerList handlers = new HandlerList();
-        Handler[] handlerList = {webAppContext, new DefaultHandler()};
-        handlers.setHandlers(handlerList);
-        server.setHandler(handlers);
+        server.setHandler(new Handler.Sequence(webAppContext, new DefaultHandler()));
 
         try {
             server.start();
@@ -228,7 +219,7 @@ public class Main {
         return webappPort;
     }
 
-    private static void printConfiguration(ConstrettoConfiguration configuration) {
+    private static void printConfiguration(ApplicationConfiguration configuration) {
         if (configuration == null) {
             log.error("Missing configuration - uib will not work properly!");
         } else {

@@ -15,9 +15,7 @@ import net.whydah.sso.user.types.UserAggregate;
 import net.whydah.sso.user.types.UserApplicationRoleEntry;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,12 +39,7 @@ public class IamDataImporterTest {
     @BeforeClass
     public static void startServer() {
         ApplicationMode.setCIMode();
-        final ConstrettoConfiguration config = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration config = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test.properties");
 
 
         String roleDBDirectory = config.evaluateToString("roledb.directory");

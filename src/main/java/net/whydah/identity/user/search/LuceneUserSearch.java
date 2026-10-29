@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class LuceneUserSearch extends LuceneUserSearchImpl {
 
     @Autowired
-    public LuceneUserSearch(@Qualifier Directory luceneUserDirectory) throws IOException {
+    public LuceneUserSearch(@Qualifier("luceneUserDirectory") Directory luceneUserDirectory) throws IOException {
         super(luceneUserDirectory);
     }
 }

@@ -11,9 +11,7 @@ import net.whydah.identity.util.FileUtils;
 import net.whydah.identity.util.PasswordGenerator;
 import net.whydah.sso.user.types.UserIdentity;
 import org.apache.commons.dbcp.BasicDataSource;
-import org.constretto.ConstrettoBuilder;
-import org.constretto.ConstrettoConfiguration;
-import org.constretto.model.Resource;
+import net.whydah.identity.config.ApplicationConfiguration;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -21,11 +19,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import java.io.File;
 import java.net.URI;
 import java.sql.SQLException;
@@ -46,12 +44,7 @@ public class PasswordResource2EndpointTest {
         FileUtils.deleteDirectory(new File("target/data/lucene"));
         FileUtils.deleteDirectory(new File("target/data/lucene"));
         ApplicationMode.setCIMode();
-        final ConstrettoConfiguration configuration = new ConstrettoBuilder()
-                .createPropertiesStore()
-                .addResource(Resource.create("classpath:useridentitybackend.properties"))
-                .addResource(Resource.create("classpath:useridentitybackend-test.properties"))
-                .done()
-                .getConfiguration();
+        final ApplicationConfiguration configuration = new ApplicationConfiguration("classpath:useridentitybackend.properties", "classpath:useridentitybackend-test.properties");
 
         luceneUsersDir = configuration.evaluateToString("lucene.usersdirectory");
         FileUtils.deleteDirectories("target/bootstrapdata/", luceneUsersDir);
@@ -78,7 +71,7 @@ public class PasswordResource2EndpointTest {
 
     }
 
-    private static BasicDataSource initBasicDataSource(ConstrettoConfiguration configuration) {
+    private static BasicDataSource initBasicDataSource(ApplicationConfiguration configuration) {
         String jdbcdriver = configuration.evaluateToString("roledb.jdbc.driver");
         String jdbcurl = configuration.evaluateToString("roledb.jdbc.url");
         String roledbuser = configuration.evaluateToString("roledb.jdbc.user");
